@@ -1,58 +1,184 @@
-# NoteSphere | Intelligent Journal Management Platform
+# NoteSphere — Intelligent Journal Management Platform
 
-NoteSphere is a production-grade Spring Boot REST API backend designed for secure, intelligent personal journaling. It features JWT and Google OAuth2 authentication, Role-Based Access Control (RBAC), and leverages VADER sentiment analysis and rule-based NLP to automatically categorize and analyze journal entries.
+**NoteSphere** is a secure Spring Boot REST API for personal journaling. Users can create, manage, and privately access their journal entries while the system automatically analyzes the content for **sentiment and category** using VADER and rule-based NLP.
+
+## What Can Users Do?
+
+* **Register & Login** using email/password.
+* **Login with Google** using OAuth2.
+* Create, view, update, and delete their **personal journals**.
+* Automatically get **sentiment analysis** for every journal:
+
+  * Positive
+  * Neutral
+  * Negative
+* Automatically **categorize journals** based on their content, such as:
+
+  * Work
+  * Health
+  * Travel
+  * etc.
+* View their journal history while ensuring **other users cannot access their journals**.
+* Use secure APIs protected by **JWT authentication and RBAC**.
+
+### Example
+
+A user writes:
+
+> "Today I completed my project and had a great meeting with my team."
+
+NoteSphere processes the entry and stores information such as:
+
+```text
+Journal
+├── Content
+├── Sentiment: Positive
+├── Sentiment Score
+└── Category: Work
+```
+
+So the application doesn't just **store journal text** — it also **understands and organizes the content**.
+
+---
+
+## Authentication & Authorization
+
+* Stateless **JWT authentication**
+* **Refresh token rotation**
+* **Google OAuth2 login**
+* Role-Based Access Control:
+
+  * `USER`
+  * `ADMIN`
+* User-level data isolation
+* Protected administrative APIs
+
+Authentication flow:
+
+```text
+Login / Google OAuth2
+        ↓
+Authentication
+        ↓
+Access + Refresh Token
+        ↓
+JWT Validation
+        ↓
+Authorized API Request
+```
+
+---
+
+## Intelligent Journal Processing
+
+Whenever a journal is created:
+
+```text
+Journal Content
+      ↓
+VADER Sentiment Analysis
+      ↓
+Positive / Neutral / Negative
+      ↓
+Rule-Based NLP
+      ↓
+Keywords & Category
+      ↓
+Store Journal in MongoDB
+```
+
+---
+
+## Admin Capabilities
+
+Admins can access protected platform-level APIs for:
+
+* User management
+* Platform statistics
+* Administrative operations
+
+These APIs are restricted using Spring Security roles.
+
+---
+
+## Architecture
+
+The application follows a layered Spring Boot architecture:
+
+```text
+Client
+  ↓
+Controller
+  ↓
+Service
+  ↓
+Repository
+  ↓
+MongoDB
+
+        + Spring Security
+        + NLP / Sentiment Processing
+```
+
+Centralized exception handling using `@RestControllerAdvice` provides consistent API error responses.
+
+---
 
 ## Tech Stack
-* **Java 21**
-* **Spring Boot 3.3.5**
-* **MongoDB** (Spring Data MongoDB)
-* **Spring Security** (JWT + OAuth2)
-* **Maven**
-* **Swagger/OpenAPI 3.0**
-* **VADER Sentiment Analysis** (Java Port)
-* **JUnit 5 & Mockito**
 
-## Core Features
-1. **Secure Authentication:** Stateless JWT authentication with refresh token rotation.
-2. **Social Login:** Google OAuth2 integration seamlessly tied into the JWT lifecycle.
-3. **Sentiment Analysis:** Every journal entry is automatically scored (Positive, Neutral, Negative) using the VADER algorithm.
-4. **Intelligent Tagging:** Rule-based NLP extracts keywords and auto-categorizes journals (e.g., Work, Health, Travel).
-5. **RBAC & Data Isolation:** Granular role permissions (USER, ADMIN) and strict tenant isolation at the repository/service layer.
-6. **Admin Dashboard APIs:** Platform-wide statistics and user management endpoints.
-7. **Comprehensive Testing:** Unit and integration test coverage.
-8. **Interactive Documentation:** Swagger UI for API exploration.
+| Technology          | Usage                          |
+| ------------------- | ------------------------------ |
+| Java 21             | Backend                        |
+| Spring Boot 3.3.5   | REST API                       |
+| Spring Security     | Authentication & Authorization |
+| JWT                 | Stateless authentication       |
+| OAuth2              | Google Login                   |
+| MongoDB             | Data persistence               |
+| Spring Data MongoDB | Database access                |
+| VADER               | Sentiment analysis             |
+| Rule-Based NLP      | Categorization                 |
+| Maven               | Build & dependency management  |
+| Swagger / OpenAPI 3 | API documentation              |
+| JUnit 5 & Mockito   | Testing                        |
 
-## Prerequisites
+---
+
+## Running Locally
+
+### Prerequisites
+
 * Java 21+
 * Maven 3.8+
 * MongoDB running on `localhost:27017`
 
-## Setup & Running
+### Clone & Run
 
-1. **Clone the repository:**
-   ```bash
-   git clone <repo-url>
-   cd NOTESPHERE
-   ```
+```bash
+git clone <repo-url>
+cd NOTESPHERE
 
-2. **Configure Environment Variables (Optional):**
-   Update `src/main/resources/application.yml` or set environment variables for Google OAuth2:
-   * `GOOGLE_CLIENT_ID`
-   * `GOOGLE_CLIENT_SECRET`
-   * `JWT_SECRET`
+mvn clean install
+mvn spring-boot:run
+```
 
-3. **Build and Run:**
-   ```bash
-   mvn clean install
-   mvn spring-boot:run
-   ```
+Configure the following environment variables for authentication:
 
-4. **Access the API Documentation:**
-   * Swagger UI: `http://localhost:8080/swagger-ui/index.html`
-   * OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+```text
+GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET
+JWT_SECRET
+```
 
-## Architecture Overview
-The application follows standard Spring Boot layered architecture:
-`Controllers -> Services -> Repositories -> MongoDB`
+Run tests:
 
-Exception handling is centralized using a `@RestControllerAdvice` to ensure consistent `ApiResponse` payload structures across all endpoints.
+```bash
+mvn test
+```
+
+---
+
+## Project Highlights
+
+NoteSphere demonstrates a production-oriented backend combining:
+
+**Secure Authentication → REST API Design → RBAC → User Data Isolation → MongoDB → NLP → Sentiment Analysis → Automated Categorization → Testing → API Documentation**
