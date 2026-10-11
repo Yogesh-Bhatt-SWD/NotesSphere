@@ -130,9 +130,9 @@ export function LoginPage() {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <Input
-            label="Email Address"
-            type="email"
-            placeholder="you@example.com"
+            label="Email or Username"
+            type="text"
+            placeholder="you@example.com or username"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             icon={Mail}
