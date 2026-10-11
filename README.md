@@ -84,7 +84,7 @@ Rule-Based NLP
       ↓
 Keywords & Category
       ↓
-Store Journal in MongoDB
+Store Journal in MySQL
 ```
 
 ---
@@ -114,7 +114,7 @@ Service
   ↓
 Repository
   ↓
-MongoDB
+MySQL
 
         + Spring Security
         + NLP / Sentiment Processing
@@ -128,13 +128,13 @@ Centralized exception handling using `@RestControllerAdvice` provides consistent
 
 | Technology          | Usage                          |
 | ------------------- | ------------------------------ |
-| Java 21             | Backend                        |
+| Java 17+            | Backend                        |
 | Spring Boot 3.3.5   | REST API                       |
 | Spring Security     | Authentication & Authorization |
 | JWT                 | Stateless authentication       |
 | OAuth2              | Google Login                   |
-| MongoDB             | Data persistence               |
-| Spring Data MongoDB | Database access                |
+| MySQL               | Data persistence               |
+| Spring Data JPA     | Database access & ORM          |
 | VADER               | Sentiment analysis             |
 | Rule-Based NLP      | Categorization                 |
 | Maven               | Build & dependency management  |
@@ -147,9 +147,9 @@ Centralized exception handling using `@RestControllerAdvice` provides consistent
 
 ### Prerequisites
 
-* Java 21+
+* Java 17+
 * Maven 3.8+
-* MongoDB running on `localhost:27017`
+* MySQL 8.0+ running on `localhost:3306` with database `db_notesphere`
 
 ### Clone & Run
 

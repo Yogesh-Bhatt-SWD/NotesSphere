@@ -21,7 +21,7 @@ import java.util.Set;
 
 /**
  * Handles successful OAuth2 authentication by creating or updating the user
- * in MongoDB and redirecting with a JWT token.
+ * in MySQL and redirecting with a JWT token.
  */
 @Slf4j
 @Component

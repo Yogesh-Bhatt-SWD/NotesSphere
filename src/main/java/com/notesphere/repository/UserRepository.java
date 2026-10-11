@@ -1,16 +1,16 @@
 package com.notesphere.repository;
 
 import com.notesphere.entity.User;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
 /**
- * MongoDB repository for User documents.
+ * Spring Data JPA repository for User entities.
  */
 @Repository
-public interface UserRepository extends MongoRepository<User, String> {
+public interface UserRepository extends JpaRepository<User, String> {
 
     Optional<User> findByEmail(String email);
 

@@ -10,7 +10,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 /**
- * Custom UserDetailsService that loads user data from MongoDB.
+ * Custom UserDetailsService that loads user data from the database.
  */
 @Service
 @RequiredArgsConstructor

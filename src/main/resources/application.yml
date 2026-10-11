@@ -5,10 +5,20 @@ spring:
   application:
     name: NoteSphere
 
-  data:
-    mongodb:
-      uri: mongodb://localhost:27017/notesphere
-      auto-index-creation: true
+  datasource:
+    url: jdbc:mysql://localhost:3306/db_notesphere?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: root123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
 
   security:
     oauth2:
