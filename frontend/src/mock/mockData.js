@@ -72,7 +72,7 @@ export const mockRecentJournals = [
     readTime: "4 min read",
     sentiment: "NEUTRAL",
     collaborators: 3,
-    thumbnail: "https://images.unsplash.com/photo-1477959858617-67f30bc75b82?auto=format&fit=crop&w=120&q=80"
+    thumbnail: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=200&q=80"
   },
   {
     id: "j-5",
@@ -82,7 +82,7 @@ export const mockRecentJournals = [
     readTime: "3 min read",
     sentiment: "POSITIVE",
     collaborators: 5,
-    thumbnail: "https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&w=120&q=80"
+    thumbnail: "https://images.unsplash.com/photo-1526676037777-05a232554f77?auto=format&fit=crop&w=200&q=80"
   },
   {
     id: "j-6",
@@ -92,7 +92,7 @@ export const mockRecentJournals = [
     readTime: "6 min read",
     sentiment: "POSITIVE",
     collaborators: 2,
-    thumbnail: "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=120&q=80"
+    thumbnail: "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=200&q=80"
   }
 ];
 
