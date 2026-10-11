@@ -20,9 +20,21 @@ public class UserProfileResponse {
 
     private String id;
     private String username;
-    private String email;
+    private String fullName;
+    private String avatarUrl;
+    private String bio;
+    private String profileLabel;
+    private java.util.Set<String> interests;
+    private String location;
+    private String website;
+    private String twitterUrl;
+    private String githubUrl;
+    private String linkedinUrl;
+    private boolean profilePublic;
     private Instant createdAt;
     private FriendshipStatus friendshipStatus;
     private String friendRequestId; // Non-null if pending
+    private int friendsCount;
     private int mutualFriendsCount;
+    private long publishedJournalsCount;
 }

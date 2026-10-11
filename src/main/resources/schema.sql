@@ -12,6 +12,28 @@ CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(255) NULL,
     provider VARCHAR(50) DEFAULT 'LOCAL',
     provider_id VARCHAR(255) NULL,
+    full_name VARCHAR(100) NULL,
+    avatar_url TEXT NULL,
+    bio VARCHAR(500) NULL,
+    profile_label VARCHAR(50) DEFAULT 'Writer',
+    location VARCHAR(100) NULL,
+    website VARCHAR(200) NULL,
+    twitter_url VARCHAR(200) NULL,
+    github_url VARCHAR(200) NULL,
+    linkedin_url VARCHAR(200) NULL,
+    is_profile_public BOOLEAN DEFAULT TRUE,
+    show_location BOOLEAN DEFAULT TRUE,
+    show_interests BOOLEAN DEFAULT TRUE,
+    show_bio BOOLEAN DEFAULT TRUE,
+    default_journal_visibility VARCHAR(30) DEFAULT 'PRIVATE',
+    notify_friend_requests BOOLEAN DEFAULT TRUE,
+    notify_messages BOOLEAN DEFAULT TRUE,
+    notify_comments BOOLEAN DEFAULT TRUE,
+    notify_reactions BOOLEAN DEFAULT TRUE,
+    notify_community BOOLEAN DEFAULT TRUE,
+    daily_writing_goal_words INT DEFAULT 500,
+    preferred_category VARCHAR(50) DEFAULT 'Mindfulness',
+    theme_preference VARCHAR(30) DEFAULT 'system',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -22,6 +44,14 @@ CREATE TABLE IF NOT EXISTS user_roles (
     role VARCHAR(50) NOT NULL,
     PRIMARY KEY (user_id, role),
     CONSTRAINT fk_user_roles_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 2b. User Interests Table (ElementCollection for User)
+CREATE TABLE IF NOT EXISTS user_interests (
+    user_id VARCHAR(36) NOT NULL,
+    interest VARCHAR(100) NOT NULL,
+    PRIMARY KEY (user_id, interest),
+    CONSTRAINT fk_user_interests_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- 3. Categories Table

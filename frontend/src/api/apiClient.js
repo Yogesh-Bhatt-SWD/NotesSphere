@@ -133,10 +133,33 @@ async function attemptRefreshToken() {
   return refreshPromise;
 }
 
+export async function downloadFile(endpoint, filename) {
+  const url = `${BASE_URL}${endpoint}`;
+  const token = localStorage.getItem('notesphere_access_token');
+  const headers = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  const response = await fetch(url, { headers });
+  if (!response.ok) {
+    throw new ApiError(`Download failed with status ${response.status}`, response.status, null);
+  }
+  const blob = await response.blob();
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = downloadUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(downloadUrl);
+}
+
 export default {
   get: (endpoint) => request(endpoint, { method: 'GET' }),
   post: (endpoint, body) => request(endpoint, { method: 'POST', body: JSON.stringify(body) }),
   put: (endpoint, body) => request(endpoint, { method: 'PUT', body: JSON.stringify(body) }),
   patch: (endpoint, body) => request(endpoint, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined }),
-  delete: (endpoint) => request(endpoint, { method: 'DELETE' }),
+  delete: (endpoint, body) => request(endpoint, { method: 'DELETE', body: body ? JSON.stringify(body) : undefined }),
+  download: downloadFile,
 };

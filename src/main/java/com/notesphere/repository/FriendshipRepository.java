@@ -19,6 +19,11 @@ public interface FriendshipRepository extends JpaRepository<Friendship, String> 
     @Query("SELECT f FROM Friendship f WHERE f.userAId = :userId OR f.userBId = :userId ORDER BY f.createdAt DESC")
     List<Friendship> findAllByUserId(@Param("userId") String userId);
 
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM Friendship f WHERE f.userAId = :userId OR f.userBId = :userId")
+    void deleteByUserId(@Param("userId") String userId);
+
     @Query("SELECT f FROM Friendship f WHERE (f.userAId = :userId AND f.userBId IN :targetIds) OR (f.userBId = :userId AND f.userAId IN :targetIds)")
     List<Friendship> findFriendshipsBetween(@Param("userId") String userId, @Param("targetIds") List<String> targetIds);
 

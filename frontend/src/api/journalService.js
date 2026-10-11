@@ -49,9 +49,11 @@ export const journalService = {
 
   getUserCategories: () => apiClient.get('/journals/categories'),
 
-  exportJson: () => apiClient.get('/journals/export/json'),
+  exportJson: (filename = 'journals.json') =>
+    apiClient.download('/journals/export/json', filename),
 
-  exportCsv: () => apiClient.get('/journals/export/csv'),
+  exportCsv: (filename = 'journals.csv') =>
+    apiClient.download('/journals/export/csv', filename),
 };
 
 export default journalService;

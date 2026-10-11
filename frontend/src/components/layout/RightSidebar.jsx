@@ -112,9 +112,9 @@ export function RightSidebar({ className = '' }) {
     <aside className={`right-sidebar ${className}`}>
       {/* 1. User Profile Widget (Common to all 4 screens) */}
       <div className="user-profile-widget" onClick={() => navigate('/settings')}>
-        {currentUser?.avatar ? (
+        {currentUser?.avatarUrl || currentUser?.avatar ? (
           <img
-            src={currentUser.avatar}
+            src={currentUser.avatarUrl || currentUser.avatar}
             alt={userName}
             className="user-avatar"
           />
@@ -125,7 +125,7 @@ export function RightSidebar({ className = '' }) {
         )}
         <div className="user-info">
           <div className="user-name">{userName}</div>
-          <div className="user-role">{currentUser?.role || 'Journalist'}</div>
+          <div className="user-role">{currentUser?.profileLabel || currentUser?.role || 'Writer'}</div>
         </div>
         <ChevronDown size={18} className="user-chevron" />
       </div>

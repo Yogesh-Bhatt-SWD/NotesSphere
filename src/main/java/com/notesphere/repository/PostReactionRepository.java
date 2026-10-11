@@ -18,4 +18,6 @@ public interface PostReactionRepository extends JpaRepository<PostReaction, Stri
     void deleteByJournalIdAndUserId(String journalId, String userId);
 
     void deleteByJournalId(String journalId);
+
+    void deleteByUserId(String userId);
 }

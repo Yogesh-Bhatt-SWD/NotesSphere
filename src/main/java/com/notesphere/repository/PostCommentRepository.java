@@ -18,4 +18,6 @@ public interface PostCommentRepository extends JpaRepository<PostComment, String
     int countByJournalId(String journalId);
 
     void deleteByJournalId(String journalId);
+
+    void deleteByUserId(String userId);
 }

@@ -1,32 +1,44 @@
 package com.notesphere.controller;
 
+import com.notesphere.util.AppConstants;
+import com.notesphere.dto.request.ChangeEmailRequest;
+import com.notesphere.dto.request.ChangePasswordRequest;
+import com.notesphere.dto.request.DeleteAccountRequest;
+import com.notesphere.dto.request.UpdatePreferencesRequest;
 import com.notesphere.dto.request.UpdateProfileRequest;
 import com.notesphere.dto.response.ApiResponse;
+import com.notesphere.dto.response.JournalResponse;
+import com.notesphere.dto.response.PagedResponse;
+import com.notesphere.dto.response.UserProfileResponse;
 import com.notesphere.dto.response.UserResponse;
 import com.notesphere.security.UserPrincipal;
+import com.notesphere.service.FriendRequestService;
+import com.notesphere.service.JournalService;
 import com.notesphere.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import com.notesphere.dto.response.PagedResponse;
-import com.notesphere.dto.response.UserProfileResponse;
-import com.notesphere.service.FriendRequestService;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "Bearer Authentication")
-@Tag(name = "Users", description = "Endpoints for managing user profiles and discovery")
+@Tag(name = "Users", description = "Endpoints for managing user profiles, preferences, and account security")
 public class UserController {
 
     private final UserService userService;
     private final FriendRequestService friendRequestService;
+    private final JournalService journalService;
 
     @GetMapping("/me")
     @Operation(summary = "Get current authenticated user profile")
@@ -43,6 +55,58 @@ public class UserController {
             @Valid @RequestBody UpdateProfileRequest request) {
         UserResponse updatedUser = userService.updateProfile(currentUser.getId(), request);
         return ResponseEntity.ok(ApiResponse.success("Profile updated successfully", updatedUser));
+    }
+
+    @PutMapping("/me/preferences")
+    @Operation(summary = "Update current user app preferences and privacy settings")
+    public ResponseEntity<ApiResponse<UserResponse>> updatePreferences(
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @Valid @RequestBody UpdatePreferencesRequest request) {
+        UserResponse updatedUser = userService.updatePreferences(currentUser.getId(), request);
+        return ResponseEntity.ok(ApiResponse.success("Preferences updated successfully", updatedUser));
+    }
+
+    @PostMapping("/me/change-password")
+    @Operation(summary = "Change password securely with current password verification")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        userService.changePassword(currentUser.getId(), request);
+        return ResponseEntity.ok(ApiResponse.success("Password changed successfully", null));
+    }
+
+    @PostMapping("/me/change-email")
+    @Operation(summary = "Change account email address with password confirmation")
+    public ResponseEntity<ApiResponse<UserResponse>> changeEmail(
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @Valid @RequestBody ChangeEmailRequest request) {
+        UserResponse updatedUser = userService.changeEmail(currentUser.getId(), request);
+        return ResponseEntity.ok(ApiResponse.success("Email changed successfully", updatedUser));
+    }
+
+    @GetMapping("/me/sessions")
+    @Operation(summary = "Get number of active refresh sessions")
+    public ResponseEntity<ApiResponse<Map<String, Integer>>> getActiveSessions(
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+        int count = userService.getActiveSessionsCount(currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success(Map.of("activeSessions", count)));
+    }
+
+    @PostMapping("/me/signout-all")
+    @Operation(summary = "Sign out of all sessions everywhere by invalidating refresh tokens")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> signOutAllSessions(
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+        int cleared = userService.signOutAllSessions(currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success("All other sessions signed out successfully", Map.of("clearedSessions", cleared)));
+    }
+
+    @DeleteMapping("/me")
+    @Operation(summary = "Delete account and all associated user data permanently")
+    public ResponseEntity<ApiResponse<Void>> deleteAccount(
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @Valid @RequestBody DeleteAccountRequest request) {
+        userService.deleteAccount(currentUser.getId(), request);
+        return ResponseEntity.ok(ApiResponse.success("Account permanently deleted", null));
     }
 
     @GetMapping("/search")
@@ -65,5 +129,18 @@ public class UserController {
         UserProfileResponse profile = friendRequestService.getUserProfile(
                 currentUser.getId(), targetUserId);
         return ResponseEntity.ok(ApiResponse.success(profile));
+    }
+
+    @GetMapping("/{id}/published-journals")
+    @Operation(summary = "Get published journals and community posts for a user")
+    public ResponseEntity<ApiResponse<PagedResponse<JournalResponse>>> getPublishedJournals(
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @PathVariable("id") String targetUserId,
+            @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) int page,
+            @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_SIZE) int size) {
+        Pageable pageable = PageRequest.of(page, Math.min(size, AppConstants.MAX_PAGE_SIZE),
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+        PagedResponse<JournalResponse> journals = journalService.getUserPublishedJournals(targetUserId, pageable);
+        return ResponseEntity.ok(ApiResponse.success(journals));
     }
 }

@@ -54,6 +54,15 @@ export function AuthProvider({ children }) {
     return data;
   };
 
+  const updateUserData = (updatedFields) => {
+    setUser((prev) => {
+      const merged = { ...prev, ...updatedFields };
+      if (!merged.name) merged.name = merged.fullName || merged.username || 'Member';
+      localStorage.setItem('notesphere_user', JSON.stringify(merged));
+      return merged;
+    });
+  };
+
   const logout = async () => {
     await authService.logout();
     setUser(null);
@@ -64,6 +73,7 @@ export function AuthProvider({ children }) {
   const value = {
     user,
     setUser,
+    updateUserData,
     loading,
     isAuthenticated: hasToken && !!user,
     login,

@@ -286,15 +286,34 @@ export default function FriendsPage() {
                 <div className="users-grid">
                   {suggestedUsers.map((target) => (
                     <div key={target.id} className="user-card">
-                      <div className="user-card-left">
+                      <div
+                        className="user-card-left"
+                        onClick={() => navigate('/profile/' + target.id)}
+                        style={{ cursor: 'pointer' }}
+                        title="View Public Profile"
+                      >
                         <div className="user-avatar-wrapper">
-                          <div className="user-avatar">
-                            {target.username ? target.username.charAt(0).toUpperCase() : 'U'}
-                          </div>
+                          {target.avatarUrl ? (
+                            <img
+                              src={target.avatarUrl}
+                              alt={target.username}
+                              className="user-avatar"
+                              style={{ objectFit: 'cover' }}
+                            />
+                          ) : (
+                            <div className="user-avatar">
+                              {target.username ? target.username.charAt(0).toUpperCase() : 'U'}
+                            </div>
+                          )}
                         </div>
                         <div className="user-meta">
-                          <h4>{target.username}</h4>
-                          <div className="user-handle">@{target.username.toLowerCase()}</div>
+                          <h4>{target.fullName || target.username}</h4>
+                          <div className="user-handle">@{target.username?.toLowerCase()}</div>
+                          {target.profileLabel && (
+                            <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600 }}>
+                              {target.profileLabel}
+                            </div>
+                          )}
                           {target.mutualFriendsCount > 0 && (
                             <div className="user-mutuals">
                               <Sparkles size={12} />
@@ -423,17 +442,31 @@ export default function FriendsPage() {
                   <div className="users-grid">
                     {friends.map((friend) => (
                       <div key={friend.friendId} className="user-card">
-                        <div className="user-card-left">
+                        <div
+                          className="user-card-left"
+                          onClick={() => navigate('/profile/' + friend.friendId)}
+                          style={{ cursor: 'pointer' }}
+                          title="View Public Profile"
+                        >
                           <div className="user-avatar-wrapper">
-                            <div className="user-avatar">
-                              {friend.username ? friend.username.charAt(0).toUpperCase() : 'U'}
-                            </div>
+                            {friend.avatarUrl ? (
+                              <img
+                                src={friend.avatarUrl}
+                                alt={friend.username}
+                                className="user-avatar"
+                                style={{ objectFit: 'cover' }}
+                              />
+                            ) : (
+                              <div className="user-avatar">
+                                {friend.username ? friend.username.charAt(0).toUpperCase() : 'U'}
+                              </div>
+                            )}
                             <div className="online-dot" title="Online" />
                           </div>
                           <div className="user-meta">
-                            <h4>{friend.username}</h4>
+                            <h4>{friend.fullName || friend.username}</h4>
                             <div className="user-handle" style={{ color: 'var(--primary)', fontWeight: 500 }}>
-                              Online
+                              @{friend.username?.toLowerCase()}
                             </div>
                           </div>
                         </div>

@@ -28,6 +28,8 @@ import org.springframework.util.StringUtils;
 import java.time.Instant;
 import java.util.*;
 import com.notesphere.dto.response.InAppNotification;
+import com.notesphere.entity.enums.JournalVisibility;
+import com.notesphere.repository.JournalEntryRepository;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import java.util.stream.Collectors;
 
@@ -42,6 +44,7 @@ public class FriendRequestService {
     private final FriendRequestRepository friendRequestRepository;
     private final FriendshipRepository friendshipRepository;
     private final UserRepository userRepository;
+    private final JournalEntryRepository journalRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
     /**
@@ -302,9 +305,9 @@ public class FriendRequestService {
                 }
             }
 
+            Set<String> targetFriends = getFriendIdSet(u.getId());
             int mutualCount = 0;
             if (!currentUserFriends.isEmpty()) {
-                Set<String> targetFriends = getFriendIdSet(u.getId());
                 Set<String> intersection = new HashSet<>(currentUserFriends);
                 intersection.retainAll(targetFriends);
                 mutualCount = intersection.size();
@@ -313,11 +316,23 @@ public class FriendRequestService {
             return UserProfileResponse.builder()
                     .id(u.getId())
                     .username(u.getUsername())
-                    .email(u.getEmail())
+                    .fullName(u.getFullName())
+                    .avatarUrl(u.getAvatarUrl())
+                    .bio(u.isShowBio() ? u.getBio() : null)
+                    .profileLabel(u.getProfileLabel())
+                    .interests(u.isShowInterests() ? u.getInterests() : Collections.emptySet())
+                    .location(u.isShowLocation() ? u.getLocation() : null)
+                    .website(u.getWebsite())
+                    .twitterUrl(u.getTwitterUrl())
+                    .githubUrl(u.getGithubUrl())
+                    .linkedinUrl(u.getLinkedinUrl())
+                    .profilePublic(u.isProfilePublic())
                     .createdAt(u.getCreatedAt())
                     .friendshipStatus(status)
                     .friendRequestId(requestId)
+                    .friendsCount(targetFriends.size())
                     .mutualFriendsCount(mutualCount)
+                    .publishedJournalsCount(0)
                     .build();
         }).collect(Collectors.toList());
 
@@ -361,14 +376,29 @@ public class FriendRequestService {
         Set<String> intersection = new HashSet<>(currentUserFriends);
         intersection.retainAll(targetFriends);
 
+        long publishedCount = journalRepository.countByUserIdAndVisibility(targetUserId, JournalVisibility.PUBLIC) +
+                journalRepository.countByUserIdAndVisibility(targetUserId, JournalVisibility.COMMUNITY);
+
         return UserProfileResponse.builder()
                 .id(target.getId())
                 .username(target.getUsername())
-                .email(target.getEmail())
+                .fullName(target.getFullName())
+                .avatarUrl(target.getAvatarUrl())
+                .bio(target.isShowBio() ? target.getBio() : null)
+                .profileLabel(target.getProfileLabel())
+                .interests(target.isShowInterests() ? target.getInterests() : Collections.emptySet())
+                .location(target.isShowLocation() ? target.getLocation() : null)
+                .website(target.getWebsite())
+                .twitterUrl(target.getTwitterUrl())
+                .githubUrl(target.getGithubUrl())
+                .linkedinUrl(target.getLinkedinUrl())
+                .profilePublic(target.isProfilePublic())
                 .createdAt(target.getCreatedAt())
                 .friendshipStatus(status)
                 .friendRequestId(requestId)
+                .friendsCount(targetFriends.size())
                 .mutualFriendsCount(intersection.size())
+                .publishedJournalsCount(publishedCount)
                 .build();
     }
 

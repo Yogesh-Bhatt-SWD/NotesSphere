@@ -301,8 +301,7 @@ public class JournalService {
 
     @Transactional(readOnly = true)
     public PagedResponse<JournalResponse> getUserPublishedJournals(String userId, Pageable pageable) {
-        Page<JournalEntry> page = journalRepository.findByUserIdAndVisibility(
-                userId, com.notesphere.entity.enums.JournalVisibility.COMMUNITY, pageable);
+        Page<JournalEntry> page = journalRepository.findPublishedByUserId(userId, pageable);
         return mapToPagedResponse(page, userId);
     }
 

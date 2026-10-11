@@ -27,4 +27,9 @@ public interface FriendRequestRepository extends JpaRepository<FriendRequest, St
 
     @Query("SELECT fr FROM FriendRequest fr WHERE ((fr.senderId = :currentUserId AND fr.receiverId IN :targetUserIds) OR (fr.receiverId = :currentUserId AND fr.senderId IN :targetUserIds)) AND fr.status = 'PENDING'")
     List<FriendRequest> findPendingForUserAndTargets(@Param("currentUserId") String currentUserId, @Param("targetUserIds") List<String> targetUserIds);
+
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM FriendRequest fr WHERE fr.senderId = :userId OR fr.receiverId = :userId")
+    void deleteByUserId(@Param("userId") String userId);
 }

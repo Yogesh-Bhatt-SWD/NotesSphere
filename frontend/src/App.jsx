@@ -11,6 +11,7 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import CalendarPage from './pages/CalendarPage';
 import RemindersPage from './pages/RemindersPage';
 import SettingsPage from './pages/SettingsPage';
+import PublicProfilePage from './pages/PublicProfilePage';
 import TagsPage from './pages/TagsPage';
 import CommunitiesPage from './pages/CommunitiesPage';
 import FriendsPage from './pages/FriendsPage';
@@ -84,6 +85,8 @@ export function App() {
             <Route path="tags" element={<TagsPage />} />
             <Route path="reminders" element={<RemindersPage />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="profile/:userId" element={<PublicProfilePage />} />
+            <Route path="profile" element={<Navigate to="/settings" replace />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
