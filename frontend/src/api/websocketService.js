@@ -57,7 +57,7 @@ class WebSocketService {
     this.client.onStompError = (frame) => {
       const msg = frame.headers?.['message'] || '';
       console.warn('STOMP Broker error:', msg, frame.body);
-      if (msg.includes('Unauthorized')) {
+      if (msg.includes('Unauthorized') || msg.includes('Access denied')) {
         this.client?.deactivate();
       }
       if (onErrorCallback) onErrorCallback(frame);
@@ -77,7 +77,11 @@ class WebSocketService {
   disconnect() {
     if (this.client) {
       this.subscriptions.forEach((sub) => {
-        try { sub.unsubscribe(); } catch (_) {}
+        try {
+          if (this.client?.connected) {
+            sub.unsubscribe();
+          }
+        } catch (_) {}
       });
       this.subscriptions.clear();
       this.client.deactivate();
@@ -95,7 +99,11 @@ class WebSocketService {
     const dest = `/topic/conversation.${conversationId}`;
 
     if (this.subscriptions.has(dest)) {
-      this.subscriptions.get(dest).unsubscribe();
+      try {
+        if (this.client?.connected) {
+          this.subscriptions.get(dest).unsubscribe();
+        }
+      } catch (_) {}
     }
 
     const sub = this.client.subscribe(dest, (message) => {
@@ -110,7 +118,11 @@ class WebSocketService {
     this.subscriptions.set(dest, sub);
 
     return () => {
-      try { sub.unsubscribe(); } catch (_) {}
+      try {
+        if (this.client?.connected) {
+          sub.unsubscribe();
+        }
+      } catch (_) {}
       this.subscriptions.delete(dest);
     };
   }
@@ -123,7 +135,11 @@ class WebSocketService {
     const dest = `/topic/notifications.${userId}`;
 
     if (this.subscriptions.has(dest)) {
-      this.subscriptions.get(dest).unsubscribe();
+      try {
+        if (this.client?.connected) {
+          this.subscriptions.get(dest).unsubscribe();
+        }
+      } catch (_) {}
     }
 
     const sub = this.client.subscribe(dest, (message) => {
@@ -138,7 +154,11 @@ class WebSocketService {
     this.subscriptions.set(dest, sub);
 
     return () => {
-      try { sub.unsubscribe(); } catch (_) {}
+      try {
+        if (this.client?.connected) {
+          sub.unsubscribe();
+        }
+      } catch (_) {}
       this.subscriptions.delete(dest);
     };
   }

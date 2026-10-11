@@ -1,7 +1,9 @@
 package com.notesphere.security;
 
 import com.notesphere.entity.Conversation;
+import com.notesphere.entity.User;
 import com.notesphere.repository.ConversationRepository;
+import com.notesphere.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.Message;
@@ -31,6 +33,7 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomUserDetailsService userDetailsService;
     private final ConversationRepository conversationRepository;
+    private final UserRepository userRepository;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -66,7 +69,7 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
                 throw new MessageDeliveryException("Unauthorized STOMP subscription");
             }
 
-            String userId = principal.getName();
+            String userId = resolveUserId(principal);
             String destination = accessor.getDestination();
 
             if (destination != null) {
@@ -75,15 +78,17 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
                     String conversationId = destination.substring("/topic/conversation.".length());
                     Conversation conversation = conversationRepository.findById(conversationId).orElse(null);
                     if (conversation == null || !conversation.isParticipant(userId)) {
-                        log.warn("User {} attempted unauthorized subscription to destination {}", userId, destination);
+                        log.warn("User {} (resolved ID: {}) attempted unauthorized subscription to destination {}",
+                                principal.getName(), userId, destination);
                         throw new MessageDeliveryException("Access denied: You are not a participant in this conversation");
                     }
                 }
                 // Authorize personal notifications topic: /topic/notifications.{id}
                 else if (destination.startsWith("/topic/notifications.")) {
                     String targetUserId = destination.substring("/topic/notifications.".length());
-                    if (!targetUserId.equals(userId)) {
-                        log.warn("User {} attempted unauthorized subscription to private notifications of {}", userId, targetUserId);
+                    if (!targetUserId.equals(userId) && !targetUserId.equalsIgnoreCase(principal.getName())) {
+                        log.warn("User {} (resolved ID: {}) attempted unauthorized subscription to private notifications of {}",
+                                principal.getName(), userId, targetUserId);
                         throw new MessageDeliveryException("Access denied: You cannot subscribe to another user's notifications");
                     }
                 }
@@ -120,5 +125,25 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
         }
 
         return null;
+    }
+
+    private String resolveUserId(Principal principal) {
+        if (principal == null) {
+            return null;
+        }
+        if (principal instanceof UsernamePasswordAuthenticationToken auth) {
+            if (auth.getPrincipal() instanceof UserPrincipal userPrincipal) {
+                return userPrincipal.getId();
+            }
+        }
+        if (principal instanceof UserPrincipal userPrincipal) {
+            return userPrincipal.getId();
+        }
+        String name = principal.getName();
+        return userRepository.findByUsername(name)
+                .map(User::getId)
+                .or(() -> userRepository.findByEmail(name).map(User::getId))
+                .or(() -> userRepository.findById(name).map(User::getId))
+                .orElse(name);
     }
 }
