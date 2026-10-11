@@ -22,4 +22,8 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     @org.springframework.data.jpa.repository.Query("SELECT u.provider, COUNT(u) FROM User u GROUP BY u.provider")
     java.util.List<Object[]> countUsersByProvider();
+
+    org.springframework.data.domain.Page<User> findByUsernameContainingIgnoreCaseAndIdNot(String username, String currentUserId, org.springframework.data.domain.Pageable pageable);
+
+    org.springframework.data.domain.Page<User> findByIdNot(String currentUserId, org.springframework.data.domain.Pageable pageable);
 }

@@ -10,7 +10,9 @@ import {
   LogOut,
   Sparkles,
   ArrowRight,
-  Users
+  Users,
+  UserPlus,
+  MessageSquare
 } from 'lucide-react';
 import { PillNumber } from '../common/Badge';
 import { useAuth } from '../../context/AuthContext';
@@ -27,9 +29,11 @@ export function Sidebar({ unreadCount = 4, className = '' }) {
 
   const navItems = [
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
-    { label: 'Analytics', path: '/analytics', icon: LineChart },
     { label: 'Journal', path: '/journals', icon: BookOpen },
     { label: 'Communities', path: '/communities', icon: Users },
+    { label: 'Friends', path: '/friends', icon: UserPlus },
+    { label: 'Chats', path: '/chat', icon: MessageSquare },
+    { label: 'Analytics', path: '/analytics', icon: LineChart },
     { label: 'Calendar', path: '/calendar', icon: CalendarDays },
     { label: 'Tags', path: '/tags', icon: Sparkles },
     { label: 'Reminders', path: '/reminders', icon: BellRing },

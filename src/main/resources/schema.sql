@@ -171,3 +171,61 @@ CREATE TABLE IF NOT EXISTS reminder_days (
     PRIMARY KEY (reminder_id, day),
     CONSTRAINT fk_reminder_days_pref FOREIGN KEY (reminder_id) REFERENCES reminder_preferences(id) ON DELETE CASCADE
 );
+
+-- 14. Friend Requests Table
+CREATE TABLE IF NOT EXISTS friend_requests (
+    id VARCHAR(36) PRIMARY KEY,
+    sender_id VARCHAR(36) NOT NULL,
+    receiver_id VARCHAR(36) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_fr_receiver_status (receiver_id, status),
+    INDEX idx_fr_sender_status (sender_id, status),
+    CONSTRAINT fk_fr_sender FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_fr_receiver FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 15. Friendships Table (Canonical ordering: user_a_id < user_b_id)
+CREATE TABLE IF NOT EXISTS friendships (
+    id VARCHAR(36) PRIMARY KEY,
+    user_a_id VARCHAR(36) NOT NULL,
+    user_b_id VARCHAR(36) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE INDEX idx_friendship_unique (user_a_id, user_b_id),
+    INDEX idx_friendship_user_a (user_a_id),
+    INDEX idx_friendship_user_b (user_b_id),
+    CONSTRAINT fk_friendship_user_a FOREIGN KEY (user_a_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_friendship_user_b FOREIGN KEY (user_b_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 16. Conversations Table (Canonical 1-to-1 pair: user_a_id < user_b_id)
+CREATE TABLE IF NOT EXISTS conversations (
+    id VARCHAR(36) PRIMARY KEY,
+    user_a_id VARCHAR(36) NOT NULL,
+    user_b_id VARCHAR(36) NOT NULL,
+    last_message_content VARCHAR(1000) NULL,
+    last_message_at TIMESTAMP NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE INDEX idx_conversation_pair (user_a_id, user_b_id),
+    INDEX idx_conversation_user_a (user_a_id),
+    INDEX idx_conversation_user_b (user_b_id),
+    CONSTRAINT fk_conversation_user_a FOREIGN KEY (user_a_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_conversation_user_b FOREIGN KEY (user_b_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 17. Messages Table
+CREATE TABLE IF NOT EXISTS messages (
+    id VARCHAR(36) PRIMARY KEY,
+    conversation_id VARCHAR(36) NOT NULL,
+    sender_id VARCHAR(36) NOT NULL,
+    content VARCHAR(4000) NOT NULL,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    read_at TIMESTAMP NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_message_convo_created (conversation_id, created_at),
+    INDEX idx_message_sender (sender_id),
+    CONSTRAINT fk_message_conversation FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+    CONSTRAINT fk_message_sender FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
+);

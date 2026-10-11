@@ -13,6 +13,8 @@ import RemindersPage from './pages/RemindersPage';
 import SettingsPage from './pages/SettingsPage';
 import TagsPage from './pages/TagsPage';
 import CommunitiesPage from './pages/CommunitiesPage';
+import FriendsPage from './pages/FriendsPage';
+import ChatPage from './pages/ChatPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -32,6 +34,8 @@ export function App() {
             <Route path="journals" element={<JournalsPage />} />
             <Route path="editor" element={<EditorPage />} />
             <Route path="communities" element={<CommunitiesPage />} />
+            <Route path="friends" element={<FriendsPage />} />
+            <Route path="chat" element={<ChatPage />} />
             <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="tags" element={<TagsPage />} />
