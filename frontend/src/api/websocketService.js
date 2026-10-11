@@ -16,6 +16,10 @@ class WebSocketService {
    * Connect to backend WebSocket with JWT credentials.
    */
   connect(token, onConnectCallback, onErrorCallback) {
+    if (!token || token === 'null' || token === 'undefined') {
+      return;
+    }
+
     if (this.client && this.client.active) {
       if (this.connected && onConnectCallback) {
         onConnectCallback();
@@ -44,7 +48,11 @@ class WebSocketService {
     };
 
     this.client.onStompError = (frame) => {
-      console.warn('STOMP Broker error:', frame.headers['message'], frame.body);
+      const msg = frame.headers?.['message'] || '';
+      console.warn('STOMP Broker error:', msg, frame.body);
+      if (msg.includes('Unauthorized')) {
+        this.client?.deactivate();
+      }
       if (onErrorCallback) onErrorCallback(frame);
     };
 
