@@ -2,17 +2,9 @@
  * API Client with JWT Bearer Token Injection and Automatic Refresh Token Rotation
  */
 
-const getBaseUrl = () => {
-  const envUrl = import.meta.env.VITE_API_BASE_URL || '/api';
-  // If browser is on HTTPS (e.g. deployed on Vercel) but API URL is HTTP, use relative /api proxy
-  // to avoid browser mixed-content (HTTPS -> HTTP) blocking.
-  if (typeof window !== 'undefined' && window.location.protocol === 'https:' && envUrl.startsWith('http://')) {
-    return '/api';
-  }
-  return envUrl;
-};
-
-const BASE_URL = getBaseUrl();
+// Use relative '/api' so Vite proxy (in dev) and Vercel rewrites (in production)
+// handle all traffic seamlessly without CORS or Mixed Content errors.
+const BASE_URL = '/api';
 
 export class ApiError extends Error {
   constructor(message, status, data) {
