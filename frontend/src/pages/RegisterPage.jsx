@@ -17,15 +17,27 @@ export function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name || !email || !password) {
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+
+    if (!trimmedName || !trimmedEmail || !password) {
       setError('Please fill in all required fields.');
       return;
     }
+    if (trimmedName.length < 3) {
+      setError('Full Name must be at least 3 characters.');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+
     setError('');
     setLoading(true);
 
     try {
-      await register(name, email, password);
+      await register(trimmedName, trimmedEmail, password);
       navigate('/');
     } catch (err) {
       setError(err.message || 'Registration failed. Try a different email.');

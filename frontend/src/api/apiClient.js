@@ -51,8 +51,15 @@ export async function request(endpoint, options = {}) {
 
     if (!response.ok) {
       const errorBody = await response.json().catch(() => null);
+      let errorMsg = errorBody?.message || `Request failed with status ${response.status}`;
+      if (errorBody?.data && typeof errorBody.data === 'object' && !Array.isArray(errorBody.data)) {
+        const fieldErrors = Object.values(errorBody.data).filter(Boolean);
+        if (fieldErrors.length > 0) {
+          errorMsg = fieldErrors.join('. ');
+        }
+      }
       throw new ApiError(
-        errorBody?.message || `Request failed with status ${response.status}`,
+        errorMsg,
         response.status,
         errorBody
       );

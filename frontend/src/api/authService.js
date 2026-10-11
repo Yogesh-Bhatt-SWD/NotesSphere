@@ -12,7 +12,13 @@ export const authService = {
   },
 
   register: async (name, email, password) => {
-    const res = await apiClient.post('/auth/register', { name, email, password });
+    const trimmedName = name?.trim();
+    const res = await apiClient.post('/auth/register', {
+      username: trimmedName,
+      name: trimmedName,
+      email: email?.trim(),
+      password,
+    });
     if (res?.data?.accessToken) {
       localStorage.setItem('notesphere_access_token', res.data.accessToken);
       localStorage.setItem('notesphere_refresh_token', res.data.refreshToken);
