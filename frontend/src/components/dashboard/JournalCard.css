@@ -1,0 +1,79 @@
+.journal-card {
+  position: relative;
+  background-color: #FFFFFF;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0, 40, 30, 0.05);
+  border: 1px solid var(--border-card);
+  transition: all var(--transition-normal);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  height: 280px;
+}
+
+.journal-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 14px 28px rgba(0, 182, 155, 0.12);
+  border-color: rgba(0, 182, 155, 0.4);
+}
+
+.journal-card-cover-wrapper {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  overflow: hidden;
+  background-color: #E2E8F0;
+}
+
+.journal-card-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.journal-card:hover .journal-card-cover {
+  transform: scale(1.05);
+}
+
+/* Frosted floating icon badge over image matching Image A */
+.journal-card-floating-badge {
+  position: absolute;
+  bottom: 14px;
+  left: 18px;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+}
+
+.journal-card-body {
+  padding: 14px 20px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+  background: #FFFFFF;
+}
+
+.journal-card-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  letter-spacing: -0.02em;
+}
+
+.journal-card-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}

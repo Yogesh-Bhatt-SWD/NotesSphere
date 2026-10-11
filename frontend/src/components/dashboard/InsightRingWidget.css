@@ -1,0 +1,101 @@
+.insight-ring-widget {
+  background-color: #FFFFFF;
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  border: 1px solid var(--border-card);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+}
+
+.insight-widget-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin-bottom: 18px;
+}
+
+.insight-content-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex: 1;
+}
+
+/* SVG Circular Gauge */
+.progress-ring-container {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.progress-ring-svg {
+  transform: rotate(-90deg);
+}
+
+.progress-ring-bg {
+  fill: none;
+  stroke: #E2F4EE;
+  stroke-width: 9;
+}
+
+.progress-ring-circle {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 9;
+  stroke-linecap: round;
+  stroke-dasharray: 283;
+  stroke-dashoffset: 51; /* for ~82% */
+  transition: stroke-dashoffset 0.8s ease-in-out;
+}
+
+.progress-ring-text {
+  position: absolute;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.insight-stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+}
+
+.stat-label {
+  color: var(--text-muted);
+}
+
+.stat-val {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.view-details-link {
+  margin-top: 18px;
+  align-self: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #FF7B54;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.view-details-link:hover {
+  color: #E66A42;
+  text-decoration: underline;
+}
