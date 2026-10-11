@@ -37,7 +37,7 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Login successful", authResponse));
     }
 
-    @PostMapping("/refresh-token")
+    @PostMapping({"/refresh-token", "/refresh"})
     @Operation(summary = "Refresh access token using a valid refresh token")
     public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
         AuthResponse authResponse = authService.refreshToken(request);

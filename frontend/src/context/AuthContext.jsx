@@ -10,17 +10,28 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     // Check if token/user exists in localStorage
+    const token = localStorage.getItem('notesphere_access_token');
+    const refreshToken = localStorage.getItem('notesphere_refresh_token');
     const savedUser = authService.getCurrentUser();
-    if (savedUser) {
+
+    if (savedUser && (token || refreshToken)) {
       setUser({
         ...savedUser,
         name: savedUser.name || savedUser.username || savedUser.email?.split('@')[0] || 'Member',
       });
-    } else if (import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
-      // Default to visual mock user for previewing dashboard layout
-      setUser(mockCurrentUser);
+    } else {
+      // Clear stale user if no tokens exist
+      localStorage.removeItem('notesphere_user');
+      setUser(null);
     }
     setLoading(false);
+
+    // Listen for session expired events from apiClient
+    const handleSessionExpired = () => {
+      setUser(null);
+    };
+    window.addEventListener('notesphere_session_expired', handleSessionExpired);
+    return () => window.removeEventListener('notesphere_session_expired', handleSessionExpired);
   }, []);
 
   const login = async (email, password) => {
@@ -48,11 +59,13 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const hasToken = !!localStorage.getItem('notesphere_access_token') || !!localStorage.getItem('notesphere_refresh_token');
+
   const value = {
     user,
     setUser,
     loading,
-    isAuthenticated: !!user,
+    isAuthenticated: hasToken && !!user,
     login,
     register,
     logout,

@@ -33,7 +33,7 @@ export async function request(endpoint, options = {}) {
   try {
     let response = await fetch(url, config);
 
-    // If 401 Unauthorized and not already refreshing, try refresh token rotation
+    // If 401 Unauthorized and not an auth endpoint, attempt seamless token refresh
     if (response.status === 401 && !endpoint.includes('/auth/')) {
       const refreshed = await attemptRefreshToken();
       if (refreshed) {
@@ -42,16 +42,17 @@ export async function request(endpoint, options = {}) {
         headers['Authorization'] = `Bearer ${newToken}`;
         response = await fetch(url, { ...config, headers });
       } else {
-        // Session dead, clear tokens
+        // Session expired and cannot be refreshed — clear tokens & notify UI
         localStorage.removeItem('notesphere_access_token');
         localStorage.removeItem('notesphere_refresh_token');
         localStorage.removeItem('notesphere_user');
+        window.dispatchEvent(new CustomEvent('notesphere_session_expired'));
       }
     }
 
     if (!response.ok) {
       const errorBody = await response.json().catch(() => null);
-      let errorMsg = errorBody?.message || `Request failed with status ${response.status}`;
+      let errorMsg = errorBody?.message || (response.status === 401 ? 'Authentication required. Please sign in.' : `Request failed with status ${response.status}`);
       if (errorBody?.data && typeof errorBody.data === 'object' && !Array.isArray(errorBody.data)) {
         const fieldErrors = Object.values(errorBody.data).filter(Boolean);
         if (fieldErrors.length > 0) {
@@ -74,31 +75,62 @@ export async function request(endpoint, options = {}) {
   }
 }
 
+// In-flight refresh promise singleton to prevent race conditions during concurrent 401s
+let refreshPromise = null;
+
 async function attemptRefreshToken() {
   const refreshToken = localStorage.getItem('notesphere_refresh_token');
   if (!refreshToken) return false;
 
-  try {
-    const res = await fetch(`${BASE_URL}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      if (data?.data?.accessToken) {
-        localStorage.setItem('notesphere_access_token', data.data.accessToken);
-        if (data.data.refreshToken) {
-          localStorage.setItem('notesphere_refresh_token', data.data.refreshToken);
-        }
-        return true;
-      }
-    }
-  } catch {
-    // refresh attempt failed
+  if (refreshPromise) {
+    return refreshPromise;
   }
-  return false;
+
+  refreshPromise = (async () => {
+    try {
+      // Primary backend endpoint is /api/auth/refresh-token (with fallback to /api/auth/refresh)
+      let res = await fetch(`${BASE_URL}/auth/refresh-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (!res.ok) {
+        res = await fetch(`${BASE_URL}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
+        });
+      }
+
+      if (res.ok) {
+        const json = await res.json();
+        const data = json?.data || json;
+        if (data?.accessToken) {
+          localStorage.setItem('notesphere_access_token', data.accessToken);
+          if (data.refreshToken) {
+            localStorage.setItem('notesphere_refresh_token', data.refreshToken);
+          }
+          if (data.user) {
+            const user = data.user;
+            const normalized = {
+              ...user,
+              name: user.name || user.username || user.email?.split('@')[0],
+            };
+            localStorage.setItem('notesphere_user', JSON.stringify(normalized));
+          }
+          return true;
+        }
+      }
+    } catch (err) {
+      console.warn('Silent token refresh failed:', err);
+    } finally {
+      refreshPromise = null;
+    }
+    return false;
+  })();
+
+  return refreshPromise;
 }
 
 export default {

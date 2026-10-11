@@ -8,6 +8,7 @@ import { Sparkles, Save, Globe, Lock, Plus, Check, Users, Leaf, Laptop, PenTool,
 import journalService from '../../api/journalService';
 import categoryService from '../../api/categoryService';
 import communityService from '../../api/communityService';
+import authService from '../../api/authService';
 
 export function QuickCreateModal({ isOpen, onClose, onCreated }) {
   const [title, setTitle] = useState('');
@@ -40,6 +41,21 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
       loadCategories();
       loadCommunities();
       setErrorMsg('');
+
+      // Auto-restore any previously unsaved draft
+      const savedDraft = localStorage.getItem('notesphere_saved_draft');
+      if (savedDraft) {
+        try {
+          const draft = JSON.parse(savedDraft);
+          if (draft.title && !title) setTitle(draft.title);
+          if (draft.content && !content) setContent(draft.content);
+          if (draft.category) setCategory(draft.category);
+          if (draft.tags) setTags(draft.tags);
+          if (draft.communityId) setSelectedCommunityId(draft.communityId);
+        } catch {
+          // Ignore parse errors
+        }
+      }
     }
   }, [isOpen]);
 
@@ -157,6 +173,19 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
       return;
     }
 
+    if (!authService.isAuthenticated()) {
+      localStorage.setItem('notesphere_saved_draft', JSON.stringify({
+        title,
+        content,
+        category,
+        tags,
+        visibility: chosenVisibility,
+        communityId: effectiveCommunityId,
+      }));
+      setErrorMsg('You need to be signed in to publish. Your reflection has been saved as a draft! Please sign in.');
+      return;
+    }
+
     setSubmitting(true);
     setErrorMsg('');
 
@@ -188,6 +217,9 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
         coverImage: 'https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=600&q=80',
       };
 
+      // Clean up saved draft on success
+      localStorage.removeItem('notesphere_saved_draft');
+
       if (onCreated) onCreated(createdJournal);
 
       // Reset form and close
@@ -195,7 +227,21 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
       setContent('');
       onClose();
     } catch (err) {
-      setErrorMsg(err.message || 'Failed to process journal');
+      // Auto-save draft on failure so the user never loses content
+      localStorage.setItem('notesphere_saved_draft', JSON.stringify({
+        title,
+        content,
+        category,
+        tags,
+        visibility: chosenVisibility,
+        communityId: effectiveCommunityId,
+      }));
+
+      if (err.status === 401 || err.message?.includes('Authentication') || err.message?.includes('Unauthorized')) {
+        setErrorMsg('Your session has expired. Your journal is safely saved as a draft! Please sign in to publish.');
+      } else {
+        setErrorMsg(err.message || 'Failed to process journal');
+      }
     } finally {
       setSubmitting(false);
     }

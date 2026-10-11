@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import MainLayout from './components/layout/MainLayout';
 
 // Pages
@@ -19,17 +19,60 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import NotFoundPage from './pages/NotFoundPage';
 
+function ProtectedRoute({ children }) {
+  const { isAuthenticated, loading } = useAuth();
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'var(--bg-app)'
+      }}>
+        <div style={{
+          fontSize: '0.95rem',
+          color: 'var(--text-secondary)',
+          fontWeight: 600
+        }}>
+          Loading NoteSphere...
+        </div>
+      </div>
+    );
+  }
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+}
+
+function PublicRoute({ children }) {
+  const { isAuthenticated, loading } = useAuth();
+  if (loading) return null;
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+  return children;
+}
+
 export function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
           {/* Public Authentication Routes */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+          <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
 
           {/* Authenticated Dashboard Shell Layout */}
-          <Route path="/" element={<MainLayout showRightPanel={true} />}>
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <MainLayout showRightPanel={true} />
+              </ProtectedRoute>
+            }
+          >
             <Route index element={<DashboardPage />} />
             <Route path="journals" element={<JournalsPage />} />
             <Route path="editor" element={<EditorPage />} />

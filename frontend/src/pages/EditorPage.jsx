@@ -26,6 +26,7 @@ import {
 import journalService from '../api/journalService';
 import categoryService from '../api/categoryService';
 import communityService from '../api/communityService';
+import authService from '../api/authService';
 import { CustomDropdown } from '../components/common/CustomDropdown';
 import './EditorPage.css';
 
@@ -121,6 +122,22 @@ export function EditorPage() {
     loadJoinedCommunities();
     if (editId) {
       loadExistingJournal(editId);
+    } else {
+      const savedDraft = localStorage.getItem('notesphere_saved_draft');
+      if (savedDraft) {
+        try {
+          const draft = JSON.parse(savedDraft);
+          if (draft.title) setTitle(draft.title);
+          if (draft.content) setContent(draft.content);
+          if (draft.category) {
+            setCategory(draft.category);
+            userManuallySetCategory.current = true;
+          }
+          if (draft.tags) setSelectedTags(draft.tags);
+          if (draft.communityId) setSelectedCommunityId(draft.communityId);
+          showToast('Restored your saved journal draft!', 'success');
+        } catch {}
+      }
     }
   }, [editId]);
 
@@ -239,6 +256,18 @@ export function EditorPage() {
       return;
     }
 
+    if (!authService.isAuthenticated()) {
+      localStorage.setItem('notesphere_saved_draft', JSON.stringify({
+        title,
+        content,
+        category,
+        tags: selectedTags,
+        visibility: 'PRIVATE',
+      }));
+      showToast('You must be signed in to save. Your journal has been preserved as a draft.', 'error');
+      return;
+    }
+
     setIsSaving(true);
     try {
       const payload = {
@@ -257,9 +286,21 @@ export function EditorPage() {
         showToast('Journal saved privately!');
       }
 
+      localStorage.removeItem('notesphere_saved_draft');
       setTimeout(() => navigate('/journals'), 500);
     } catch (err) {
-      showToast(err.message || 'Failed to save journal', 'error');
+      localStorage.setItem('notesphere_saved_draft', JSON.stringify({
+        title,
+        content,
+        category,
+        tags: selectedTags,
+        visibility: 'PRIVATE',
+      }));
+      if (err.status === 401 || err.message?.includes('Authentication') || err.message?.includes('Unauthorized')) {
+        showToast('Your session has expired. Your reflection is saved as a draft. Please sign in.', 'error');
+      } else {
+        showToast(err.message || 'Failed to save journal', 'error');
+      }
     } finally {
       setIsSaving(false);
     }
@@ -277,6 +318,19 @@ export function EditorPage() {
     }
     if (!selectedCommunityId) {
       showToast('Please select a community to publish to', 'error');
+      return;
+    }
+
+    if (!authService.isAuthenticated()) {
+      localStorage.setItem('notesphere_saved_draft', JSON.stringify({
+        title,
+        content,
+        category,
+        tags: selectedTags,
+        visibility: 'COMMUNITY',
+        communityId: selectedCommunityId,
+      }));
+      showToast('You must be signed in to publish. Your journal has been preserved as a draft.', 'error');
       return;
     }
 
@@ -300,9 +354,22 @@ export function EditorPage() {
         showToast('Journal successfully published to community feed!');
       }
 
+      localStorage.removeItem('notesphere_saved_draft');
       setTimeout(() => navigate(`/communities?id=${selectedCommunityId}`), 600);
     } catch (err) {
-      showToast(err.message || 'Failed to publish to community', 'error');
+      localStorage.setItem('notesphere_saved_draft', JSON.stringify({
+        title,
+        content,
+        category,
+        tags: selectedTags,
+        visibility: 'COMMUNITY',
+        communityId: selectedCommunityId,
+      }));
+      if (err.status === 401 || err.message?.includes('Authentication') || err.message?.includes('Unauthorized')) {
+        showToast('Your session has expired. Your reflection is saved as a draft. Please sign in.', 'error');
+      } else {
+        showToast(err.message || 'Failed to publish to community', 'error');
+      }
     } finally {
       setIsSaving(false);
     }
