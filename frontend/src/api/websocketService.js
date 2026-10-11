@@ -27,9 +27,16 @@ class WebSocketService {
       return;
     }
 
-    const host = window.location.hostname === 'localhost' ? 'localhost:8080' : window.location.host;
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const brokerURL = `${protocol}//${host}/ws`;
+    let brokerURL = import.meta.env.VITE_WS_URL;
+    if (!brokerURL) {
+      if (import.meta.env.VITE_BACKEND_URL && !import.meta.env.DEV) {
+        const wsBackend = import.meta.env.VITE_BACKEND_URL.replace(/^http/, 'ws');
+        brokerURL = `${wsBackend}/ws`;
+      } else {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        brokerURL = `${protocol}//${window.location.host}/ws`;
+      }
+    }
 
     this.client = new Client({
       brokerURL,
