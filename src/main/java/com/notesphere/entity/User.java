@@ -91,19 +91,19 @@ public class User {
     // Visibility & Privacy Preferences
     @Column(name = "is_profile_public")
     @Builder.Default
-    private boolean profilePublic = true;
+    private Boolean profilePublic = true;
 
     @Column(name = "show_location")
     @Builder.Default
-    private boolean showLocation = true;
+    private Boolean showLocation = true;
 
     @Column(name = "show_interests")
     @Builder.Default
-    private boolean showInterests = true;
+    private Boolean showInterests = true;
 
     @Column(name = "show_bio")
     @Builder.Default
-    private boolean showBio = true;
+    private Boolean showBio = true;
 
     @Column(name = "default_journal_visibility", length = 30)
     @Builder.Default
@@ -112,28 +112,28 @@ public class User {
     // Notification Preferences
     @Column(name = "notify_friend_requests")
     @Builder.Default
-    private boolean notifyFriendRequests = true;
+    private Boolean notifyFriendRequests = true;
 
     @Column(name = "notify_messages")
     @Builder.Default
-    private boolean notifyMessages = true;
+    private Boolean notifyMessages = true;
 
     @Column(name = "notify_comments")
     @Builder.Default
-    private boolean notifyComments = true;
+    private Boolean notifyComments = true;
 
     @Column(name = "notify_reactions")
     @Builder.Default
-    private boolean notifyReactions = true;
+    private Boolean notifyReactions = true;
 
     @Column(name = "notify_community")
     @Builder.Default
-    private boolean notifyCommunity = true;
+    private Boolean notifyCommunity = true;
 
     // Writing Goals & Habits
     @Column(name = "daily_writing_goal_words")
     @Builder.Default
-    private int dailyWritingGoalWords = 500;
+    private Integer dailyWritingGoalWords = 500;
 
     @Column(name = "preferred_category", length = 50)
     @Builder.Default
@@ -142,6 +142,46 @@ public class User {
     @Column(name = "theme_preference", length = 30)
     @Builder.Default
     private String themePreference = "system";
+
+    public boolean isProfilePublic() {
+        return profilePublic == null || profilePublic;
+    }
+
+    public boolean isShowLocation() {
+        return showLocation == null || showLocation;
+    }
+
+    public boolean isShowInterests() {
+        return showInterests == null || showInterests;
+    }
+
+    public boolean isShowBio() {
+        return showBio == null || showBio;
+    }
+
+    public boolean isNotifyFriendRequests() {
+        return notifyFriendRequests == null || notifyFriendRequests;
+    }
+
+    public boolean isNotifyMessages() {
+        return notifyMessages == null || notifyMessages;
+    }
+
+    public boolean isNotifyComments() {
+        return notifyComments == null || notifyComments;
+    }
+
+    public boolean isNotifyReactions() {
+        return notifyReactions == null || notifyReactions;
+    }
+
+    public boolean isNotifyCommunity() {
+        return notifyCommunity == null || notifyCommunity;
+    }
+
+    public int getDailyWritingGoalWords() {
+        return dailyWritingGoalWords != null ? dailyWritingGoalWords : 500;
+    }
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
