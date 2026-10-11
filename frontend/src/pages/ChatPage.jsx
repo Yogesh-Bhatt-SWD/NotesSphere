@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   MessageSquare,
@@ -31,7 +31,10 @@ export default function ChatPage() {
   const [loadingConversations, setLoadingConversations] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   
-  const [activeConversation, setActiveConversation] = useState(null);
+  const activeConversation = useMemo(
+    () => conversations.find((c) => c.id === activeConversationId) || null,
+    [conversations, activeConversationId]
+  );
   const [messages, setMessages] = useState([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [messageText, setMessageText] = useState('');
@@ -90,14 +93,8 @@ export default function ChatPage() {
   // 3. When activeConversationId changes, load messages & subscribe to STOMP channel
   useEffect(() => {
     if (!activeConversationId) {
-      setActiveConversation(null);
       setMessages([]);
       return;
-    }
-
-    const currentConvo = conversations.find((c) => c.id === activeConversationId);
-    if (currentConvo) {
-      setActiveConversation(currentConvo);
     }
 
     let isMounted = true;
@@ -163,7 +160,7 @@ export default function ChatPage() {
       isMounted = false;
       if (unsubscribe) unsubscribe();
     };
-  }, [activeConversationId, conversations, user?.id]);
+  }, [activeConversationId, user?.id]);
 
   useEffect(() => {
     scrollToBottom(true);
