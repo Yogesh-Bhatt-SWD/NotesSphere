@@ -13,8 +13,8 @@ export function SettingsPage() {
   const { toggleMobileMenu } = useOutletContext() || {};
   const currentUser = user || mockCurrentUser;
 
-  const [name, setName] = useState(currentUser.name || 'Arthur Fen');
-  const [email, setEmail] = useState(currentUser.email || 'arthur.fen@notesphere.io');
+  const [name, setName] = useState(currentUser.name || currentUser.username || (user ? 'Member' : 'Arthur Fen'));
+  const [email, setEmail] = useState(currentUser.email || (user ? '' : 'arthur.fen@notesphere.io'));
   const [downloading, setDownloading] = useState(null);
 
   const handleExport = async (format) => {

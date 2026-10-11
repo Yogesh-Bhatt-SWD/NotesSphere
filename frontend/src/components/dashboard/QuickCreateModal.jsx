@@ -324,6 +324,8 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
                 placeholder="Choose category..."
                 onAddNew={() => setIsAddingCategory(true)}
                 addNewLabel="+ Create Custom Category"
+                searchable={true}
+                searchPlaceholder="Search categories..."
               />
             )}
           </div>
@@ -361,6 +363,8 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
             options={communityOptions}
             placeholder="Select community space..."
             icon={Users}
+            searchable={true}
+            searchPlaceholder="Search community feed..."
           />
         </div>
 

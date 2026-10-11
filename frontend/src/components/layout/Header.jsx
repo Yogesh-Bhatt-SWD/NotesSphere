@@ -15,7 +15,8 @@ export function Header({
 }) {
   const { user } = useAuth();
   const currentUser = user || mockCurrentUser;
-  const displayName = title || `Hello, ${currentUser.name || 'Arthur Fen'}`;
+  const userName = currentUser?.name || currentUser?.username || (user ? 'Member' : 'Arthur Fen');
+  const displayName = title || `Hello, ${userName}`;
 
   return (
     <header className="app-header">

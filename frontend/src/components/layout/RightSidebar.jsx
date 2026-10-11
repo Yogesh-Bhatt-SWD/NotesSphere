@@ -21,6 +21,8 @@ export function RightSidebar({ className = '' }) {
   const navigate = useNavigate();
 
   const currentUser = user || mockCurrentUser;
+  const userName = currentUser?.name || currentUser?.username || (user ? 'Member' : 'Arthur Fen');
+  const userInitial = userName.charAt(0).toUpperCase();
   const path = location.pathname;
 
   // Calendar State
@@ -110,14 +112,20 @@ export function RightSidebar({ className = '' }) {
     <aside className={`right-sidebar ${className}`}>
       {/* 1. User Profile Widget (Common to all 4 screens) */}
       <div className="user-profile-widget" onClick={() => navigate('/settings')}>
-        <img
-          src={currentUser.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=160&q=80"}
-          alt={currentUser.name}
-          className="user-avatar"
-        />
+        {currentUser?.avatar ? (
+          <img
+            src={currentUser.avatar}
+            alt={userName}
+            className="user-avatar"
+          />
+        ) : (
+          <div className="user-avatar-initial">
+            {userInitial}
+          </div>
+        )}
         <div className="user-info">
-          <div className="user-name">{currentUser.name || 'Arthur Fen'}</div>
-          <div className="user-role">{currentUser.role || 'Journalist'}</div>
+          <div className="user-name">{userName}</div>
+          <div className="user-role">{currentUser?.role || 'Journalist'}</div>
         </div>
         <ChevronDown size={18} className="user-chevron" />
       </div>

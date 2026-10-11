@@ -12,7 +12,10 @@ export function AuthProvider({ children }) {
     // Check if token/user exists in localStorage
     const savedUser = authService.getCurrentUser();
     if (savedUser) {
-      setUser(savedUser);
+      setUser({
+        ...savedUser,
+        name: savedUser.name || savedUser.username || savedUser.email?.split('@')[0] || 'Member',
+      });
     } else if (import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
       // Default to visual mock user for previewing dashboard layout
       setUser(mockCurrentUser);
@@ -22,13 +25,21 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const data = await authService.login(email, password);
-    setUser(data.user);
+    const normalized = {
+      ...data.user,
+      name: data.user?.name || data.user?.username || email.split('@')[0],
+    };
+    setUser(normalized);
     return data;
   };
 
   const register = async (name, email, password) => {
     const data = await authService.register(name, email, password);
-    setUser(data.user);
+    const normalized = {
+      ...data.user,
+      name: data.user?.name || data.user?.username || name,
+    };
+    setUser(normalized);
     return data;
   };
 

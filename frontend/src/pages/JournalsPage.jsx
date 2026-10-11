@@ -506,6 +506,8 @@ export function JournalsPage() {
                   }))}
                   placeholder="Select community..."
                   icon={Users}
+                  searchable={true}
+                  searchPlaceholder="Search community..."
                 />
               )}
             </div>

@@ -145,6 +145,7 @@ public class AuthService {
         return UserResponse.builder()
                 .id(user.getId())
                 .username(user.getUsername())
+                .name(user.getUsername())
                 .email(user.getEmail())
                 .roles(user.getRoles())
                 .provider(user.getProvider().name())

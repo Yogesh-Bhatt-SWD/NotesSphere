@@ -6,7 +6,12 @@ export const authService = {
     if (res?.data?.accessToken) {
       localStorage.setItem('notesphere_access_token', res.data.accessToken);
       localStorage.setItem('notesphere_refresh_token', res.data.refreshToken);
-      localStorage.setItem('notesphere_user', JSON.stringify(res.data.user));
+      const user = res.data.user || {};
+      const normalizedUser = {
+        ...user,
+        name: user.name || user.username || email.split('@')[0],
+      };
+      localStorage.setItem('notesphere_user', JSON.stringify(normalizedUser));
     }
     return res.data;
   },
@@ -22,7 +27,12 @@ export const authService = {
     if (res?.data?.accessToken) {
       localStorage.setItem('notesphere_access_token', res.data.accessToken);
       localStorage.setItem('notesphere_refresh_token', res.data.refreshToken);
-      localStorage.setItem('notesphere_user', JSON.stringify(res.data.user));
+      const user = res.data.user || {};
+      const normalizedUser = {
+        ...user,
+        name: user.name || user.username || trimmedName,
+      };
+      localStorage.setItem('notesphere_user', JSON.stringify(normalizedUser));
     }
     return res.data;
   },

@@ -384,12 +384,29 @@ export function CommunitiesPage() {
                   { value: 'General', label: 'General' },
                 ]}
                 placeholder="Category Filter"
+                searchable={true}
+                searchPlaceholder="Search category filter..."
               />
             </div>
           </div>
 
           {(() => {
-            const displayedCommunities = activeTab === 'joined' ? joinedCommunities : communities;
+            const allList = activeTab === 'joined' ? joinedCommunities : communities;
+            const displayedCommunities = allList.filter((comm) => {
+              if (activeTab === 'joined') {
+                if (selectedCategory !== 'ALL' && comm.category !== selectedCategory) {
+                  return false;
+                }
+                if (searchQuery.trim()) {
+                  const q = searchQuery.toLowerCase();
+                  const matchesName = comm.name?.toLowerCase().includes(q);
+                  const matchesDesc = comm.description?.toLowerCase().includes(q);
+                  const matchesCategory = comm.category?.toLowerCase().includes(q);
+                  return matchesName || matchesDesc || matchesCategory;
+                }
+              }
+              return true;
+            });
             if (displayedCommunities.length === 0) {
               return (
                 <div className="community-not-found-card">

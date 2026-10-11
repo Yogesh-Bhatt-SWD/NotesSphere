@@ -461,6 +461,8 @@ export function EditorPage() {
                 icon={Briefcase}
                 onAddNew={() => setShowCategoryModal(true)}
                 addNewLabel="+ Create Custom Category"
+                searchable={true}
+                searchPlaceholder="Search category..."
               />
             </div>
 
@@ -557,6 +559,8 @@ export function EditorPage() {
                   options={communityOptions}
                   placeholder="Select a community feed..."
                   icon={Users}
+                  searchable={true}
+                  searchPlaceholder="Search community feed..."
                 />
               )}
             </div>

@@ -38,6 +38,21 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
+.user-avatar-initial {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary) 0%, #2DD4BF 100%);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.15rem;
+  box-shadow: 0 2px 6px rgba(0, 182, 155, 0.25);
+  flex-shrink: 0;
+}
+
 .user-info {
   flex: 1;
   min-width: 0;
