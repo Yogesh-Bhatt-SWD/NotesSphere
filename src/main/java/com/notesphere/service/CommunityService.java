@@ -82,9 +82,26 @@ public class CommunityService {
                 .build();
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<CommunityResponse> getJoinedCommunities(String userId) {
         List<CommunityMember> memberships = memberRepository.findByUserId(userId);
+        if (memberships.isEmpty()) {
+            List<Community> all = communityRepository.findAll();
+            for (Community c : all) {
+                if (!memberRepository.existsByCommunityIdAndUserId(c.getId(), userId)) {
+                    CommunityMember member = CommunityMember.builder()
+                            .communityId(c.getId())
+                            .userId(userId)
+                            .role(CommunityRole.MEMBER)
+                            .build();
+                    memberRepository.save(member);
+                    c.setMemberCount((int) memberRepository.countByCommunityId(c.getId()));
+                    communityRepository.save(c);
+                }
+            }
+            memberships = memberRepository.findByUserId(userId);
+        }
+
         List<String> communityIds = memberships.stream().map(CommunityMember::getCommunityId).toList();
         return communityRepository.findAllById(communityIds).stream()
                 .map(c -> mapToResponse(c, userId))

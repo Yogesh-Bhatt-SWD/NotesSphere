@@ -20,11 +20,13 @@ import {
   AlertCircle,
   FolderPlus,
   Trash2,
-  Edit2
+  Edit2,
+  Users
 } from 'lucide-react';
 import journalService from '../api/journalService';
 import categoryService from '../api/categoryService';
 import communityService from '../api/communityService';
+import { CustomDropdown } from '../components/common/CustomDropdown';
 import './EditorPage.css';
 
 export function EditorPage() {
@@ -306,6 +308,34 @@ export function EditorPage() {
     }
   };
 
+  const categoryOptions = (categoriesList.length > 0
+    ? categoriesList
+    : [
+        { name: 'Mindfulness' },
+        { name: 'Goals' },
+        { name: 'Daily Life' },
+        { name: 'Work & Projects' },
+        { name: 'Reflections' },
+        { name: 'Study' },
+        { name: 'Travel' },
+        { name: 'Health' },
+        { name: 'Fitness' },
+        { name: 'Personal Growth' },
+        { name: 'Other' },
+      ]
+  ).map((c) => ({
+    value: c.name,
+    label: c.name,
+    badge: c.predefined === false ? 'Custom' : undefined,
+  }));
+
+  const communityOptions = joinedCommunities.map((c) => ({
+    value: c.id,
+    label: c.name,
+    badge: `${c.memberCount || 1} members`,
+    icon: Users,
+  }));
+
   return (
     <div className="new-journal-editor">
       {/* Toast Notification */}
@@ -420,42 +450,18 @@ export function EditorPage() {
                 </button>
               </div>
 
-              <div className="category-dropdown-box">
-                <Briefcase size={16} color="var(--primary)" />
-                <select
-                  value={category}
-                  onChange={handleCategoryChange}
-                  style={{
-                    border: 'none',
-                    background: 'transparent',
-                    outline: 'none',
-                    width: '100%',
-                    fontWeight: 600,
-                    color: 'var(--text-primary)',
-                  }}
-                >
-                  {categoriesList.map((cat) => (
-                    <option key={cat.id || cat.name} value={cat.name}>
-                      {cat.name} {cat.predefined ? '' : '(Custom)'}
-                    </option>
-                  ))}
-                  {categoriesList.length === 0 && (
-                    <>
-                      <option value="Mindfulness">Mindfulness</option>
-                      <option value="Goals">Goals</option>
-                      <option value="Daily Life">Daily Life</option>
-                      <option value="Work & Projects">Work & Projects</option>
-                      <option value="Reflections">Reflections</option>
-                      <option value="Study">Study</option>
-                      <option value="Travel">Travel</option>
-                      <option value="Health">Health</option>
-                      <option value="Fitness">Fitness</option>
-                      <option value="Personal Growth">Personal Growth</option>
-                      <option value="Other">Other</option>
-                    </>
-                  )}
-                </select>
-              </div>
+              <CustomDropdown
+                value={category}
+                onChange={(val) => {
+                  setCategory(val);
+                  userManuallySetCategory.current = true;
+                }}
+                options={categoryOptions}
+                placeholder="Select Category"
+                icon={Briefcase}
+                onAddNew={() => setShowCategoryModal(true)}
+                addNewLabel="+ Create Custom Category"
+              />
             </div>
 
             <div>
@@ -545,23 +551,13 @@ export function EditorPage() {
                   </button>
                 </div>
               ) : (
-                <select
+                <CustomDropdown
                   value={selectedCommunityId}
-                  onChange={(e) => setSelectedCommunityId(e.target.value)}
-                  style={{
-                    padding: '10px 14px',
-                    borderRadius: 'var(--radius-sm)',
-                    border: '1px solid var(--border-subtle)',
-                    background: '#FFFFFF',
-                    fontWeight: 600,
-                  }}
-                >
-                  {joinedCommunities.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.memberCount} members)
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setSelectedCommunityId(val)}
+                  options={communityOptions}
+                  placeholder="Select a community feed..."
+                  icon={Users}
+                />
               )}
             </div>
           )}

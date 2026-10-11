@@ -24,6 +24,7 @@ import {
 import communityService from '../api/communityService';
 import journalService from '../api/journalService';
 import { useAuth } from '../context/AuthContext';
+import { CustomDropdown } from '../components/common/CustomDropdown';
 import './CommunitiesPage.css';
 
 export function CommunitiesPage() {
@@ -369,87 +370,148 @@ export function CommunitiesPage() {
               />
             </div>
 
-            <select
-              className="filter-dropdown-select"
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              style={{
-                padding: '9px 16px',
-                borderRadius: 'var(--radius-pill)',
-                border: '1px solid var(--border-subtle)',
-                background: '#ffffff',
-                fontWeight: 600,
-                color: 'var(--text-primary)',
-              }}
-            >
-              <option value="ALL">All Categories</option>
-              <option value="Mindfulness">Mindfulness</option>
-              <option value="Work & Projects">Work & Projects</option>
-              <option value="Reflections">Reflections</option>
-              <option value="Fitness">Fitness</option>
-              <option value="General">General</option>
-            </select>
+            <div style={{ minWidth: '200px' }}>
+              <CustomDropdown
+                value={selectedCategory}
+                onChange={(val) => setSelectedCategory(val)}
+                options={[
+                  { value: 'ALL', label: 'All Categories' },
+                  { value: 'Mindfulness', label: 'Mindfulness' },
+                  { value: 'Work & Projects', label: 'Work & Projects' },
+                  { value: 'Reflections', label: 'Reflections' },
+                  { value: 'Fitness', label: 'Fitness' },
+                  { value: 'Study', label: 'Study' },
+                  { value: 'General', label: 'General' },
+                ]}
+                placeholder="Category Filter"
+              />
+            </div>
           </div>
 
-          <div className="communities-grid">
-            {(activeTab === 'joined' ? joinedCommunities : communities).map((comm) => {
-              const joined = isJoined(comm.id);
+          {(() => {
+            const displayedCommunities = activeTab === 'joined' ? joinedCommunities : communities;
+            if (displayedCommunities.length === 0) {
               return (
-                <div
-                  key={comm.id}
-                  className="community-card"
-                  onClick={() => {
-                    if (joined) {
-                      setSearchParams({ id: comm.id });
-                    }
-                  }}
-                >
-                  <div className="community-card-top">
-                    <div className="community-icon-box">{renderIcon(comm.icon)}</div>
-                    <div className="community-card-info">
-                      <h3>{comm.name}</h3>
-                      <p>{comm.description || 'A space for mindful reflections and shared growth.'}</p>
-                    </div>
+                <div className="community-not-found-card">
+                  <div className="community-not-found-icon">
+                    <Search size={30} />
                   </div>
+                  <h3>Community Not Found</h3>
+                  {searchQuery ? (
+                    <p>
+                      We couldn't find any community matching <strong>"{searchQuery}"</strong>
+                      {selectedCategory !== 'ALL' ? ` in the "${selectedCategory}" category` : ''}.
+                      <br />
+                      Try adjusting your search keywords or create a new community space!
+                    </p>
+                  ) : activeTab === 'joined' ? (
+                    <p>
+                      You haven't joined any communities yet. Discover public communities and join spaces that inspire your journaling!
+                    </p>
+                  ) : (
+                    <p>
+                      No communities found in <strong>"{selectedCategory}"</strong>. Be the first to create one!
+                    </p>
+                  )}
 
-                  <div className="community-meta-row">
-                    <span className="community-tag-pill">{comm.category || 'General'}</span>
-                    <span>•</span>
-                    <span>{comm.memberCount} members</span>
-                  </div>
-
-                  <div className="community-card-actions">
-                    {joined ? (
-                      <>
-                        <button
-                          className="btn-community-action btn-community-view"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSearchParams({ id: comm.id });
-                          }}
-                        >
-                          <MessageSquare size={14} /> Open Feed
-                        </button>
-                        <button
-                          className="btn-community-action btn-community-leave"
-                          onClick={(e) => handleLeave(comm.id, e)}
-                        >
-                          Leave
-                        </button>
-                      </>
-                    ) : (
+                  <div className="community-not-found-actions">
+                    {(searchQuery || selectedCategory !== 'ALL') && (
                       <button
-                        className="btn-community-action btn-community-join"
-                        onClick={(e) => handleJoin(comm.id, e)}
+                        type="button"
+                        className="btn-clear-search"
+                        onClick={() => {
+                          setSearchQuery('');
+                          setSelectedCategory('ALL');
+                        }}
                       >
-                        <Plus size={14} /> Join Space
+                        Clear Search & Filter
                       </button>
                     )}
+
+                    {activeTab === 'joined' && (
+                      <button
+                        type="button"
+                        className="btn-discover-more"
+                        onClick={() => setActiveTab('explore')}
+                      >
+                        <Compass size={16} /> Discover Communities
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      className="btn-create-community"
+                      onClick={() => setShowCreateModal(true)}
+                    >
+                      <Plus size={16} /> Create Community
+                    </button>
                   </div>
                 </div>
               );
-            })}
-          </div>
+            }
+
+            return (
+              <div className="communities-grid">
+                {displayedCommunities.map((comm) => {
+                  const joined = isJoined(comm.id);
+                  return (
+                    <div
+                      key={comm.id}
+                      className="community-card"
+                      onClick={() => {
+                        if (joined) {
+                          setSearchParams({ id: comm.id });
+                        }
+                      }}
+                    >
+                      <div className="community-card-top">
+                        <div className="community-icon-box">{renderIcon(comm.icon)}</div>
+                        <div className="community-card-info">
+                          <h3>{comm.name}</h3>
+                          <p>{comm.description || 'A space for mindful reflections and shared growth.'}</p>
+                        </div>
+                      </div>
+
+                      <div className="community-meta-row">
+                        <span className="community-tag-pill">{comm.category || 'General'}</span>
+                        <span>•</span>
+                        <span>{comm.memberCount} members</span>
+                      </div>
+
+                      <div className="community-card-actions">
+                        {joined ? (
+                          <>
+                            <button
+                              className="btn-community-action btn-community-view"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSearchParams({ id: comm.id });
+                              }}
+                            >
+                              <MessageSquare size={14} /> Open Feed
+                            </button>
+                            <button
+                              className="btn-community-action btn-community-leave"
+                              onClick={(e) => handleLeave(comm.id, e)}
+                            >
+                              Leave
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            className="btn-community-action btn-community-join"
+                            onClick={(e) => handleJoin(comm.id, e)}
+                          >
+                            <Plus size={14} /> Join Space
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </>
       )}
 
@@ -664,17 +726,19 @@ export function CommunitiesPage() {
 
               <div className="modal-field">
                 <label>Category</label>
-                <select
+                <CustomDropdown
                   value={newCommunityCategory}
-                  onChange={(e) => setNewCommunityCategory(e.target.value)}
-                >
-                  <option value="General">General</option>
-                  <option value="Mindfulness">Mindfulness</option>
-                  <option value="Work & Projects">Work & Projects</option>
-                  <option value="Reflections">Reflections</option>
-                  <option value="Fitness">Fitness</option>
-                  <option value="Study">Study</option>
-                </select>
+                  onChange={(val) => setNewCommunityCategory(val)}
+                  options={[
+                    { value: 'General', label: 'General' },
+                    { value: 'Mindfulness', label: 'Mindfulness' },
+                    { value: 'Work & Projects', label: 'Work & Projects' },
+                    { value: 'Reflections', label: 'Reflections' },
+                    { value: 'Fitness', label: 'Fitness' },
+                    { value: 'Study', label: 'Study' },
+                  ]}
+                  placeholder="Select Category"
+                />
               </div>
 
               <div className="modal-field">

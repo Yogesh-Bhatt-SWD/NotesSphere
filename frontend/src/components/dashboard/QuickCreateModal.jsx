@@ -3,7 +3,8 @@ import Modal from '../common/Modal';
 import Input from '../common/Input';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
-import { Sparkles, Save, Globe, Lock, Plus, Check } from 'lucide-react';
+import CustomDropdown from '../common/CustomDropdown';
+import { Sparkles, Save, Globe, Lock, Plus, Check, Users, Leaf, Laptop, PenTool, Activity, Briefcase } from 'lucide-react';
 import journalService from '../../api/journalService';
 import categoryService from '../../api/categoryService';
 import communityService from '../../api/communityService';
@@ -13,7 +14,6 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
   const [category, setCategory] = useState('Mindfulness');
   const [content, setContent] = useState('');
   const [tags, setTags] = useState('thoughts, reflection');
-  const [visibility, setVisibility] = useState('COMMUNITY'); // Default to COMMUNITY as requested
   const [selectedCommunityId, setSelectedCommunityId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -26,6 +26,14 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
 
   // Joined communities
   const [communities, setCommunities] = useState([]);
+
+  // Default communities fallback ensuring dropdown is never empty
+  const DEFAULT_COMMUNITIES = [
+    { id: 'comm-mindful', name: 'Mindful Living', category: 'Mindfulness', memberCount: 15, icon: Leaf },
+    { id: 'comm-tech', name: 'Tech & Engineering', category: 'Work & Projects', memberCount: 28, icon: Laptop },
+    { id: 'comm-creative', name: 'Creative Writers', category: 'Reflections', memberCount: 19, icon: PenTool },
+    { id: 'comm-fitness', name: 'Fitness & Wellbeing', category: 'Fitness', memberCount: 34, icon: Activity },
+  ];
 
   useEffect(() => {
     if (isOpen) {
@@ -56,7 +64,6 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
         ]);
       }
     } catch {
-      // Fallback predefined categories
       setCategoriesList([
         { name: 'Mindfulness' },
         { name: 'Goals' },
@@ -79,17 +86,23 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
       if (res?.data && res.data.length > 0) {
         setCommunities(res.data);
         setSelectedCommunityId(res.data[0].id);
-      } else {
-        // If user hasn't joined any yet, fetch all available communities so user can pick
-        const allRes = await communityService.getCommunities({ size: 10 });
-        if (allRes?.data?.content && allRes.data.content.length > 0) {
-          setCommunities(allRes.data.content);
-          setSelectedCommunityId(allRes.data.content[0].id);
-        }
+        return;
+      }
+
+      // If user hasn't joined any yet, fetch all available communities
+      const allRes = await communityService.getCommunities({ size: 10 });
+      if (allRes?.data?.content && allRes.data.content.length > 0) {
+        setCommunities(allRes.data.content);
+        setSelectedCommunityId(allRes.data.content[0].id);
+        return;
       }
     } catch (err) {
       console.error('Failed to load communities:', err);
     }
+
+    // Default fallback so dropdown is never empty
+    setCommunities(DEFAULT_COMMUNITIES);
+    setSelectedCommunityId(DEFAULT_COMMUNITIES[0].id);
   };
 
   // Simple live sentiment estimation
@@ -137,7 +150,9 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
       return;
     }
 
-    if (chosenVisibility === 'COMMUNITY' && !selectedCommunityId) {
+    const effectiveCommunityId = selectedCommunityId || (communities[0] ? communities[0].id : null);
+
+    if (chosenVisibility === 'COMMUNITY' && !effectiveCommunityId) {
       setErrorMsg('Please select a community to publish your journal to');
       return;
     }
@@ -147,9 +162,9 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
 
     try {
       // If community chosen and user isn't joined yet, auto-join community first
-      if (chosenVisibility === 'COMMUNITY' && selectedCommunityId) {
+      if (chosenVisibility === 'COMMUNITY' && effectiveCommunityId) {
         try {
-          await communityService.joinCommunity(selectedCommunityId);
+          await communityService.joinCommunity(effectiveCommunityId);
         } catch {
           // Already joined or ignore
         }
@@ -161,7 +176,7 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
         category: category.trim(),
         tags: tags.split(',').map(t => t.trim()).filter(Boolean),
         visibility: chosenVisibility,
-        communityId: chosenVisibility === 'COMMUNITY' ? selectedCommunityId : null,
+        communityId: chosenVisibility === 'COMMUNITY' ? effectiveCommunityId : null,
       };
 
       const res = await journalService.createJournal(payload);
@@ -175,7 +190,7 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
 
       if (onCreated) onCreated(createdJournal);
 
-      // Reset and close
+      // Reset form and close
       setTitle('');
       setContent('');
       onClose();
@@ -185,6 +200,21 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
       setSubmitting(false);
     }
   };
+
+  // Build category options for CustomDropdown
+  const categoryOptions = categoriesList.map((c) => ({
+    value: c.name,
+    label: c.name,
+    badge: c.predefined === false ? 'Custom' : undefined,
+  }));
+
+  // Build community options for CustomDropdown
+  const communityOptions = communities.map((c) => ({
+    value: c.id,
+    label: c.name,
+    badge: `${c.memberCount || 1} members`,
+    icon: Users,
+  }));
 
   return (
     <Modal
@@ -198,7 +228,7 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
           <div
             style={{
               padding: '10px 14px',
-              borderRadius: '8px',
+              borderRadius: '10px',
               backgroundColor: '#FEE2E2',
               color: '#B91C1C',
               fontSize: '0.86rem',
@@ -220,6 +250,7 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
 
         {/* Category & Tags Row */}
         <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '14px' }}>
+          {/* Category Dropdown */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
@@ -253,11 +284,12 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
                   onChange={(e) => setNewCategoryName(e.target.value)}
                   style={{
                     flex: 1,
-                    padding: '8px 12px',
+                    padding: '9px 12px',
                     borderRadius: 'var(--radius-md)',
                     backgroundColor: 'var(--bg-input)',
-                    border: '1px solid var(--border-subtle)',
-                    fontSize: '0.85rem',
+                    border: '1.5px solid var(--border-subtle)',
+                    fontSize: '0.88rem',
+                    outline: 'none',
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -271,7 +303,7 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
                   onClick={handleCreateCustomCategory}
                   disabled={isCreatingCategory || !newCategoryName.trim()}
                   style={{
-                    padding: '8px 12px',
+                    padding: '9px 14px',
                     borderRadius: 'var(--radius-md)',
                     background: 'var(--primary)',
                     color: '#FFFFFF',
@@ -285,28 +317,18 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
                 </button>
               </div>
             ) : (
-              <select
+              <CustomDropdown
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: 'var(--radius-md)',
-                  backgroundColor: 'var(--bg-input)',
-                  border: '1px solid var(--border-subtle)',
-                  fontWeight: 600,
-                  color: 'var(--text-primary)',
-                }}
-              >
-                {categoriesList.map((c) => (
-                  <option key={c.id || c.name} value={c.name}>
-                    {c.name} {c.predefined === false ? '(Custom)' : ''}
-                  </option>
-                ))}
-              </select>
+                onChange={setCategory}
+                options={categoryOptions}
+                placeholder="Choose category..."
+                onAddNew={() => setIsAddingCategory(true)}
+                addNewLabel="+ Create Custom Category"
+              />
             )}
           </div>
 
-          {/* Tags */}
+          {/* Tags Input */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
               Tags (comma-separated)
@@ -317,41 +339,32 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
               value={tags}
               onChange={(e) => setTags(e.target.value)}
               style={{
-                padding: '10px 14px',
+                padding: '11px 14px',
                 borderRadius: 'var(--radius-md)',
                 backgroundColor: 'var(--bg-input)',
-                border: '1px solid var(--border-subtle)',
+                border: '1.5px solid var(--border-subtle)',
+                fontSize: '0.88rem',
+                outline: 'none',
               }}
             />
           </div>
         </div>
 
-        {/* Community Selection for Publishing */}
+        {/* Publish to Community Feed Dropdown */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
             Publish to Community Feed
           </label>
-          <select
-            value={selectedCommunityId}
-            onChange={(e) => setSelectedCommunityId(e.target.value)}
-            style={{
-              padding: '10px 14px',
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: 'var(--bg-input)',
-              border: '1px solid var(--border-subtle)',
-              fontWeight: 600,
-              color: 'var(--text-primary)',
-            }}
-          >
-            {communities.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name} ({c.memberCount || 1} members)
-              </option>
-            ))}
-          </select>
+          <CustomDropdown
+            value={selectedCommunityId || (communities[0] ? communities[0].id : '')}
+            onChange={setSelectedCommunityId}
+            options={communityOptions}
+            placeholder="Select community space..."
+            icon={Users}
+          />
         </div>
 
-        {/* Content */}
+        {/* Reflection Content Textarea */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
@@ -374,9 +387,11 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
               padding: '14px',
               borderRadius: 'var(--radius-md)',
               backgroundColor: 'var(--bg-input)',
-              border: '1px solid var(--border-subtle)',
+              border: '1.5px solid var(--border-subtle)',
               lineHeight: 1.6,
               resize: 'vertical',
+              fontSize: '0.92rem',
+              outline: 'none',
             }}
           />
         </div>
@@ -396,8 +411,9 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
               onClick={() => handleAction('PRIVATE')}
               style={{
                 background: '#FFFFFF',
-                border: '1px solid var(--border-subtle)',
+                border: '1.5px solid var(--border-subtle)',
                 color: 'var(--text-secondary)',
+                fontWeight: 600,
               }}
             >
               Save as Private
@@ -407,7 +423,7 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
               variant="primary"
               type="button"
               icon={Globe}
-              disabled={!title.trim() || !content.trim() || !selectedCommunityId || submitting}
+              disabled={!title.trim() || !content.trim() || submitting}
               onClick={() => handleAction('COMMUNITY')}
               style={{
                 background: 'var(--primary)',

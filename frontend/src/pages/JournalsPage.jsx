@@ -12,11 +12,13 @@ import {
   Share2,
   AlertCircle,
   CheckCircle2,
-  Plus
+  Plus,
+  Users
 } from 'lucide-react';
 import journalService from '../api/journalService';
 import categoryService from '../api/categoryService';
 import communityService from '../api/communityService';
+import { CustomDropdown } from '../components/common/CustomDropdown';
 import './JournalsPage.css';
 
 export function JournalsPage() {
@@ -265,30 +267,35 @@ export function JournalsPage() {
           </button>
 
           {/* Visibility filter */}
-          <select
-            className="filter-dropdown-select"
-            value={selectedVisibility}
-            onChange={(e) => { setSelectedVisibility(e.target.value); setCurrentPage(0); }}
-            style={{ marginLeft: 'auto' }}
-          >
-            <option value="ALL">All Visibilities</option>
-            <option value="PRIVATE">🔒 Private Only</option>
-            <option value="COMMUNITY">🌐 Published to Community</option>
-          </select>
+          <div style={{ minWidth: '175px', marginLeft: 'auto' }}>
+            <CustomDropdown
+              value={selectedVisibility}
+              onChange={(val) => { setSelectedVisibility(val); setCurrentPage(0); }}
+              options={[
+                { value: 'ALL', label: 'All Visibilities' },
+                { value: 'PRIVATE', label: 'Private Only', icon: Lock },
+                { value: 'COMMUNITY', label: 'Published Feed', icon: Globe },
+              ]}
+              placeholder="Visibility"
+            />
+          </div>
 
           {/* Category filter */}
-          <select
-            className="filter-dropdown-select"
-            value={selectedCategory}
-            onChange={(e) => { setSelectedCategory(e.target.value); setCurrentPage(0); }}
-          >
-            <option value="ALL">All Categories</option>
-            {categories.map((c) => (
-              <option key={c.id || c.name} value={c.name}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <div style={{ minWidth: '185px' }}>
+            <CustomDropdown
+              value={selectedCategory}
+              onChange={(val) => { setSelectedCategory(val); setCurrentPage(0); }}
+              options={[
+                { value: 'ALL', label: 'All Categories' },
+                ...categories.map((c) => ({
+                  value: c.name,
+                  label: c.name,
+                  badge: c.predefined === false ? 'Custom' : undefined,
+                })),
+              ]}
+              placeholder="Category Filter"
+            />
+          </div>
         </div>
 
         {/* Journals List */}
@@ -488,16 +495,18 @@ export function JournalsPage() {
                   </button>
                 </div>
               ) : (
-                <select
+                <CustomDropdown
                   value={selectedCommunityId}
-                  onChange={(e) => setSelectedCommunityId(e.target.value)}
-                >
-                  {joinedCommunities.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.memberCount} members)
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setSelectedCommunityId(val)}
+                  options={joinedCommunities.map((c) => ({
+                    value: c.id,
+                    label: c.name,
+                    badge: `${c.memberCount || 1} members`,
+                    icon: Users,
+                  }))}
+                  placeholder="Select community..."
+                  icon={Users}
+                />
               )}
             </div>
 
