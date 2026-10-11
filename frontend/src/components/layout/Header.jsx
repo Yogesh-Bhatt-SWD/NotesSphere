@@ -8,7 +8,7 @@ import './Header.css';
 export function Header({
   title,
   subtitle = "How it's going on ?",
-  badgeText = "PRO",
+  badgeText = null,
   onSearchChange,
   searchPlaceholder = "Search Journal...",
   onToggleMobileMenu,

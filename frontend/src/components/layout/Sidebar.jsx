@@ -29,7 +29,7 @@ export function Sidebar({ unreadCount = 4, className = '' }) {
 
   const navItems = [
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
-    { label: 'Journal', path: '/journals', icon: BookOpen },
+    { label: 'My Journals', path: '/journals', icon: BookOpen },
     { label: 'Communities', path: '/communities', icon: Users },
     { label: 'Friends', path: '/friends', icon: UserPlus },
     { label: 'Chats', path: '/chat', icon: MessageSquare },
@@ -75,23 +75,6 @@ export function Sidebar({ unreadCount = 4, className = '' }) {
           );
         })}
       </nav>
-
-      {/* Promo Card Matching Image B */}
-      <div className="sidebar-promo-card">
-        <div className="promo-tag">FREE 1 Month Pro</div>
-        <div className="promo-title" style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-secondary)', marginTop: '4px' }}>
-          Unlock advanced insights and themes
-        </div>
-        <button
-          className="promo-btn"
-          onClick={() => navigate('/analytics')}
-          title="Unlock Pro Insights"
-          aria-label="Unlock Pro Insights"
-          style={{ marginTop: '12px' }}
-        >
-          <ArrowRight size={18} />
-        </button>
-      </div>
 
       {/* Bottom Footer Actions */}
       <div className="sidebar-footer">

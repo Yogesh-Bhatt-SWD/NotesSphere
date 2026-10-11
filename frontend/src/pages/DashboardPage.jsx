@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Plus, Globe } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Button from '../components/common/Button';
 import JournalCard from '../components/dashboard/JournalCard';
 import RecentEntriesWidget from '../components/dashboard/RecentEntriesWidget';
 import InsightRingWidget from '../components/dashboard/InsightRingWidget';
 import QuickCreateModal from '../components/dashboard/QuickCreateModal';
-import { mockFeaturedJournals, mockRecentJournals } from '../mock/mockData';
+import { mockFeaturedJournals } from '../mock/mockData';
+import journalService from '../api/journalService';
 import './DashboardPage.css';
 
 export function DashboardPage() {
@@ -18,13 +19,23 @@ export function DashboardPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  useEffect(() => {
+    journalService.getJournals({ size: 6, sortBy: 'createdAt', sortDir: 'desc' })
+      .then((res) => {
+        if (res?.data?.content && res.data.content.length > 0) {
+          setFeaturedJournals(res.data.content);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const handleCreateNew = (newEntry) => {
-    setFeaturedJournals([newEntry, ...featuredJournals.slice(0, 2)]);
+    setFeaturedJournals([newEntry, ...featuredJournals.slice(0, 5)]);
   };
 
   const filteredJournals = featuredJournals.filter(j =>
-    j.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    j.category.toLowerCase().includes(searchQuery.toLowerCase())
+    (j.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (j.category || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -32,7 +43,6 @@ export function DashboardPage() {
       {/* 1. Header with greeting and search bar */}
       <Header
         subtitle="How it's going on ?"
-        badgeText="PRO"
         onSearchChange={setSearchQuery}
         onToggleMobileMenu={toggleMobileMenu}
       />
@@ -42,14 +52,25 @@ export function DashboardPage() {
         <section className="dashboard-section">
           <div className="section-header-row">
             <h2 className="section-title">My Journals</h2>
-            <Button
-              variant="primary"
-              size="md"
-              icon={Plus}
-              onClick={() => setIsModalOpen(true)}
-            >
-              Add New
-            </Button>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <Button
+                variant="secondary"
+                size="md"
+                icon={Globe}
+                onClick={() => navigate('/journals?tab=published')}
+                title="View Published Journals Timeline"
+              >
+                Published Timeline
+              </Button>
+              <Button
+                variant="primary"
+                size="md"
+                icon={Plus}
+                onClick={() => setIsModalOpen(true)}
+              >
+                Add New
+              </Button>
+            </div>
           </div>
 
           <div className="featured-journals-grid">

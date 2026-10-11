@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Search,
   Star,
@@ -13,7 +13,13 @@ import {
   AlertCircle,
   CheckCircle2,
   Plus,
-  Users
+  Users,
+  Calendar,
+  Clock,
+  Heart,
+  MessageSquare,
+  ExternalLink,
+  BookOpen
 } from 'lucide-react';
 import journalService from '../api/journalService';
 import categoryService from '../api/categoryService';
@@ -23,8 +29,20 @@ import './JournalsPage.css';
 
 export function JournalsPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') === 'published' ? 'published' : 'all';
+
+  const setActiveTab = (tab) => {
+    if (tab === 'published') {
+      setSearchParams({ tab: 'published' });
+    } else {
+      setSearchParams({});
+    }
+  };
 
   const [entries, setEntries] = useState([]);
+  const [publishedEntries, setPublishedEntries] = useState([]);
+  const [isLoadingPublished, setIsLoadingPublished] = useState(false);
   const [categories, setCategories] = useState([]);
   const [joinedCommunities, setJoinedCommunities] = useState([]);
 
@@ -96,14 +114,66 @@ export function JournalsPage() {
     }
   };
 
+  const loadPublishedJournals = async () => {
+    setIsLoadingPublished(true);
+    try {
+      const res = await journalService.getPublishedJournals({ page: 0, size: 50 });
+      if (res?.data?.content) {
+        setPublishedEntries(res.data.content);
+      } else if (Array.isArray(res?.data)) {
+        setPublishedEntries(res.data);
+      }
+    } catch (err) {
+      console.error('Failed to load published journals:', err);
+    } finally {
+      setIsLoadingPublished(false);
+    }
+  };
+
   useEffect(() => {
     loadCategories();
     loadJoinedCommunities();
+    loadPublishedJournals();
   }, []);
 
   useEffect(() => {
-    loadJournals();
-  }, [search, activeSentiment, selectedCategory, selectedVisibility, currentPage]);
+    if (activeTab === 'published') {
+      loadPublishedJournals();
+    } else {
+      loadJournals();
+    }
+  }, [search, activeSentiment, selectedCategory, selectedVisibility, currentPage, activeTab]);
+
+  const handleUnpublishFromTimeline = async (id, e) => {
+    e?.stopPropagation();
+    if (!window.confirm('Revert this publication to private? It will be removed from the community feed.')) return;
+
+    try {
+      await journalService.unpublishJournal(id);
+      showToast('Journal reverted to private');
+      setPublishedEntries((prev) => prev.filter((item) => item.id !== id));
+      loadJournals();
+    } catch (err) {
+      showToast(err.message || 'Failed to unpublish journal', 'error');
+    }
+  };
+
+  const formatPublishedDate = (isoStr) => {
+    if (!isoStr) return 'Recently';
+    const d = new Date(isoStr);
+    return d.toLocaleDateString(undefined, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const formatPublishedTime = (isoStr) => {
+    if (!isoStr) return '';
+    const d = new Date(isoStr);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
 
   const toggleFavorite = async (id, e) => {
     e.stopPropagation();
@@ -239,71 +309,222 @@ export function JournalsPage() {
       </div>
 
       <div className="center-page-body">
-        {/* Filter Row */}
-        <div className="filter-pills-row">
+        {/* View Switcher Tabs: All Journals vs Published Timeline */}
+        <div className="journals-view-tabs">
           <button
-            className={`sentiment-filter-pill ${activeSentiment === 'ALL' ? 'active' : ''}`}
-            onClick={() => { setActiveSentiment('ALL'); setCurrentPage(0); }}
+            className={`journals-view-tab-btn ${activeTab === 'all' ? 'active' : ''}`}
+            onClick={() => setActiveTab('all')}
           >
-            All Sentiments
+            <BookOpen size={16} /> All Journals ({entries.length})
           </button>
           <button
-            className={`sentiment-filter-pill ${activeSentiment === 'POSITIVE' ? 'active' : ''}`}
-            onClick={() => { setActiveSentiment('POSITIVE'); setCurrentPage(0); }}
+            className={`journals-view-tab-btn ${activeTab === 'published' ? 'active' : ''}`}
+            onClick={() => setActiveTab('published')}
           >
-            <span style={{ color: '#10B981' }}>•</span> Positive
+            <Globe size={16} /> Published Timeline ({publishedEntries.length})
           </button>
-          <button
-            className={`sentiment-filter-pill ${activeSentiment === 'NEUTRAL' ? 'active' : ''}`}
-            onClick={() => { setActiveSentiment('NEUTRAL'); setCurrentPage(0); }}
-          >
-            <span style={{ color: '#F59E0B' }}>•</span> Neutral
-          </button>
-          <button
-            className={`sentiment-filter-pill ${activeSentiment === 'NEGATIVE' ? 'active' : ''}`}
-            onClick={() => { setActiveSentiment('NEGATIVE'); setCurrentPage(0); }}
-          >
-            <span style={{ color: '#EF4444' }}>•</span> Negative
-          </button>
-
-          {/* Visibility filter */}
-          <div style={{ minWidth: '175px', marginLeft: 'auto' }}>
-            <CustomDropdown
-              value={selectedVisibility}
-              onChange={(val) => { setSelectedVisibility(val); setCurrentPage(0); }}
-              options={[
-                { value: 'ALL', label: 'All Visibilities' },
-                { value: 'PRIVATE', label: 'Private Only', icon: Lock },
-                { value: 'COMMUNITY', label: 'Published Feed', icon: Globe },
-              ]}
-              placeholder="Visibility"
-            />
-          </div>
-
-          {/* Category filter */}
-          <div style={{ minWidth: '185px' }}>
-            <CustomDropdown
-              value={selectedCategory}
-              onChange={(val) => { setSelectedCategory(val); setCurrentPage(0); }}
-              options={[
-                { value: 'ALL', label: 'All Categories' },
-                ...categories.map((c) => ({
-                  value: c.name,
-                  label: c.name,
-                  badge: c.predefined === false ? 'Custom' : undefined,
-                })),
-              ]}
-              placeholder="Category Filter"
-            />
-          </div>
         </div>
 
-        {/* Journals List */}
-        {isLoading ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-            Loading your journals...
+        {activeTab === 'published' ? (
+          /* ================= PUBLISHED TIMELINE VIEW ================= */
+          <div className="timeline-view-container">
+            {isLoadingPublished ? (
+              <div style={{ textAlign: 'center', padding: '50px', color: 'var(--text-muted)' }}>
+                Loading your published timeline...
+              </div>
+            ) : publishedEntries.length === 0 ? (
+              <div
+                style={{
+                  background: '#FFFFFF',
+                  padding: '60px 24px',
+                  borderRadius: 'var(--radius-lg)',
+                  textAlign: 'center',
+                  color: 'var(--text-muted)',
+                  border: '1px solid var(--border-card)',
+                }}
+              >
+                <Globe size={40} style={{ margin: '0 auto 14px', color: 'var(--primary)', opacity: 0.6 }} />
+                <h3 style={{ color: 'var(--text-primary)', marginBottom: '6px' }}>No Published Journals Yet</h3>
+                <p style={{ maxWidth: '440px', margin: '0 auto 18px auto', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                  Share your reflections, mindfulness practices, or learnings with a community. Once published, your entries will appear chronologically along your timeline with dates and engagement metrics!
+                </p>
+                <button
+                  className="btn-card-publish"
+                  onClick={() => navigate('/editor')}
+                  style={{
+                    padding: '10px 22px',
+                    fontSize: '0.9rem',
+                    background: 'var(--primary)',
+                    color: '#ffffff',
+                    margin: '0 auto',
+                  }}
+                >
+                  <Plus size={16} /> Write & Publish Entry
+                </button>
+              </div>
+            ) : (
+              <div className="timeline-track">
+                {publishedEntries.map((item) => (
+                  <div key={item.id} className="timeline-item">
+                    {/* Node Dot on Timeline */}
+                    <div className="timeline-node" />
+
+                    {/* Prominent Published Date & Time Badge */}
+                    <div className="timeline-date-badge">
+                      <Calendar size={13} />
+                      <span>{formatPublishedDate(item.publishedAt || item.createdAt)}</span>
+                      <span style={{ opacity: 0.5 }}>•</span>
+                      <Clock size={13} />
+                      <span>{formatPublishedTime(item.publishedAt || item.createdAt)}</span>
+                    </div>
+
+                    {/* Timeline Content Card */}
+                    <div className="timeline-card">
+                      <div className="timeline-card-header">
+                        <div className="timeline-header-meta">
+                          <span
+                            className="timeline-community-badge"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate('/communities');
+                            }}
+                            title="View Community Feed"
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <Globe size={13} />
+                            {item.communityName || 'Community Publication'}
+                          </span>
+
+                          <span className="badge-category-tag">{item.category || 'General'}</span>
+
+                          {item.sentimentLabel && (
+                            <span className={`badge-sentiment-tag ${item.sentimentLabel.toLowerCase()}`}>
+                              {item.sentimentLabel}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="timeline-actions">
+                          <button
+                            className="btn-card-unpublish"
+                            onClick={(e) => handleUnpublishFromTimeline(item.id, e)}
+                            title="Revert journal to private (removes from community feed)"
+                          >
+                            <Lock size={13} /> Unpublish
+                          </button>
+                        </div>
+                      </div>
+
+                      <h3
+                        className="timeline-card-title"
+                        onClick={() => navigate(`/editor?id=${item.id}`)}
+                      >
+                        {item.title}
+                      </h3>
+
+                      <p className="timeline-card-content">{item.content}</p>
+
+                      <div className="timeline-card-footer">
+                        <div className="timeline-stats">
+                          <div className="timeline-stat-item likes">
+                            <Heart size={15} fill="#EF4444" />
+                            <span>{item.likeCount || 0} Likes</span>
+                          </div>
+                          <div className="timeline-stat-item comments">
+                            <MessageSquare size={15} />
+                            <span>{item.commentCount || 0} Comments</span>
+                          </div>
+                        </div>
+
+                        <div className="timeline-actions">
+                          <button
+                            className="btn-card-publish"
+                            onClick={() => navigate(`/editor?id=${item.id}`)}
+                          >
+                            <Edit3 size={13} /> Edit Entry
+                          </button>
+                          <button
+                            className="btn-card-publish"
+                            onClick={() => navigate('/communities')}
+                          >
+                            <ExternalLink size={13} /> Feed
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        ) : entries.length === 0 ? (
+        ) : (
+          /* ================= ALL JOURNALS GRID VIEW ================= */
+          <>
+            {/* Filter Row */}
+            <div className="filter-pills-row">
+              <button
+                className={`sentiment-filter-pill ${activeSentiment === 'ALL' ? 'active' : ''}`}
+                onClick={() => { setActiveSentiment('ALL'); setCurrentPage(0); }}
+              >
+                All Sentiments
+              </button>
+              <button
+                className={`sentiment-filter-pill ${activeSentiment === 'POSITIVE' ? 'active' : ''}`}
+                onClick={() => { setActiveSentiment('POSITIVE'); setCurrentPage(0); }}
+              >
+                <span style={{ color: '#10B981' }}>•</span> Positive
+              </button>
+              <button
+                className={`sentiment-filter-pill ${activeSentiment === 'NEUTRAL' ? 'active' : ''}`}
+                onClick={() => { setActiveSentiment('NEUTRAL'); setCurrentPage(0); }}
+              >
+                <span style={{ color: '#F59E0B' }}>•</span> Neutral
+              </button>
+              <button
+                className={`sentiment-filter-pill ${activeSentiment === 'NEGATIVE' ? 'active' : ''}`}
+                onClick={() => { setActiveSentiment('NEGATIVE'); setCurrentPage(0); }}
+              >
+                <span style={{ color: '#EF4444' }}>•</span> Negative
+              </button>
+
+              {/* Visibility filter */}
+              <div style={{ minWidth: '175px', marginLeft: 'auto' }}>
+                <CustomDropdown
+                  value={selectedVisibility}
+                  onChange={(val) => { setSelectedVisibility(val); setCurrentPage(0); }}
+                  options={[
+                    { value: 'ALL', label: 'All Visibilities' },
+                    { value: 'PRIVATE', label: 'Private Only', icon: Lock },
+                    { value: 'COMMUNITY', label: 'Published Feed', icon: Globe },
+                  ]}
+                  placeholder="Visibility"
+                />
+              </div>
+
+              {/* Category filter */}
+              <div style={{ minWidth: '185px' }}>
+                <CustomDropdown
+                  value={selectedCategory}
+                  onChange={(val) => { setSelectedCategory(val); setCurrentPage(0); }}
+                  options={[
+                    { value: 'ALL', label: 'All Categories' },
+                    ...categories.map((c) => ({
+                      value: c.name,
+                      label: c.name,
+                      badge: c.predefined === false ? 'Custom' : undefined,
+                    })),
+                  ]}
+                  placeholder="Category Filter"
+                />
+              </div>
+            </div>
+
+            {/* Journals List */}
+            {isLoading ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                Loading your journals...
+              </div>
+            ) : entries.length === 0 ? (
           <div
             style={{
               background: '#FFFFFF',
@@ -455,6 +676,8 @@ export function JournalsPage() {
               <ChevronRight size={16} />
             </button>
           </div>
+        )}
+          </>
         )}
       </div>
 
