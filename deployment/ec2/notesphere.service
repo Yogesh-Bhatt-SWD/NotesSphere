@@ -1,0 +1,25 @@
+[Unit]
+Description=NoteSphere Spring Boot Backend Service
+After=syslog.target network.target mysql.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/notesphere
+ExecStart=/usr/bin/java -Xms256m -Xmx512m -jar /opt/notesphere/notesphere.jar
+SuccessExitStatus=143
+TimeoutStopSec=20
+Restart=always
+RestartSec=10
+
+# Standard environment variables
+Environment=SERVER_PORT=8080
+EnvironmentFile=-/opt/notesphere/application.env
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=notesphere
+
+[Install]
+WantedBy=multi-user.target
