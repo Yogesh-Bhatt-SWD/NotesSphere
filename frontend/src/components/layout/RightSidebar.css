@@ -6,7 +6,7 @@
   padding: 24px 22px;
   display: flex;
   flex-direction: column;
-  gap: 26px;
+  gap: 22px;
   height: 100vh;
   position: sticky;
   top: 0;
@@ -70,11 +70,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .calendar-month-title {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--text-primary);
 }
@@ -91,8 +91,8 @@
 }
 
 .calendar-nav-btn {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background: var(--bg-subtle);
   display: flex;
@@ -111,7 +111,7 @@
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   text-align: center;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--text-muted);
   margin-bottom: 8px;
@@ -120,7 +120,7 @@
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  row-gap: 8px;
+  row-gap: 6px;
   text-align: center;
 }
 
@@ -130,8 +130,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 34px;
-  font-size: 0.85rem;
+  height: 32px;
+  font-size: 0.82rem;
   font-weight: 500;
   color: var(--text-primary);
   cursor: pointer;
@@ -142,11 +142,6 @@
 .calendar-cell.empty {
   cursor: default;
   color: transparent;
-}
-
-.calendar-cell.other-month {
-  color: var(--text-muted);
-  opacity: 0.4;
 }
 
 .calendar-cell:hover:not(.empty) {
@@ -166,14 +161,14 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background-color: #F97316;
+  background-color: var(--primary);
 }
 
 .calendar-cell.active-day .calendar-dot {
   background-color: #FFFFFF;
 }
 
-/* Activities Section */
+/* Activities Section (Screen 1 & Image A) */
 .widget-section-header {
   display: flex;
   align-items: center;
@@ -182,105 +177,278 @@
 }
 
 .widget-section-title {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--text-primary);
 }
 
-.activity-item {
+.view-all-link {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.view-all-link:hover {
+  text-decoration: underline;
+}
+
+.activity-item-card {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border-radius: var(--radius-md);
   background-color: var(--bg-subtle);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
-.activity-item:hover {
+.activity-item-card:hover {
   background-color: var(--primary-light);
   transform: translateX(2px);
 }
 
-.activity-icon-badge {
-  width: 38px;
-  height: 38px;
+.activity-thumb {
+  width: 42px;
+  height: 42px;
   border-radius: 12px;
-  background-color: #FFFFFF;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--primary);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-}
-
-.activity-info {
-  flex: 1;
+  object-fit: cover;
 }
 
 .activity-name {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 700;
   color: var(--text-primary);
 }
 
 .activity-meta {
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   color: var(--text-muted);
 }
 
-.activity-chevron {
-  color: var(--text-muted);
-}
-
-/* Upcoming Activities Timeline */
-.timeline-list {
+/* Screen 2: Journal Insights Card (Editor) */
+.insights-sidebar-card {
+  background: #FFFFFF;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-card);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
+  gap: 16px;
+}
+
+.insights-card-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.sentiment-meter-box {
+  display: flex;
+  align-items: center;
   gap: 14px;
-  position: relative;
-  padding-left: 18px;
 }
 
-.timeline-list::before {
-  content: '';
-  position: absolute;
-  left: 5px;
-  top: 8px;
-  bottom: 8px;
-  width: 2px;
-  background-color: var(--border-subtle);
-}
-
-.timeline-item {
-  position: relative;
-  cursor: pointer;
-}
-
-.timeline-dot {
-  position: absolute;
-  left: -18px;
-  top: 4px;
-  width: 10px;
-  height: 10px;
+.sentiment-avatar-circle {
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background-color: #FF7B54;
-  border: 2px solid #FFFFFF;
-  box-shadow: 0 0 0 2px rgba(255, 123, 84, 0.2);
+  background: #D1FAE5;
+  color: #10B981;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.timeline-date {
+.sentiment-text-label {
   font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.sentiment-val-status {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #10B981;
+}
+
+.score-progress-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.score-progress-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.score-progress-bar-bg {
+  width: 100%;
+  height: 7px;
+  border-radius: 999px;
+  background: #E2E8F0;
+  overflow: hidden;
+}
+
+.score-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--primary);
+  transition: width 0.5s ease;
+}
+
+.category-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
+}
+
+.keywords-chips-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.keyword-chip {
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Screen 3: Recent Insights List (Analytics) */
+.insight-stat-item {
+  display: flex;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+  margin-bottom: 10px;
+}
+
+.insight-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+}
+
+.insight-item-title {
+  font-size: 0.85rem;
   font-weight: 700;
-  color: #FF7B54;
+  color: var(--text-primary);
   margin-bottom: 2px;
 }
 
-.timeline-desc {
-  font-size: 0.85rem;
-  font-weight: 600;
+.insight-item-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+/* Screen 4: Calendar Date Inspector */
+.date-inspector-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.inspector-date-title {
+  font-size: 1.15rem;
+  font-weight: 800;
   color: var(--text-primary);
-  line-height: 1.3;
+}
+
+.inspector-entry-count {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.inspector-entries-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.inspector-entry-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.inspector-entry-card:hover {
+  background: var(--primary-light);
+  transform: translateX(2px);
+}
+
+.inspector-entry-thumb {
+  width: 50px;
+  height: 42px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.inspector-entry-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.inspector-entry-title {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+
+.inspector-badges-row {
+  display: flex;
+  gap: 6px;
+}
+
+.add-journal-calendar-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 0.92rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px var(--primary-glow);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  margin-top: auto;
+}
+
+.add-journal-calendar-btn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
 }

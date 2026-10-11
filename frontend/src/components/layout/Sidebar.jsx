@@ -28,7 +28,8 @@ export function Sidebar({ unreadCount = 4, className = '' }) {
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
     { label: 'Analytics', path: '/analytics', icon: LineChart },
     { label: 'Journal', path: '/journals', icon: BookOpen },
-    { label: 'Schedule', path: '/calendar', icon: CalendarDays, badge: unreadCount },
+    { label: 'Calendar', path: '/calendar', icon: CalendarDays },
+    { label: 'Tags', path: '/tags', icon: Sparkles },
     { label: 'Reminders', path: '/reminders', icon: BellRing },
   ];
 
@@ -69,18 +70,18 @@ export function Sidebar({ unreadCount = 4, className = '' }) {
         })}
       </nav>
 
-      {/* Streak / Pro Promo Card (from Image A) */}
+      {/* Promo Card Matching Image B */}
       <div className="sidebar-promo-card">
-        <div className="promo-tag">Streak Active</div>
-        <div className="promo-title">14-Day Streak! 🔥</div>
-        <p className="promo-desc">
-          You're in the top 5% of mindful journalers this month.
-        </p>
+        <div className="promo-tag">FREE 1 Month Pro</div>
+        <div className="promo-title" style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-secondary)', marginTop: '4px' }}>
+          Unlock advanced insights and themes
+        </div>
         <button
           className="promo-btn"
           onClick={() => navigate('/analytics')}
-          title="View Streak Insights"
-          aria-label="View Streak Insights"
+          title="Unlock Pro Insights"
+          aria-label="Unlock Pro Insights"
+          style={{ marginTop: '12px' }}
         >
           <ArrowRight size={18} />
         </button>

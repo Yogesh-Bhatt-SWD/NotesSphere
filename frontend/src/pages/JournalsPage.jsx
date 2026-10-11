@@ -1,152 +1,219 @@
 import React, { useState } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
-import { Plus, Search, Star, Pin, Calendar, Tag } from 'lucide-react';
-import Header from '../components/layout/Header';
-import Button from '../components/common/Button';
-import Badge from '../components/common/Badge';
-import EmptyState from '../components/common/EmptyState';
-import { mockFeaturedJournals, mockRecentJournals } from '../mock/mockData';
+import { useNavigate } from 'react-router-dom';
+import { Search, Star, Edit3, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import './JournalsPage.css';
 
 export function JournalsPage() {
   const navigate = useNavigate();
-  const { toggleMobileMenu } = useOutletContext() || {};
 
   const [search, setSearch] = useState('');
+  const [activeSentiment, setActiveSentiment] = useState('ALL');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
-  const [selectedSentiment, setSelectedSentiment] = useState('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Combined sample entries
-  const allJournals = [
-    ...mockFeaturedJournals,
+  // Exact data from Screen 1 in Image B
+  const [entries, setEntries] = useState([
     {
-      id: 'j-4',
-      title: 'Accident on Yeou Gogae',
-      snippet: 'Walking past the tranquil ridge during dusk, observing the city light up below...',
-      createdAt: '10/10/26',
-      category: 'Storytelling',
-      sentiment: 'NEUTRAL',
-      tags: ['evening', 'walk'],
-      isFavorite: false,
-      isPinned: false
+      id: 'j-1',
+      title: 'A Productive Day at Work',
+      excerpt: 'Today I completed the backend implementation for the new feature. Had a great discussion with my team and learned a lot...',
+      sentiment: 'Positive',
+      category: 'Work',
+      date: 'Apr 12, 2026',
+      isFavorite: true,
+      thumbnail: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=300&q=80'
     },
     {
-      id: 'j-5',
-      title: 'Badminton Olympics',
-      snippet: 'High energy doubles match today! Teamwork and rapid reflexes kept our focus sharp...',
-      createdAt: '09/10/26',
-      category: 'Health',
-      sentiment: 'POSITIVE',
-      tags: ['fitness', 'sport'],
-      isFavorite: true,
-      isPinned: false
+      id: 'j-2',
+      title: 'Weekend Memories',
+      excerpt: 'Had an amazing weekend trip to the mountains. The weather was perfect and it felt so refreshing.',
+      sentiment: 'Neutral',
+      category: 'Travel',
+      date: 'Apr 11, 2026',
+      isFavorite: false,
+      thumbnail: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=300&q=80'
+    },
+    {
+      id: 'j-3',
+      title: 'Learning something new',
+      excerpt: 'Started exploring system design today. It was challenging but really interesting. I feel motivated to keep learning.',
+      sentiment: 'Positive',
+      category: 'Study',
+      date: 'Apr 9, 2026',
+      isFavorite: false,
+      thumbnail: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=300&q=80'
     }
-  ];
+  ]);
 
-  const filtered = allJournals.filter(item => {
+  const toggleFavorite = (id, e) => {
+    e.stopPropagation();
+    setEntries(entries.map(item =>
+      item.id === id ? { ...item, isFavorite: !item.isFavorite } : item
+    ));
+  };
+
+  const deleteEntry = (id, e) => {
+    e.stopPropagation();
+    if (window.confirm('Are you sure you want to delete this journal entry?')) {
+      setEntries(entries.filter(item => item.id !== id));
+    }
+  };
+
+  const filtered = entries.filter(item => {
     const matchesSearch = item.title.toLowerCase().includes(search.toLowerCase()) ||
-                          item.snippet.toLowerCase().includes(search.toLowerCase());
+                          item.excerpt.toLowerCase().includes(search.toLowerCase());
+    const matchesSentiment = activeSentiment === 'ALL' || item.sentiment.toUpperCase() === activeSentiment;
     const matchesCategory = selectedCategory === 'ALL' || item.category === selectedCategory;
-    const matchesSentiment = selectedSentiment === 'ALL' || item.sentiment === selectedSentiment;
-    return matchesSearch && matchesCategory && matchesSentiment;
+    return matchesSearch && matchesSentiment && matchesCategory;
   });
 
   return (
     <div className="journals-page">
-      <Header
-        title="Journal Archive"
-        subtitle="Browse, filter and search through all your personal reflections"
-        onSearchChange={setSearch}
-        onToggleMobileMenu={toggleMobileMenu}
-      />
-
-      <div className="center-page-body">
-        {/* Filters and action bar */}
-        <div className="journals-filter-bar">
-          <div className="filters-group">
-            <select
-              className="filter-select"
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-            >
-              <option value="ALL">All Categories</option>
-              <option value="Mindfulness">Mindfulness</option>
-              <option value="Goals">Goals</option>
-              <option value="Reflections">Reflections</option>
-              <option value="Storytelling">Storytelling</option>
-              <option value="Health">Health</option>
-            </select>
-
-            <select
-              className="filter-select"
-              value={selectedSentiment}
-              onChange={(e) => setSelectedSentiment(e.target.value)}
-            >
-              <option value="ALL">All Sentiments</option>
-              <option value="POSITIVE">Positive Mood</option>
-              <option value="NEUTRAL">Neutral Mood</option>
-              <option value="NEGATIVE">Negative Mood</option>
-            </select>
-          </div>
-
-          <Button
-            variant="primary"
-            icon={Plus}
-            onClick={() => navigate('/editor')}
-          >
-            New Journal
-          </Button>
+      {/* 1. Header Row */}
+      <div className="journals-header-row">
+        <div className="journals-title-wrap">
+          <h1>My Journals</h1>
+          <p>All your journal entries in one place</p>
         </div>
 
-        {/* Entries Grid or Empty State */}
-        {filtered.length === 0 ? (
-          <EmptyState
-            title="No matching journal entries"
-            description="Try clearing your search query or filters to see more results."
-            actionText="Write New Journal"
-            onAction={() => navigate('/editor')}
-          />
-        ) : (
-          <div className="journals-grid">
-            {filtered.map((item) => (
-              <div
-                key={item.id}
-                className="journal-archive-card"
-                onClick={() => navigate(`/editor?id=${item.id}`)}
-              >
-                <div>
-                  <div className="archive-card-header">
-                    <h3 className="archive-card-title">{item.title}</h3>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      {item.isFavorite && <Star size={16} fill="#F59E0B" color="#F59E0B" />}
-                      {item.isPinned && <Pin size={16} fill="var(--primary)" color="var(--primary)" />}
-                    </div>
-                  </div>
-                  <p className="archive-card-snippet">{item.snippet}</p>
-                </div>
+        <div className="journals-search-box">
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <Search
+              size={16}
+              style={{ position: 'absolute', left: '14px', color: 'var(--text-muted)' }}
+            />
+            <input
+              type="text"
+              placeholder="Search journals, keywords..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '9px 16px 9px 38px',
+                borderRadius: '999px',
+                border: '1px solid var(--border-subtle)',
+                background: '#FFFFFF',
+                fontSize: '0.85rem'
+              }}
+            />
+          </div>
+        </div>
+      </div>
 
-                <div className="archive-card-footer">
-                  <Badge
-                    variant={
-                      item.sentiment === 'POSITIVE'
-                        ? 'success'
-                        : item.sentiment === 'NEGATIVE'
-                        ? 'danger'
-                        : 'neutral'
-                    }
-                    dot
-                  >
+      <div className="center-page-body">
+        {/* 2. Filter Pills Row */}
+        <div className="filter-pills-row">
+          <button
+            className={`sentiment-filter-pill ${activeSentiment === 'ALL' ? 'active' : ''}`}
+            onClick={() => setActiveSentiment('ALL')}
+          >
+            All
+          </button>
+          <button
+            className={`sentiment-filter-pill ${activeSentiment === 'POSITIVE' ? 'active' : ''}`}
+            onClick={() => setActiveSentiment('POSITIVE')}
+          >
+            <span style={{ color: '#10B981' }}>•</span> Positive
+          </button>
+          <button
+            className={`sentiment-filter-pill ${activeSentiment === 'NEUTRAL' ? 'active' : ''}`}
+            onClick={() => setActiveSentiment('NEUTRAL')}
+          >
+            <span style={{ color: '#F59E0B' }}>•</span> Neutral
+          </button>
+          <button
+            className={`sentiment-filter-pill ${activeSentiment === 'NEGATIVE' ? 'active' : ''}`}
+            onClick={() => setActiveSentiment('NEGATIVE')}
+          >
+            <span style={{ color: '#EF4444' }}>•</span> Negative
+          </button>
+
+          <select
+            className="filter-dropdown-select"
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            style={{ marginLeft: 'auto' }}
+          >
+            <option value="ALL">All Categories</option>
+            <option value="Work">Work</option>
+            <option value="Travel">Travel</option>
+            <option value="Study">Study</option>
+            <option value="Personal">Personal</option>
+          </select>
+
+          <select className="filter-dropdown-select">
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+          </select>
+        </div>
+
+        {/* 3. Horizontal Journal Cards List */}
+        <div className="horizontal-journals-list">
+          {filtered.map((item) => (
+            <div
+              key={item.id}
+              className="horizontal-journal-card"
+              onClick={() => navigate(`/editor?id=${item.id}`)}
+            >
+              <img src={item.thumbnail} alt={item.title} className="card-thumbnail-img" />
+
+              <div className="card-content-center">
+                <h3 className="card-entry-title">{item.title}</h3>
+                <p className="card-entry-excerpt">{item.excerpt}</p>
+                <div className="card-badges-row">
+                  <span className={`badge-sentiment-tag ${item.sentiment.toLowerCase()}`}>
                     {item.sentiment}
-                  </Badge>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Calendar size={13} />
-                    <span>{item.createdAt}</span>
-                  </div>
+                  </span>
+                  <span className="badge-category-tag">
+                    {item.category}
+                  </span>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+
+              <div className="card-actions-right">
+                <span className="card-date-label">{item.date}</span>
+                <div className="card-action-icons">
+                  <button
+                    className={`icon-btn star ${item.isFavorite ? 'active' : ''}`}
+                    onClick={(e) => toggleFavorite(item.id, e)}
+                    title="Favorite"
+                  >
+                    <Star size={16} fill={item.isFavorite ? '#F59E0B' : 'none'} />
+                  </button>
+                  <button
+                    className="icon-btn edit"
+                    onClick={(e) => { e.stopPropagation(); navigate(`/editor?id=${item.id}`); }}
+                    title="Edit"
+                  >
+                    <Edit3 size={16} />
+                  </button>
+                  <button
+                    className="icon-btn delete"
+                    onClick={(e) => deleteEntry(item.id, e)}
+                    title="Delete"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* 4. Numbered Pagination Bar */}
+        <div className="pagination-container">
+          <button className="page-nav-btn"><ChevronLeft size={16} /></button>
+          {[1, 2, 3, 4, 5].map((pageNum) => (
+            <button
+              key={pageNum}
+              className={`page-nav-btn ${currentPage === pageNum ? 'active' : ''}`}
+              onClick={() => setCurrentPage(pageNum)}
+            >
+              {pageNum}
+            </button>
+          ))}
+          <button className="page-nav-btn"><ChevronRight size={16} /></button>
+        </div>
       </div>
     </div>
   );

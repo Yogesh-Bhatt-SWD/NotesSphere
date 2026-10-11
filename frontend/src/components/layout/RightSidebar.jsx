@@ -1,32 +1,31 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  BookOpen,
-  Rocket,
-  MoreVertical,
-  ChevronRight as ArrowIcon
+  Smile,
+  Briefcase,
+  TrendingUp,
+  Folder,
+  BarChart2,
+  Plus
 } from 'lucide-react';
-import {
-  mockCurrentUser,
-  mockTodayActivities,
-  mockUpcomingReminders,
-  mockCalendarDatesWithEntries
-} from '../../mock/mockData';
+import { mockCurrentUser, mockCalendarDatesWithEntries } from '../../mock/mockData';
 import { useAuth } from '../../context/AuthContext';
 import './RightSidebar.css';
 
 export function RightSidebar({ className = '' }) {
   const { user } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
 
   const currentUser = user || mockCurrentUser;
+  const path = location.pathname;
 
   // Calendar State
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDay, setSelectedDay] = useState(new Date().getDate());
+  const [selectedDay, setSelectedDay] = useState(12);
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -41,20 +40,16 @@ export function RightSidebar({ className = '' }) {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
 
-  // Generate calendar days for current month
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-  const firstDayIndex = new Date(year, month, 1).getDay(); // 0 is Sunday
-  // Adjust so Monday is 0:
+  const firstDayIndex = new Date(year, month, 1).getDay();
   const startDay = (firstDayIndex + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   const calendarDays = [];
-  // Empty slots before first day
   for (let i = 0; i < startDay; i++) {
     calendarDays.push({ day: null, empty: true });
   }
-  // Days of the month
   for (let d = 1; d <= daysInMonth; d++) {
     calendarDays.push({
       day: d,
@@ -64,9 +59,56 @@ export function RightSidebar({ className = '' }) {
     });
   }
 
+  // Sample activities matching Screen 1 in Image B
+  const sampleActivities = [
+    {
+      id: 'act-1',
+      title: 'A Productive Day',
+      time: '2 hours ago',
+      thumb: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=120&q=80'
+    },
+    {
+      id: 'act-2',
+      title: 'Weekend Memories',
+      time: '5 hours ago',
+      thumb: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=120&q=80'
+    },
+    {
+      id: 'act-3',
+      title: 'Learning something new',
+      time: '1 day ago',
+      thumb: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=120&q=80'
+    }
+  ];
+
+  // Calendar entries for selected date (Screen 4)
+  const calendarEntries = [
+    {
+      id: 'cal-1',
+      title: 'A Productive Day at Work',
+      sentiment: 'Positive',
+      category: 'Work',
+      thumb: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=120&q=80'
+    },
+    {
+      id: 'cal-2',
+      title: 'Team Learning Session',
+      sentiment: 'Neutral',
+      category: 'Study',
+      thumb: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=120&q=80'
+    },
+    {
+      id: 'cal-3',
+      title: 'Evening Reflection',
+      sentiment: 'Positive',
+      category: 'Personal',
+      thumb: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=120&q=80'
+    }
+  ];
+
   return (
     <aside className={`right-sidebar ${className}`}>
-      {/* 1. User Profile Widget */}
+      {/* 1. User Profile Widget (Common to all 4 screens) */}
       <div className="user-profile-widget" onClick={() => navigate('/settings')}>
         <img
           src={currentUser.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=160&q=80"}
@@ -80,93 +122,217 @@ export function RightSidebar({ className = '' }) {
         <ChevronDown size={18} className="user-chevron" />
       </div>
 
-      {/* 2. Interactive Calendar Widget */}
-      <div className="calendar-widget">
-        <div className="calendar-header">
-          <div className="calendar-month-title">
-            {monthNames[month]} <span>{year}</span>
+      {/* 2. CONTEXTUAL CONTENT BASED ON CURRENT SCREEN IN IMAGE B */}
+
+      {/* SCREEN 2: EDITOR INSIGHTS PANEL */}
+      {path === '/editor' && (
+        <div className="insights-sidebar-card">
+          <h3 className="insights-card-title">Journal Insights</h3>
+
+          {/* Sentiment Emoji & Text */}
+          <div className="sentiment-meter-box">
+            <div className="sentiment-avatar-circle">
+              <Smile size={28} />
+            </div>
+            <div>
+              <div className="sentiment-text-label">Sentiment</div>
+              <div className="sentiment-val-status">Positive</div>
+            </div>
           </div>
-          <div className="calendar-nav-buttons">
-            <button className="calendar-nav-btn" onClick={handlePrevMonth} aria-label="Previous month">
-              <ChevronLeft size={16} />
-            </button>
-            <button className="calendar-nav-btn" onClick={handleNextMonth} aria-label="Next month">
-              <ChevronRight size={16} />
-            </button>
+
+          {/* Score & Progress Bar */}
+          <div className="score-progress-box">
+            <div className="score-progress-header">
+              <span style={{ color: 'var(--text-muted)' }}>Score</span>
+              <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>0.72</span>
+            </div>
+            <div className="score-progress-bar-bg">
+              <div className="score-progress-fill" style={{ width: '72%' }} />
+            </div>
+          </div>
+
+          {/* Category */}
+          <div className="category-badge-row">
+            <Briefcase size={16} color="var(--primary)" />
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+              Work
+            </span>
+          </div>
+
+          {/* Keywords */}
+          <div>
+            <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
+              Keywords
+            </div>
+            <div className="keywords-chips-wrap">
+              {['productivity', 'team', 'progress', 'learning', 'motivation'].map((kw) => (
+                <span key={kw} className="keyword-chip">{kw}</span>
+              ))}
+            </div>
           </div>
         </div>
+      )}
 
-        <div className="calendar-weekdays">
-          <span>Mo</span>
-          <span>Tu</span>
-          <span>We</span>
-          <span>Th</span>
-          <span>Fr</span>
-          <span>Sa</span>
-          <span>Su</span>
-        </div>
+      {/* SCREEN 4: CALENDAR SELECTED DATE INSPECTOR */}
+      {path === '/calendar' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
+          <div className="date-inspector-header">
+            <div className="inspector-date-title">Apr 12, 2026</div>
+            <div className="inspector-entry-count">3 Journal Entries</div>
+          </div>
 
-        <div className="calendar-grid">
-          {calendarDays.map((item, idx) => {
-            if (item.empty) {
-              return <div key={`empty-${idx}`} className="calendar-cell empty" />;
-            }
-            return (
-              <div
-                key={`day-${item.day}`}
-                className={`calendar-cell ${item.isActive ? 'active-day' : ''}`}
-                onClick={() => setSelectedDay(item.day)}
-              >
-                <span>{item.day}</span>
-                {item.hasEntry && <span className="calendar-dot" />}
+          <div className="inspector-entries-list">
+            {calendarEntries.map((item) => (
+              <div key={item.id} className="inspector-entry-card" onClick={() => navigate('/editor')}>
+                <img src={item.thumb} alt={item.title} className="inspector-entry-thumb" />
+                <div className="inspector-entry-details">
+                  <div className="inspector-entry-title">{item.title}</div>
+                  <div className="inspector-badges-row">
+                    <span style={{
+                      fontSize: '0.68rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px',
+                      background: item.sentiment === 'Positive' ? '#D1FAE5' : '#F1F5F9',
+                      color: item.sentiment === 'Positive' ? '#065F46' : '#475569'
+                    }}>
+                      {item.sentiment}
+                    </span>
+                    <span style={{
+                      fontSize: '0.68rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px',
+                      background: '#EFF6FF', color: '#1E40AF'
+                    }}>
+                      {item.category}
+                    </span>
+                  </div>
+                </div>
               </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 3. Today's Activities */}
-      <div className="activities-section">
-        <div className="widget-section-header">
-          <h4 className="widget-section-title">Today's Activities</h4>
-          <button style={{ color: 'var(--text-muted)' }} onClick={() => navigate('/journals')}>
-            <MoreVertical size={16} />
-          </button>
-        </div>
-
-        {mockTodayActivities.map((act) => (
-          <div key={act.id} className="activity-item" onClick={() => navigate('/journals')}>
-            <div className="activity-icon-badge">
-              {act.icon === 'rocket' ? <Rocket size={18} /> : <BookOpen size={18} />}
-            </div>
-            <div className="activity-info">
-              <div className="activity-name">{act.title}</div>
-              <div className="activity-meta">{act.time}</div>
-            </div>
-            <ArrowIcon size={16} className="activity-chevron" />
+            ))}
           </div>
-        ))}
-      </div>
 
-      {/* 4. Upcoming Activities / Reminders */}
-      <div className="upcoming-section">
-        <div className="widget-section-header">
-          <h4 className="widget-section-title">Upcoming Reminders</h4>
-          <button style={{ color: 'var(--text-muted)' }} onClick={() => navigate('/reminders')}>
-            <MoreVertical size={16} />
+          <button className="add-journal-calendar-btn" onClick={() => navigate('/editor')}>
+            <Plus size={18} /> Add Journal
           </button>
         </div>
+      )}
 
-        <div className="timeline-list">
-          {mockUpcomingReminders.map((rem) => (
-            <div key={rem.id} className="timeline-item" onClick={() => navigate('/reminders')}>
-              <div className="timeline-dot" />
-              <div className="timeline-date">{rem.date}</div>
-              <div className="timeline-desc">{rem.title}</div>
+      {/* SCREEN 3: ANALYTICS RECENT INSIGHTS */}
+      {path === '/analytics' && (
+        <>
+          {/* Mini Calendar */}
+          <div className="calendar-widget">
+            <div className="calendar-header">
+              <div className="calendar-month-title">
+                April <span>2026</span>
+              </div>
+              <div className="calendar-nav-buttons">
+                <button className="calendar-nav-btn" onClick={handlePrevMonth}><ChevronLeft size={14} /></button>
+                <button className="calendar-nav-btn" onClick={handleNextMonth}><ChevronRight size={14} /></button>
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
+            <div className="calendar-weekdays">
+              <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
+            </div>
+            <div className="calendar-grid">
+              {calendarDays.slice(0, 35).map((item, idx) => (
+                <div
+                  key={idx}
+                  className={`calendar-cell ${item.isActive ? 'active-day' : ''}`}
+                >
+                  {item.day && <span>{item.day}</span>}
+                  {item.hasEntry && <span className="calendar-dot" />}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Recent Insights Card */}
+          <div style={{ marginTop: '8px' }}>
+            <div className="widget-section-header">
+              <h4 className="widget-section-title">Recent Insights</h4>
+              <span className="view-all-link" onClick={() => navigate('/analytics')}>View all</span>
+            </div>
+
+            <div className="insight-stat-item">
+              <div className="insight-icon-box">
+                <TrendingUp size={18} color="var(--primary)" />
+              </div>
+              <div>
+                <div className="insight-item-title">Positive trend this week</div>
+                <div className="insight-item-desc">Your mood has been improving compared to last week.</div>
+              </div>
+            </div>
+
+            <div className="insight-stat-item">
+              <div className="insight-icon-box">
+                <Folder size={18} color="#F59E0B" />
+              </div>
+              <div>
+                <div className="insight-item-title">Most common category</div>
+                <div className="insight-item-desc">Work (28% of entries)</div>
+              </div>
+            </div>
+
+            <div className="insight-stat-item">
+              <div className="insight-icon-box">
+                <BarChart2 size={18} color="#3B82F6" />
+              </div>
+              <div>
+                <div className="insight-item-title">Peak journaling day</div>
+                <div className="insight-item-desc">Wednesday (5 entries)</div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* DEFAULT / SCREEN 1: JOURNAL HISTORY & DASHBOARD */}
+      {(path === '/' || path === '/journals' || path === '/tags' || path === '/settings' || path === '/reminders') && (
+        <>
+          {/* Mini Calendar */}
+          <div className="calendar-widget">
+            <div className="calendar-header">
+              <div className="calendar-month-title">
+                {monthNames[month]} <span>{year}</span>
+              </div>
+              <div className="calendar-nav-buttons">
+                <button className="calendar-nav-btn" onClick={handlePrevMonth}><ChevronLeft size={14} /></button>
+                <button className="calendar-nav-btn" onClick={handleNextMonth}><ChevronRight size={14} /></button>
+              </div>
+            </div>
+            <div className="calendar-weekdays">
+              <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
+            </div>
+            <div className="calendar-grid">
+              {calendarDays.map((item, idx) => (
+                <div
+                  key={idx}
+                  className={`calendar-cell ${item.isActive ? 'active-day' : ''}`}
+                  onClick={() => item.day && setSelectedDay(item.day)}
+                >
+                  {item.day && <span>{item.day}</span>}
+                  {item.hasEntry && <span className="calendar-dot" />}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Today's Activities */}
+          <div style={{ marginTop: '8px' }}>
+            <div className="widget-section-header">
+              <h4 className="widget-section-title">Today's Activities</h4>
+              <span className="view-all-link" onClick={() => navigate('/journals')}>View all</span>
+            </div>
+
+            {sampleActivities.map((act) => (
+              <div key={act.id} className="activity-item-card" onClick={() => navigate('/journals')}>
+                <img src={act.thumb} alt={act.title} className="activity-thumb" />
+                <div className="activity-info">
+                  <div className="activity-name">{act.title}</div>
+                  <div className="activity-meta">{act.time}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </aside>
   );
 }

@@ -1,170 +1,205 @@
 import React, { useState } from 'react';
-import { useOutletContext, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Plus, Calendar, Clock, BookOpen } from 'lucide-react';
-import Header from '../components/layout/Header';
-import Button from '../components/common/Button';
-import Badge from '../components/common/Badge';
-import { mockFeaturedJournals, mockCalendarDatesWithEntries } from '../mock/mockData';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export function CalendarPage() {
-  const navigate = useNavigate();
-  const { toggleMobileMenu } = useOutletContext() || {};
+  const [selectedDay, setSelectedDay] = useState(12);
 
-  const [date, setDate] = useState(new Date());
-  const [selectedDay, setSelectedDay] = useState(date.getDate());
+  // April 2026 dates with sentiments matching Screen 4 in Image B
+  const entryDots = {
+    4: ['positive'],
+    6: ['neutral'],
+    7: ['positive'],
+    8: ['positive'],
+    9: ['negative'],
+    11: ['neutral'],
+    12: ['positive'], // selected date
+    14: ['positive'],
+    15: ['neutral'],
+    16: ['positive'],
+    18: ['neutral'],
+    19: ['positive'],
+    21: ['positive', 'negative'],
+    22: ['neutral'],
+    24: ['positive'],
+    26: ['negative'],
+    28: ['positive'],
+    29: ['positive']
+  };
 
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+  const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  // Days layout: 2 previous month days (30, 31), 30 days of April, 3 next month days (1, 2, 3)
+  const calendarCells = [
+    { day: 30, isOtherMonth: true },
+    { day: 31, isOtherMonth: true },
+    ...Array.from({ length: 30 }, (_, i) => ({ day: i + 1, isOtherMonth: false })),
+    { day: 1, isOtherMonth: true },
+    { day: 2, isOtherMonth: true },
+    { day: 3, isOtherMonth: true }
   ];
 
-  const year = date.getFullYear();
-  const month = date.getMonth();
-  const firstDay = (new Date(year, month, 1).getDay() + 6) % 7;
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  const days = [];
-  for (let i = 0; i < firstDay; i++) days.push(null);
-  for (let d = 1; d <= daysInMonth; d++) days.push(d);
-
   return (
-    <div>
-      <Header
-        title="Schedule & Calendar"
-        subtitle="Review your journaling consistency across the month"
-        onToggleMobileMenu={toggleMobileMenu}
-      />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* 1. Header Row */}
+      <div style={{ padding: '24px 32px 10px' }}>
+        <h1 style={{ fontSize: '1.7rem', fontWeight: 800, letterSpacing: '-0.02em' }}>Journal Calendar</h1>
+        <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+          View your journaling activity and revisit past entries
+        </p>
+      </div>
 
-      <div className="center-page-body" style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '24px' }}>
-        {/* Calendar Box */}
+      <div className="center-page-body">
+        {/* 2. Big Calendar Card */}
         <div style={{
-          backgroundColor: '#FFFFFF',
+          background: '#FFFFFF',
           borderRadius: 'var(--radius-xl)',
-          padding: '28px',
           border: '1px solid var(--border-card)',
+          padding: '28px',
           boxShadow: 'var(--shadow-card)'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-            <h2 style={{ fontSize: '1.3rem', fontWeight: 800 }}>
-              {monthNames[month]} <span style={{ color: 'var(--text-muted)' }}>{year}</span>
-            </h2>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                onClick={() => setDate(new Date(year, month - 1, 1))}
-                style={{
-                  width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-subtle)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
-                }}
-              >
-                <ChevronLeft size={18} />
+          {/* Controls Bar */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <button style={{
+                background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)',
+                padding: '4px', display: 'flex', alignItems: 'center'
+              }}>
+                <ChevronLeft size={20} />
               </button>
-              <button
-                onClick={() => setDate(new Date(year, month + 1, 1))}
-                style={{
-                  width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-subtle)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
-                }}
-              >
-                <ChevronRight size={18} />
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                April 2026
+              </h2>
+              <button style={{
+                background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)',
+                padding: '4px', display: 'flex', alignItems: 'center'
+              }}>
+                <ChevronRight size={20} />
               </button>
             </div>
+
+            <button
+              onClick={() => setSelectedDay(12)}
+              style={{
+                padding: '6px 16px',
+                borderRadius: 'var(--radius-pill)',
+                border: '1px solid var(--border-subtle)',
+                background: '#FFFFFF',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                color: 'var(--text-primary)',
+                cursor: 'pointer'
+              }}
+            >
+              Today
+            </button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', gap: '10px' }}>
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(w => (
-              <div key={w} style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', paddingBottom: '10px' }}>
-                {w}
-              </div>
-            ))}
+          {/* Weekday Labels */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(7, 1fr)',
+            textAlign: 'center',
+            fontSize: '0.82rem',
+            fontWeight: 700,
+            color: 'var(--text-muted)',
+            paddingBottom: '14px',
+            borderBottom: '1px solid var(--border-subtle)'
+          }}>
+            {weekdays.map(d => <span key={d}>{d}</span>)}
+          </div>
 
-            {days.map((d, idx) => {
-              if (!d) return <div key={`empty-${idx}`} />;
-              const hasEntry = mockCalendarDatesWithEntries.includes(d);
-              const isSelected = d === selectedDay;
+          {/* Calendar Grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(7, 1fr)',
+            rowGap: '16px',
+            textAlign: 'center',
+            paddingTop: '16px'
+          }}>
+            {calendarCells.map((cell, idx) => {
+              const isSelected = !cell.isOtherMonth && cell.day === selectedDay;
+              const dots = !cell.isOtherMonth ? entryDots[cell.day] : null;
 
               return (
                 <div
-                  key={`day-${d}`}
-                  onClick={() => setSelectedDay(d)}
+                  key={idx}
+                  onClick={() => !cell.isOtherMonth && setSelectedDay(cell.day)}
                   style={{
-                    height: '46px',
-                    borderRadius: '14px',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    cursor: 'pointer',
-                    position: 'relative',
-                    fontWeight: isSelected ? 700 : 500,
-                    backgroundColor: isSelected ? 'var(--primary)' : 'transparent',
-                    color: isSelected ? '#FFFFFF' : 'var(--text-primary)',
-                    border: hasEntry && !isSelected ? '1px solid #C4ECE1' : 'none',
-                    transition: 'all 0.15s ease'
+                    minHeight: '48px',
+                    cursor: cell.isOtherMonth ? 'default' : 'pointer'
                   }}
                 >
-                  <span>{d}</span>
-                  {hasEntry && (
-                    <span style={{
-                      width: '5px',
-                      height: '5px',
-                      borderRadius: '50%',
-                      backgroundColor: isSelected ? '#FFFFFF' : '#FF7B54',
-                      position: 'absolute',
-                      bottom: '5px'
-                    }} />
-                  )}
+                  <div style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.92rem',
+                    fontWeight: isSelected ? 800 : 600,
+                    backgroundColor: isSelected ? 'var(--primary)' : 'transparent',
+                    color: isSelected
+                      ? '#FFFFFF'
+                      : cell.isOtherMonth
+                      ? 'var(--text-muted)'
+                      : 'var(--text-primary)',
+                    boxShadow: isSelected ? '0 4px 12px var(--primary-glow)' : 'none',
+                    opacity: cell.isOtherMonth ? 0.35 : 1,
+                    transition: 'all 0.15s ease'
+                  }}>
+                    {cell.day}
+                  </div>
+
+                  {/* Colored sentiment dots underneath */}
+                  <div style={{ display: 'flex', gap: '3px', height: '6px', marginTop: '4px' }}>
+                    {dots && !isSelected && dots.map((s, i) => (
+                      <span
+                        key={i}
+                        style={{
+                          width: '5px',
+                          height: '5px',
+                          borderRadius: '50%',
+                          backgroundColor:
+                            s === 'positive'
+                              ? '#10B981'
+                              : s === 'negative'
+                              ? '#EF4444'
+                              : '#94A3B8'
+                        }}
+                      />
+                    ))}
+                  </div>
                 </div>
               );
             })}
           </div>
-        </div>
 
-        {/* Selected Date Entries Panel */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: 'var(--radius-xl)',
-          padding: '28px',
-          border: '1px solid var(--border-card)',
-          boxShadow: 'var(--shadow-card)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '16px'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>
-              Entries for {selectedDay} {monthNames[month]}
-            </h3>
-            <Button size="sm" icon={Plus} onClick={() => navigate('/editor')}>
-              Add
-            </Button>
+          {/* Legend row at bottom matching Screen 4 */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '24px',
+            marginTop: '28px',
+            paddingTop: '16px',
+            borderTop: '1px solid var(--border-subtle)',
+            fontSize: '0.82rem',
+            fontWeight: 600
+          }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)' }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }} /> Positive
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)' }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#94A3B8' }} /> Neutral
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)' }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#EF4444' }} /> Negative
+            </span>
           </div>
-
-          {mockCalendarDatesWithEntries.includes(selectedDay) ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div
-                style={{
-                  padding: '16px',
-                  borderRadius: 'var(--radius-md)',
-                  backgroundColor: 'var(--bg-subtle)',
-                  cursor: 'pointer'
-                }}
-                onClick={() => navigate('/editor?id=j-1')}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700 }}>Diary Reflection</h4>
-                  <Badge variant="success">Positive</Badge>
-                </div>
-                <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                  Reflecting on morning mindfulness and peaceful moments...
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '40px 10px', color: 'var(--text-muted)' }}>
-              <Calendar size={36} style={{ margin: '0 auto 10px', opacity: 0.5 }} />
-              <p style={{ fontSize: '0.9rem' }}>No entries logged on this date.</p>
-            </div>
-          )}
         </div>
       </div>
     </div>

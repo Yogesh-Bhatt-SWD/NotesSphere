@@ -1,151 +1,166 @@
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams, useOutletContext } from 'react-router-dom';
-import { ArrowLeft, Save, Sparkles, Tag, Smile } from 'lucide-react';
-import Header from '../components/layout/Header';
-import Button from '../components/common/Button';
-import Badge from '../components/common/Badge';
+import { useNavigate } from 'react-router-dom';
+import {
+  Bold,
+  Italic,
+  Underline,
+  List,
+  ListOrdered,
+  Link2,
+  Quote,
+  Code,
+  Maximize2,
+  Save,
+  Plus,
+  Briefcase
+} from 'lucide-react';
 import './EditorPage.css';
 
 export function EditorPage() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { toggleMobileMenu } = useOutletContext() || {};
 
-  const [title, setTitle] = useState('Mindful Morning Reflections');
-  const [category, setCategory] = useState('Mindfulness');
+  const [title, setTitle] = useState('A Productive Day at Work');
   const [content, setContent] = useState(
-    'Today began with ten minutes of stillness and morning tea. I watched the golden sunrise stream across the workspace, feeling deeply centered and ready to make progress on creative endeavors...'
+    'Today I completed the backend implementation for the new feature. Had a great discussion with my team and learned a lot. Feeling motivated and happy with the progress. Excited for what\'s next!'
   );
-  const [tags, setTags] = useState('mindfulness, tea, gratitude');
-  const [saving, setSaving] = useState(false);
+  const [category, setCategory] = useState('Work');
+  const [selectedTags, setSelectedTags] = useState(['productivity', 'team']);
+  const [allTags, setAllTags] = useState(['productivity', 'team', 'learning', 'development']);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Word count & reading time
+  // Live word counter
   const words = content.trim() ? content.trim().split(/\s+/).length : 0;
-  const readTime = Math.ceil(words / 200);
 
-  // Real-time sentiment estimation
-  const getSentiment = (text) => {
-    const positiveWords = ['happy', 'great', 'grateful', 'peace', 'good', 'joy', 'love', 'blessed', 'progress', 'centered'];
-    const negativeWords = ['sad', 'bad', 'angry', 'stressed', 'tired', 'hate', 'pain', 'frustrated'];
-    const lower = text.toLowerCase();
-    const pos = positiveWords.filter(w => lower.includes(w)).length;
-    const neg = negativeWords.filter(w => lower.includes(w)).length;
-    if (pos > neg) return { label: 'Positive (VADER ~0.84)', variant: 'success' };
-    if (neg > pos) return { label: 'Negative (VADER ~-0.62)', variant: 'danger' };
-    return { label: 'Neutral (VADER ~0.0)', variant: 'neutral' };
+  const toggleTag = (tag) => {
+    if (selectedTags.includes(tag)) {
+      setSelectedTags(selectedTags.filter(t => t !== tag));
+    } else {
+      setSelectedTags([...selectedTags, tag]);
+    }
   };
 
-  const sentiment = getSentiment(content);
+  const handleAddNewTag = () => {
+    const newTag = prompt('Enter new tag name:');
+    if (newTag && !allTags.includes(newTag.trim())) {
+      setAllTags([...allTags, newTag.trim()]);
+      setSelectedTags([...selectedTags, newTag.trim()]);
+    }
+  };
 
   const handleSave = () => {
-    setSaving(true);
+    setIsSaving(true);
     setTimeout(() => {
-      setSaving(false);
+      setIsSaving(false);
       navigate('/journals');
-    }, 500);
+    }, 400);
   };
 
   return (
-    <div className="editor-page">
-      <Header
-        title="Journal Editor"
-        subtitle="Write, structure, and analyze your thoughts in real time"
-        onToggleMobileMenu={toggleMobileMenu}
-      />
+    <div className="new-journal-editor">
+      {/* 1. Header Row */}
+      <div className="editor-header-wrap">
+        <h1>Create a New Journal</h1>
+        <p>Write, reflect and understand your thoughts</p>
+      </div>
 
       <div className="center-page-body">
-        <div style={{ marginBottom: '16px' }}>
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={ArrowLeft}
-            onClick={() => navigate(-1)}
-          >
-            Back
-          </Button>
-        </div>
-
-        <div className="editor-card">
+        <div className="editor-container-card">
+          {/* Title Input */}
           <input
             type="text"
-            className="editor-title-input"
+            className="title-input-field"
             placeholder="Journal Title..."
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
 
-          <div className="editor-meta-row">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Category:</span>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: 'var(--radius-pill)',
-                  border: '1px solid var(--border-subtle)',
-                  background: 'var(--bg-input)'
-                }}
-              >
-                <option value="Mindfulness">Mindfulness</option>
-                <option value="Goals">Goals</option>
-                <option value="Daily">Daily Life</option>
-                <option value="Work">Work</option>
-                <option value="Reflections">Reflections</option>
-              </select>
+          {/* Rich Text Toolbar */}
+          <div className="rich-toolbar">
+            <select className="toolbar-select">
+              <option>Normal</option>
+              <option>Heading 1</option>
+              <option>Heading 2</option>
+            </select>
+
+            <button type="button" className="toolbar-btn"><Bold size={15} /></button>
+            <button type="button" className="toolbar-btn"><Italic size={15} /></button>
+            <button type="button" className="toolbar-btn"><Underline size={15} /></button>
+
+            <div className="toolbar-divider" />
+
+            <button type="button" className="toolbar-btn"><List size={15} /></button>
+            <button type="button" className="toolbar-btn"><ListOrdered size={15} /></button>
+            <button type="button" className="toolbar-btn"><Link2 size={15} /></button>
+            <button type="button" className="toolbar-btn"><Quote size={15} /></button>
+            <button type="button" className="toolbar-btn"><Code size={15} /></button>
+
+            <div className="toolbar-divider" />
+
+            <button type="button" className="toolbar-btn" style={{ marginLeft: 'auto' }}>
+              <Maximize2 size={15} />
+            </button>
+          </div>
+
+          {/* Content Textarea with Words Badge */}
+          <div className="content-textarea-wrap">
+            <textarea
+              className="content-textarea"
+              placeholder="Start typing your reflection..."
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+            />
+            <div className="word-count-badge">Words: {words}</div>
+          </div>
+
+          {/* Category & Suggested Tags Controls */}
+          <div className="meta-controls-row">
+            <div>
+              <div className="meta-group-label">Category</div>
+              <div className="category-dropdown-box">
+                <Briefcase size={16} color="var(--primary)" />
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', fontWeight: 600 }}
+                >
+                  <option value="Work">Work</option>
+                  <option value="Mindfulness">Mindfulness</option>
+                  <option value="Study">Study</option>
+                  <option value="Travel">Travel</option>
+                  <option value="Personal">Personal</option>
+                </select>
+              </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Tags:</span>
-              <input
-                type="text"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                placeholder="tags separated by commas"
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: 'var(--radius-pill)',
-                  border: '1px solid var(--border-subtle)',
-                  background: 'var(--bg-input)',
-                  width: '240px'
-                }}
-              />
-            </div>
-
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Smile size={16} color="var(--primary)" />
-              <Badge variant={sentiment.variant} dot>
-                {sentiment.label}
-              </Badge>
+            <div>
+              <div className="meta-group-label">Suggested Tags</div>
+              <div className="suggested-tags-container">
+                {allTags.map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    className={`suggested-tag-chip ${selectedTags.includes(t) ? 'active' : ''}`}
+                    onClick={() => toggleTag(t)}
+                  >
+                    {t}
+                  </button>
+                ))}
+                <button type="button" className="add-tag-chip-btn" onClick={handleAddNewTag}>
+                  <Plus size={14} /> Add Tag
+                </button>
+              </div>
             </div>
           </div>
 
-          <textarea
-            className="editor-content-area"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Start writing your mindful reflection here..."
-          />
-
-          <div className="editor-footer-row">
-            <div className="editor-word-count">
-              {words} words • {content.length} characters • ~{readTime} min read
-            </div>
-
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <Button variant="ghost" onClick={() => navigate('/journals')}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                icon={Save}
-                onClick={handleSave}
-                disabled={saving || !title.trim() || !content.trim()}
-              >
-                {saving ? 'Saving...' : 'Save Entry'}
-              </Button>
-            </div>
-          </div>
+          {/* Large Save Journal Button */}
+          <button
+            type="button"
+            className="save-journal-big-btn"
+            onClick={handleSave}
+            disabled={isSaving || !title.trim()}
+          >
+            <Save size={18} /> {isSaving ? 'Saving...' : 'Save Journal'}
+          </button>
         </div>
       </div>
     </div>
