@@ -12,11 +12,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * JPA entity representing a journal entry with sentiment analysis data.
+ * JPA entity representing a journal entry with sentiment analysis and metadata.
  */
 @Entity
 @Table(name = "journal_entries", indexes = {
-        @Index(name = "idx_journal_user_id", columnList = "user_id")
+        @Index(name = "idx_journal_user_id", columnList = "user_id"),
+        @Index(name = "idx_journal_created_at", columnList = "created_at"),
+        @Index(name = "idx_journal_favorite", columnList = "user_id, is_favorite"),
+        @Index(name = "idx_journal_pinned", columnList = "user_id, is_pinned")
 })
 @EntityListeners(AuditingEntityListener.class)
 @Data
@@ -30,7 +33,7 @@ public class JournalEntry {
     @Column(name = "id", length = 36, updatable = false, nullable = false)
     private String id;
 
-    @Column(name = "title", nullable = false)
+    @Column(name = "title", nullable = false, length = 200)
     private String title;
 
     @Column(name = "content", columnDefinition = "LONGTEXT")
@@ -41,6 +44,18 @@ public class JournalEntry {
     @Column(name = "tag")
     @Builder.Default
     private List<String> tags = new ArrayList<>();
+
+    @Column(name = "category", length = 100)
+    @Builder.Default
+    private String category = "General";
+
+    @Column(name = "is_favorite", nullable = false)
+    @Builder.Default
+    private boolean favorite = false;
+
+    @Column(name = "is_pinned", nullable = false)
+    @Builder.Default
+    private boolean pinned = false;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "sentiment_label")

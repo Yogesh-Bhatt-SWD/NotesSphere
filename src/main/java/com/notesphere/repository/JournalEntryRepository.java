@@ -5,18 +5,20 @@ import com.notesphere.entity.enums.SentimentLabel;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
- * Spring Data JPA repository for JournalEntry entities with custom queries
- * for search, filtering, and sentiment analytics.
+ * Spring Data JPA repository for JournalEntry entities with specification support,
+ * custom queries for search, filtering, tags, analytics, and calendar data.
  */
 @Repository
-public interface JournalEntryRepository extends JpaRepository<JournalEntry, String> {
+public interface JournalEntryRepository extends JpaRepository<JournalEntry, String>, JpaSpecificationExecutor<JournalEntry> {
 
     Page<JournalEntry> findByUserId(String userId, Pageable pageable);
 
@@ -38,8 +40,34 @@ public interface JournalEntryRepository extends JpaRepository<JournalEntry, Stri
 
     long countBySentimentLabel(SentimentLabel sentimentLabel);
 
+    long countByUserIdAndSentimentLabel(String userId, SentimentLabel sentimentLabel);
+
+    long countByUserIdAndFavoriteTrue(String userId);
+
+    long countByUserIdAndPinnedTrue(String userId);
+
     @Query("SELECT j FROM JournalEntry j WHERE j.userId = :userId")
     List<JournalEntry> findTagsByUserId(@Param("userId") String userId);
 
     List<JournalEntry> findByUserIdOrderByCreatedAtDesc(String userId);
+
+    List<JournalEntry> findByUserIdOrderByCreatedAtAsc(String userId);
+
+    @Query("SELECT j FROM JournalEntry j WHERE j.userId = :userId AND j.createdAt >= :startDate AND j.createdAt <= :endDate ORDER BY j.createdAt ASC")
+    List<JournalEntry> findByUserIdAndCreatedAtBetween(
+            @Param("userId") String userId,
+            @Param("startDate") Instant startDate,
+            @Param("endDate") Instant endDate);
+
+    @Query("SELECT j.sentimentLabel, COUNT(j) FROM JournalEntry j WHERE j.userId = :userId GROUP BY j.sentimentLabel")
+    List<Object[]> countSentimentDistributionByUserId(@Param("userId") String userId);
+
+    @Query("SELECT j.category, COUNT(j) FROM JournalEntry j WHERE j.userId = :userId GROUP BY j.category")
+    List<Object[]> countCategoryDistributionByUserId(@Param("userId") String userId);
+
+    @Query("SELECT AVG(j.compoundScore) FROM JournalEntry j WHERE j.userId = :userId")
+    Double getAverageCompoundScoreByUserId(@Param("userId") String userId);
+
+    @Query("SELECT j.category, COUNT(j) FROM JournalEntry j GROUP BY j.category")
+    List<Object[]> countAllPlatformCategories();
 }

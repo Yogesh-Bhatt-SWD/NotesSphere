@@ -177,8 +177,54 @@ mvn test
 
 ---
 
+## API Endpoints Reference
+
+### Authentication (`/api/auth`)
+* `POST /api/auth/register` — Register a new user
+* `POST /api/auth/login` — Authenticate and receive JWT tokens
+* `POST /api/auth/refresh` — Refresh access token
+* `POST /api/auth/logout` — Invalidate refresh tokens
+
+### Journals (`/api/journals`)
+* `POST /api/journals` — Create journal with auto-sentiment & category
+* `GET /api/journals` — Filtered & paginated journals (`query`, `sentiment`, `category`, `tag`, `favorite`, `pinned`, `startDate`, `endDate`)
+* `GET /api/journals/{id}` — Get single journal by ID (user-isolated)
+* `PUT /api/journals/{id}` — Update journal (triggers auto-reanalysis if content changed)
+* `DELETE /api/journals/{id}` — Delete journal
+* `PATCH /api/journals/{id}/favorite` — Toggle favorite status
+* `PATCH /api/journals/{id}/pin` — Toggle pinned status
+* `GET /api/journals/search` — Search journals by title/content
+* `GET /api/journals/tags` — Get all user-defined & auto tags
+* `GET /api/journals/categories` — Get all user categories
+* `GET /api/journals/export/json` — Export journals as JSON file
+* `GET /api/journals/export/csv` — Export journals as CSV file
+
+### Analytics & Calendar (`/api/analytics`)
+* `GET /api/analytics` — Volume, sentiment distribution, category breakdown, timeline, streaks
+* `GET /api/analytics/streaks` — Current and longest writing streak
+* `GET /api/analytics/calendar/dates` — All active journaling dates (YYYY-MM-DD)
+* `GET /api/analytics/calendar/monthly` — Monthly calendar with entries grouped by day
+
+### Sentiment & NLP (`/api/sentiment`)
+* `POST /api/sentiment/analyze` — Standalone VADER sentiment analysis
+* `POST /api/sentiment/categorize` — Rule-based NLP categorization & scores
+* `POST /api/sentiment/nlp-analyze` — Combined sentiment & category classification
+
+### Reminders (`/api/reminders`)
+* `GET /api/reminders` — Get reminder preferences
+* `PUT /api/reminders` — Update reminder time, days, and channel
+* `POST /api/reminders/test` — Trigger a test reminder
+
+### Admin (`/api/admin`)
+* `GET /api/admin/users` — Paginated user directory
+* `PUT /api/admin/users/{id}/roles` — Update user roles (e.g., grant ROLE_ADMIN)
+* `DELETE /api/admin/users/{id}` — Delete user and cascading data
+* `GET /api/admin/stats` — Aggregate platform statistics
+
+---
+
 ## Project Highlights
 
 NoteSphere demonstrates a production-oriented backend combining:
 
-**Secure Authentication → REST API Design → RBAC → User Data Isolation → MongoDB → NLP → Sentiment Analysis → Automated Categorization → Testing → API Documentation**
+**Secure Authentication → REST API Design → RBAC → User Data Isolation → MySQL & Spring Data JPA → VADER NLP → Dynamic Filtering & Specifications → Analytics & Calendar Streaks → Reminders → Data Export → Testing → API Documentation**

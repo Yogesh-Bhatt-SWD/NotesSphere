@@ -10,7 +10,7 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * DTO for journal entry responses including sentiment data.
+ * DTO for journal entry responses including sentiment data, categories, and flags.
  */
 @Data
 @Builder
@@ -22,6 +22,9 @@ public class JournalResponse {
     private String title;
     private String content;
     private List<String> tags;
+    private String category;
+    private boolean favorite;
+    private boolean pinned;
     private SentimentLabel sentimentLabel;
     private double compoundScore;
     private double positiveScore;

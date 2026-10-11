@@ -19,4 +19,7 @@ public interface UserRepository extends JpaRepository<User, String> {
     boolean existsByEmail(String email);
 
     boolean existsByUsername(String username);
+
+    @org.springframework.data.jpa.repository.Query("SELECT u.provider, COUNT(u) FROM User u GROUP BY u.provider")
+    java.util.List<Object[]> countUsersByProvider();
 }
