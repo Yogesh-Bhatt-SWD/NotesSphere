@@ -24,7 +24,7 @@ sudo systemctl start mysql
 
 # Create database and configure user if not already present
 sudo mysql -e "CREATE DATABASE IF NOT EXISTS db_notesphere CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root123';"
+sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root123';" 2>/dev/null || sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root123';"
 sudo mysql -e "FLUSH PRIVILEGES;"
 echo "MySQL initialized with database 'db_notesphere'!"
 
