@@ -15,16 +15,17 @@ public class TaggingService {
     private static final Map<String, List<String>> CATEGORY_RULES = new LinkedHashMap<>();
 
     static {
-        CATEGORY_RULES.put("Work", Arrays.asList("work", "job", "meeting", "boss", "colleague", "project", "deadline", "office", "career"));
-        CATEGORY_RULES.put("Health", Arrays.asList("health", "sick", "doctor", "hospital", "medicine", "pain", "illness", "recovery"));
-        CATEGORY_RULES.put("Travel", Arrays.asList("travel", "trip", "vacation", "flight", "hotel", "tour", "journey", "holiday"));
-        CATEGORY_RULES.put("Finance", Arrays.asList("money", "finance", "budget", "salary", "expense", "bank", "invest", "tax"));
-        CATEGORY_RULES.put("Education", Arrays.asList("school", "college", "university", "study", "exam", "class", "learn", "course"));
-        CATEGORY_RULES.put("Fitness", Arrays.asList("gym", "workout", "exercise", "run", "fitness", "yoga", "training", "sport"));
-        CATEGORY_RULES.put("Family", Arrays.asList("family", "mom", "dad", "parent", "brother", "sister", "child", "kids", "wife", "husband"));
-        CATEGORY_RULES.put("Social", Arrays.asList("friend", "party", "social", "hangout", "meetup", "dinner", "lunch", "event"));
-        CATEGORY_RULES.put("Creative", Arrays.asList("art", "music", "write", "paint", "draw", "create", "design", "photo", "creative"));
-        CATEGORY_RULES.put("Personal", Arrays.asList("goal", "habit", "reflection", "journal", "diary", "thought", "dream", "plan"));
+        CATEGORY_RULES.put("Mindfulness", Arrays.asList("mindful", "meditation", "breathe", "peace", "calm", "zen", "stillness", "serenity", "gratitude", "presence"));
+        CATEGORY_RULES.put("Goals", Arrays.asList("goal", "milestone", "target", "vision", "aim", "ambition", "plan", "achieve", "success", "future"));
+        CATEGORY_RULES.put("Daily Life", Arrays.asList("daily", "routine", "morning", "evening", "coffee", "breakfast", "dinner", "walk", "home", "today", "chores"));
+        CATEGORY_RULES.put("Work & Projects", Arrays.asList("work", "job", "meeting", "boss", "colleague", "project", "deadline", "office", "career", "task", "client", "code", "backend", "feature"));
+        CATEGORY_RULES.put("Reflections", Arrays.asList("reflection", "reflect", "diary", "thought", "ponder", "memory", "introspect", "feeling", "lesson", "realization"));
+        CATEGORY_RULES.put("Study", Arrays.asList("school", "college", "university", "study", "exam", "class", "learn", "course", "reading", "lecture", "homework", "system design"));
+        CATEGORY_RULES.put("Travel", Arrays.asList("travel", "trip", "vacation", "flight", "hotel", "tour", "journey", "holiday", "mountains", "beach", "explore"));
+        CATEGORY_RULES.put("Health", Arrays.asList("health", "sick", "doctor", "hospital", "medicine", "pain", "illness", "recovery", "sleep", "nutrition", "therapy"));
+        CATEGORY_RULES.put("Fitness", Arrays.asList("gym", "workout", "exercise", "run", "fitness", "yoga", "training", "sport", "weight", "cardio", "badminton"));
+        CATEGORY_RULES.put("Personal Growth", Arrays.asList("habit", "growth", "discipline", "mindset", "self-improvement", "motivation", "development", "wisdom", "confidence"));
+        CATEGORY_RULES.put("Other", Arrays.asList("general", "misc", "random", "other"));
     }
 
     /**

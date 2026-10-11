@@ -252,3 +252,63 @@
   font-weight: 700;
   box-shadow: 0 2px 8px var(--primary-glow);
 }
+
+/* Visibility tags and publishing action styles */
+.badge-visibility-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.badge-visibility-tag.private {
+  background: #F1F5F9;
+  color: #475569;
+}
+
+.badge-visibility-tag.community {
+  background: #E0F2FE;
+  color: #0284C7;
+}
+
+.btn-card-publish {
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--primary);
+  background: transparent;
+  color: var(--primary);
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-card-publish:hover {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.btn-card-unpublish {
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid #FECDD3;
+  background: #FFF1F2;
+  color: #E11D48;
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-card-unpublish:hover {
+  background: #FEE2E2;
+}

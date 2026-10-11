@@ -12,6 +12,7 @@ import CalendarPage from './pages/CalendarPage';
 import RemindersPage from './pages/RemindersPage';
 import SettingsPage from './pages/SettingsPage';
 import TagsPage from './pages/TagsPage';
+import CommunitiesPage from './pages/CommunitiesPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -30,6 +31,7 @@ export function App() {
             <Route index element={<DashboardPage />} />
             <Route path="journals" element={<JournalsPage />} />
             <Route path="editor" element={<EditorPage />} />
+            <Route path="communities" element={<CommunitiesPage />} />
             <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="tags" element={<TagsPage />} />

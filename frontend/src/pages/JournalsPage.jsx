@@ -1,220 +1,526 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Star, Edit3, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  Search,
+  Star,
+  Edit3,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Lock,
+  Globe,
+  Share2,
+  AlertCircle,
+  CheckCircle2,
+  Plus
+} from 'lucide-react';
+import journalService from '../api/journalService';
+import categoryService from '../api/categoryService';
+import communityService from '../api/communityService';
 import './JournalsPage.css';
 
 export function JournalsPage() {
   const navigate = useNavigate();
 
+  const [entries, setEntries] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [joinedCommunities, setJoinedCommunities] = useState([]);
+
+  // Filters
   const [search, setSearch] = useState('');
   const [activeSentiment, setActiveSentiment] = useState('ALL');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedVisibility, setSelectedVisibility] = useState('ALL'); // 'ALL' | 'PRIVATE' | 'COMMUNITY'
+  const [currentPage, setCurrentPage] = useState(0); // 0-indexed for Spring Data
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [notification, setNotification] = useState(null);
 
-  // Exact data from Screen 1 in Image B
-  const [entries, setEntries] = useState([
-    {
-      id: 'j-1',
-      title: 'A Productive Day at Work',
-      excerpt: 'Today I completed the backend implementation for the new feature. Had a great discussion with my team and learned a lot...',
-      sentiment: 'Positive',
-      category: 'Work',
-      date: 'Apr 12, 2026',
-      isFavorite: true,
-      thumbnail: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=300&q=80'
-    },
-    {
-      id: 'j-2',
-      title: 'Weekend Memories',
-      excerpt: 'Had an amazing weekend trip to the mountains. The weather was perfect and it felt so refreshing.',
-      sentiment: 'Neutral',
-      category: 'Travel',
-      date: 'Apr 11, 2026',
-      isFavorite: false,
-      thumbnail: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=300&q=80'
-    },
-    {
-      id: 'j-3',
-      title: 'Learning something new',
-      excerpt: 'Started exploring system design today. It was challenging but really interesting. I feel motivated to keep learning.',
-      sentiment: 'Positive',
-      category: 'Study',
-      date: 'Apr 9, 2026',
-      isFavorite: false,
-      thumbnail: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=300&q=80'
-    }
-  ]);
+  // Quick publish modal
+  const [publishingEntry, setPublishingEntry] = useState(null);
+  const [selectedCommunityId, setSelectedCommunityId] = useState('');
 
-  const toggleFavorite = (id, e) => {
-    e.stopPropagation();
-    setEntries(entries.map(item =>
-      item.id === id ? { ...item, isFavorite: !item.isFavorite } : item
-    ));
+  const showToast = (msg, type = 'success') => {
+    setNotification({ msg, type });
+    setTimeout(() => setNotification(null), 3500);
   };
 
-  const deleteEntry = (id, e) => {
-    e.stopPropagation();
-    if (window.confirm('Are you sure you want to delete this journal entry?')) {
-      setEntries(entries.filter(item => item.id !== id));
+  const loadCategories = async () => {
+    try {
+      const res = await categoryService.getCategories();
+      if (res?.data) {
+        setCategories(res.data);
+      }
+    } catch (err) {
+      console.error('Failed to load categories:', err);
     }
   };
 
-  const filtered = entries.filter(item => {
-    const matchesSearch = item.title.toLowerCase().includes(search.toLowerCase()) ||
-                          item.excerpt.toLowerCase().includes(search.toLowerCase());
-    const matchesSentiment = activeSentiment === 'ALL' || item.sentiment.toUpperCase() === activeSentiment;
-    const matchesCategory = selectedCategory === 'ALL' || item.category === selectedCategory;
-    return matchesSearch && matchesSentiment && matchesCategory;
-  });
+  const loadJoinedCommunities = async () => {
+    try {
+      const res = await communityService.getJoinedCommunities();
+      if (res?.data) {
+        setJoinedCommunities(res.data);
+        if (res.data.length > 0) {
+          setSelectedCommunityId(res.data[0].id);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load communities:', err);
+    }
+  };
+
+  const loadJournals = async () => {
+    setIsLoading(true);
+    try {
+      const params = {
+        page: currentPage,
+        size: 8,
+        search: search.trim() || undefined,
+        category: selectedCategory !== 'ALL' ? selectedCategory : undefined,
+        sentiment: activeSentiment !== 'ALL' ? activeSentiment : undefined,
+        visibility: selectedVisibility !== 'ALL' ? selectedVisibility : undefined,
+      };
+
+      const res = await journalService.getJournals(params);
+      if (res?.data) {
+        setEntries(res.data.content || []);
+        setTotalPages(res.data.totalPages || 1);
+      }
+    } catch (err) {
+      console.error('Failed to load journals:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCategories();
+    loadJoinedCommunities();
+  }, []);
+
+  useEffect(() => {
+    loadJournals();
+  }, [search, activeSentiment, selectedCategory, selectedVisibility, currentPage]);
+
+  const toggleFavorite = async (id, e) => {
+    e.stopPropagation();
+    try {
+      await journalService.toggleFavorite(id);
+      setEntries((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, favorite: !item.favorite } : item
+        )
+      );
+    } catch (err) {
+      showToast('Failed to update favorite status', 'error');
+    }
+  };
+
+  const deleteEntry = async (id, e) => {
+    e.stopPropagation();
+    if (!window.confirm('Are you sure you want to delete this journal entry?')) return;
+
+    try {
+      await journalService.deleteJournal(id);
+      showToast('Journal entry deleted');
+      loadJournals();
+    } catch (err) {
+      showToast(err.message || 'Failed to delete entry', 'error');
+    }
+  };
+
+  const handleOpenPublishModal = (entry, e) => {
+    e.stopPropagation();
+    setPublishingEntry(entry);
+  };
+
+  const handleConfirmPublish = async () => {
+    if (!publishingEntry || !selectedCommunityId) return;
+
+    try {
+      await journalService.publishJournal(publishingEntry.id, selectedCommunityId);
+      showToast('Journal published to community feed successfully!');
+      setPublishingEntry(null);
+      loadJournals();
+    } catch (err) {
+      showToast(err.message || 'Failed to publish journal', 'error');
+    }
+  };
+
+  const handleUnpublish = async (id, e) => {
+    e.stopPropagation();
+    if (!window.confirm('Revert this publication to private? It will be removed from the community feed.')) return;
+
+    try {
+      await journalService.unpublishJournal(id);
+      showToast('Journal reverted to private');
+      loadJournals();
+    } catch (err) {
+      showToast(err.message || 'Failed to unpublish journal', 'error');
+    }
+  };
 
   return (
     <div className="journals-page">
-      {/* 1. Header Row */}
+      {/* Toast Notification */}
+      {notification && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '24px',
+            right: '24px',
+            background: notification.type === 'error' ? '#EF4444' : 'var(--primary)',
+            color: '#FFFFFF',
+            padding: '12px 20px',
+            borderRadius: 'var(--radius-pill)',
+            boxShadow: 'var(--shadow-lg)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontWeight: 600,
+            zIndex: 9999,
+          }}
+        >
+          {notification.type === 'error' ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
+          {notification.msg}
+        </div>
+      )}
+
+      {/* Header Row */}
       <div className="journals-header-row">
         <div className="journals-title-wrap">
           <h1>My Journals</h1>
-          <p>All your journal entries in one place</p>
+          <p>Browse your private entries and community publications in one place</p>
         </div>
 
-        <div className="journals-search-box">
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <Search
-              size={16}
-              style={{ position: 'absolute', left: '14px', color: 'var(--text-muted)' }}
-            />
-            <input
-              type="text"
-              placeholder="Search journals, keywords..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '9px 16px 9px 38px',
-                borderRadius: '999px',
-                border: '1px solid var(--border-subtle)',
-                background: '#FFFFFF',
-                fontSize: '0.85rem'
-              }}
-            />
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div className="journals-search-box">
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <Search
+                size={16}
+                style={{ position: 'absolute', left: '14px', color: 'var(--text-muted)' }}
+              />
+              <input
+                type="text"
+                placeholder="Search journals..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setCurrentPage(0);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '9px 16px 9px 38px',
+                  borderRadius: '999px',
+                  border: '1px solid var(--border-subtle)',
+                  background: '#FFFFFF',
+                  fontSize: '0.85rem',
+                }}
+              />
+            </div>
           </div>
+
+          <button
+            className="btn-card-publish"
+            onClick={() => navigate('/editor')}
+            style={{
+              padding: '9px 18px',
+              fontSize: '0.88rem',
+              background: 'var(--primary)',
+              color: '#ffffff',
+            }}
+          >
+            <Plus size={16} /> Write Entry
+          </button>
         </div>
       </div>
 
       <div className="center-page-body">
-        {/* 2. Filter Pills Row */}
+        {/* Filter Row */}
         <div className="filter-pills-row">
           <button
             className={`sentiment-filter-pill ${activeSentiment === 'ALL' ? 'active' : ''}`}
-            onClick={() => setActiveSentiment('ALL')}
+            onClick={() => { setActiveSentiment('ALL'); setCurrentPage(0); }}
           >
-            All
+            All Sentiments
           </button>
           <button
             className={`sentiment-filter-pill ${activeSentiment === 'POSITIVE' ? 'active' : ''}`}
-            onClick={() => setActiveSentiment('POSITIVE')}
+            onClick={() => { setActiveSentiment('POSITIVE'); setCurrentPage(0); }}
           >
             <span style={{ color: '#10B981' }}>•</span> Positive
           </button>
           <button
             className={`sentiment-filter-pill ${activeSentiment === 'NEUTRAL' ? 'active' : ''}`}
-            onClick={() => setActiveSentiment('NEUTRAL')}
+            onClick={() => { setActiveSentiment('NEUTRAL'); setCurrentPage(0); }}
           >
             <span style={{ color: '#F59E0B' }}>•</span> Neutral
           </button>
           <button
             className={`sentiment-filter-pill ${activeSentiment === 'NEGATIVE' ? 'active' : ''}`}
-            onClick={() => setActiveSentiment('NEGATIVE')}
+            onClick={() => { setActiveSentiment('NEGATIVE'); setCurrentPage(0); }}
           >
             <span style={{ color: '#EF4444' }}>•</span> Negative
           </button>
 
+          {/* Visibility filter */}
+          <select
+            className="filter-dropdown-select"
+            value={selectedVisibility}
+            onChange={(e) => { setSelectedVisibility(e.target.value); setCurrentPage(0); }}
+            style={{ marginLeft: 'auto' }}
+          >
+            <option value="ALL">All Visibilities</option>
+            <option value="PRIVATE">🔒 Private Only</option>
+            <option value="COMMUNITY">🌐 Published to Community</option>
+          </select>
+
+          {/* Category filter */}
           <select
             className="filter-dropdown-select"
             value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            style={{ marginLeft: 'auto' }}
+            onChange={(e) => { setSelectedCategory(e.target.value); setCurrentPage(0); }}
           >
             <option value="ALL">All Categories</option>
-            <option value="Work">Work</option>
-            <option value="Travel">Travel</option>
-            <option value="Study">Study</option>
-            <option value="Personal">Personal</option>
-          </select>
-
-          <select className="filter-dropdown-select">
-            <option value="newest">Newest</option>
-            <option value="oldest">Oldest</option>
+            {categories.map((c) => (
+              <option key={c.id || c.name} value={c.name}>
+                {c.name}
+              </option>
+            ))}
           </select>
         </div>
 
-        {/* 3. Horizontal Journal Cards List */}
-        <div className="horizontal-journals-list">
-          {filtered.map((item) => (
-            <div
-              key={item.id}
-              className="horizontal-journal-card"
-              onClick={() => navigate(`/editor?id=${item.id}`)}
-            >
-              <img src={item.thumbnail} alt={item.title} className="card-thumbnail-img" />
+        {/* Journals List */}
+        {isLoading ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+            Loading your journals...
+          </div>
+        ) : entries.length === 0 ? (
+          <div
+            style={{
+              background: '#FFFFFF',
+              padding: '60px 24px',
+              borderRadius: 'var(--radius-lg)',
+              textAlign: 'center',
+              color: 'var(--text-muted)',
+              border: '1px solid var(--border-card)',
+            }}
+          >
+            <Lock size={36} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
+            <h3>No journals found</h3>
+            <p style={{ marginTop: '4px' }}>Try adjusting your search or filters, or write a new entry.</p>
+          </div>
+        ) : (
+          <div className="horizontal-journals-list">
+            {entries.map((item) => {
+              const isCommunity = item.visibility === 'COMMUNITY';
+              const formattedDate = item.createdAt
+                ? new Date(item.createdAt).toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })
+                : 'Recent';
 
-              <div className="card-content-center">
-                <h3 className="card-entry-title">{item.title}</h3>
-                <p className="card-entry-excerpt">{item.excerpt}</p>
-                <div className="card-badges-row">
-                  <span className={`badge-sentiment-tag ${item.sentiment.toLowerCase()}`}>
-                    {item.sentiment}
-                  </span>
-                  <span className="badge-category-tag">
-                    {item.category}
-                  </span>
+              return (
+                <div
+                  key={item.id}
+                  className="horizontal-journal-card"
+                  onClick={() => navigate(`/editor?id=${item.id}`)}
+                >
+                  <div className="card-content-center">
+                    <h3 className="card-entry-title">{item.title}</h3>
+                    <p className="card-entry-excerpt">{item.content}</p>
+
+                    <div className="card-badges-row">
+                      {item.sentimentLabel && (
+                        <span className={`badge-sentiment-tag ${item.sentimentLabel.toLowerCase()}`}>
+                          {item.sentimentLabel}
+                        </span>
+                      )}
+
+                      <span className="badge-category-tag">{item.category || 'General'}</span>
+
+                      {/* Visibility Badge */}
+                      {isCommunity ? (
+                        <span className="badge-visibility-tag community">
+                          <Globe size={12} /> {item.communityName || 'Community'}
+                        </span>
+                      ) : (
+                        <span className="badge-visibility-tag private">
+                          <Lock size={12} /> Private
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="card-actions-right">
+                    <span className="card-date-label">{formattedDate}</span>
+
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      {/* Publish / Unpublish button */}
+                      {isCommunity ? (
+                        <button
+                          type="button"
+                          className="btn-card-unpublish"
+                          onClick={(e) => handleUnpublish(item.id, e)}
+                          title="Unpublish back to private"
+                        >
+                          Unpublish
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn-card-publish"
+                          onClick={(e) => handleOpenPublishModal(item, e)}
+                          title="Publish to a community"
+                        >
+                          <Share2 size={13} /> Publish
+                        </button>
+                      )}
+
+                      <div className="card-action-icons">
+                        <button
+                          type="button"
+                          className={`icon-btn star ${item.favorite ? 'active' : ''}`}
+                          onClick={(e) => toggleFavorite(item.id, e)}
+                          title="Favorite"
+                        >
+                          <Star size={16} fill={item.favorite ? '#F59E0B' : 'none'} />
+                        </button>
+
+                        <button
+                          type="button"
+                          className="icon-btn edit"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/editor?id=${item.id}`);
+                          }}
+                          title="Edit"
+                        >
+                          <Edit3 size={16} />
+                        </button>
+
+                        <button
+                          type="button"
+                          className="icon-btn delete"
+                          onClick={(e) => deleteEntry(item.id, e)}
+                          title="Delete"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              );
+            })}
+          </div>
+        )}
 
-              <div className="card-actions-right">
-                <span className="card-date-label">{item.date}</span>
-                <div className="card-action-icons">
-                  <button
-                    className={`icon-btn star ${item.isFavorite ? 'active' : ''}`}
-                    onClick={(e) => toggleFavorite(item.id, e)}
-                    title="Favorite"
-                  >
-                    <Star size={16} fill={item.isFavorite ? '#F59E0B' : 'none'} />
-                  </button>
-                  <button
-                    className="icon-btn edit"
-                    onClick={(e) => { e.stopPropagation(); navigate(`/editor?id=${item.id}`); }}
-                    title="Edit"
-                  >
-                    <Edit3 size={16} />
-                  </button>
-                  <button
-                    className="icon-btn delete"
-                    onClick={(e) => deleteEntry(item.id, e)}
-                    title="Delete"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* 4. Numbered Pagination Bar */}
-        <div className="pagination-container">
-          <button className="page-nav-btn"><ChevronLeft size={16} /></button>
-          {[1, 2, 3, 4, 5].map((pageNum) => (
+        {/* Numbered Pagination Bar */}
+        {totalPages > 1 && (
+          <div className="pagination-container">
             <button
-              key={pageNum}
-              className={`page-nav-btn ${currentPage === pageNum ? 'active' : ''}`}
-              onClick={() => setCurrentPage(pageNum)}
+              className="page-nav-btn"
+              disabled={currentPage === 0}
+              onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
             >
-              {pageNum}
+              <ChevronLeft size={16} />
             </button>
-          ))}
-          <button className="page-nav-btn"><ChevronRight size={16} /></button>
-        </div>
+
+            {Array.from({ length: totalPages }, (_, i) => i).map((pageNum) => (
+              <button
+                key={pageNum}
+                className={`page-nav-btn ${currentPage === pageNum ? 'active' : ''}`}
+                onClick={() => setCurrentPage(pageNum)}
+              >
+                {pageNum + 1}
+              </button>
+            ))}
+
+            <button
+              className="page-nav-btn"
+              disabled={currentPage >= totalPages - 1}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Quick Publish to Community Modal */}
+      {publishingEntry && (
+        <div className="modal-overlay" onClick={() => setPublishingEntry(null)}>
+          <div className="modal-content-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-title-row">
+              <h2>Publish to Community</h2>
+              <button
+                onClick={() => setPublishingEntry(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+              Publishing "<strong>{publishingEntry.title}</strong>" will make it visible in the selected community feed.
+            </p>
+
+            <div className="modal-field">
+              <label>Choose Community</label>
+              {joinedCommunities.length === 0 ? (
+                <div>
+                  <p style={{ color: '#EF4444', fontSize: '0.86rem', marginBottom: '8px' }}>
+                    You have not joined any communities yet.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn-create-community"
+                    onClick={() => {
+                      setPublishingEntry(null);
+                      navigate('/communities');
+                    }}
+                  >
+                    Explore Communities
+                  </button>
+                </div>
+              ) : (
+                <select
+                  value={selectedCommunityId}
+                  onChange={(e) => setSelectedCommunityId(e.target.value)}
+                >
+                  {joinedCommunities.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({c.memberCount} members)
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div className="modal-buttons-row">
+              <button
+                type="button"
+                className="btn-community-action btn-community-view"
+                onClick={() => setPublishingEntry(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-community-action btn-community-join"
+                onClick={handleConfirmPublish}
+                disabled={!selectedCommunityId || joinedCommunities.length === 0}
+              >
+                Publish Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

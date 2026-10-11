@@ -22,6 +22,12 @@ public interface JournalEntryRepository extends JpaRepository<JournalEntry, Stri
 
     Page<JournalEntry> findByUserId(String userId, Pageable pageable);
 
+    Page<JournalEntry> findByCommunityIdAndVisibility(String communityId, com.notesphere.entity.enums.JournalVisibility visibility, Pageable pageable);
+
+    Page<JournalEntry> findByUserIdAndVisibility(String userId, com.notesphere.entity.enums.JournalVisibility visibility, Pageable pageable);
+
+    long countByCommunityIdAndVisibility(String communityId, com.notesphere.entity.enums.JournalVisibility visibility);
+
     Page<JournalEntry> findByUserIdAndSentimentLabel(String userId, SentimentLabel sentimentLabel, Pageable pageable);
 
     @Query(value = "SELECT j FROM JournalEntry j WHERE j.userId = :userId AND " +

@@ -35,6 +35,10 @@ public class JournalRequest {
 
     private Boolean pinned;
 
+    private com.notesphere.entity.enums.JournalVisibility visibility;
+
+    private String communityId;
+
     public JournalRequest(String title, String content, List<String> tags) {
         this.title = title;
         this.content = content;

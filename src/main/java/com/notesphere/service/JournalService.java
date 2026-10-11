@@ -34,6 +34,10 @@ public class JournalService {
     private final JournalEntryRepository journalRepository;
     private final SentimentAnalysisService sentimentAnalysisService;
     private final TaggingService taggingService;
+    private final com.notesphere.repository.CommunityRepository communityRepository;
+    private final com.notesphere.repository.CommunityMemberRepository communityMemberRepository;
+    private final com.notesphere.repository.UserRepository userRepository;
+    private final com.notesphere.repository.PostReactionRepository postReactionRepository;
 
     @Transactional
     public JournalResponse createJournal(String userId, JournalRequest request) {
@@ -47,6 +51,27 @@ public class JournalService {
         boolean favorite = Boolean.TRUE.equals(request.getFavorite());
         boolean pinned = Boolean.TRUE.equals(request.getPinned());
 
+        com.notesphere.entity.enums.JournalVisibility visibility = request.getVisibility() != null
+                ? request.getVisibility()
+                : com.notesphere.entity.enums.JournalVisibility.PRIVATE;
+        String communityId = null;
+        String communityName = null;
+        Instant publishedAt = null;
+
+        if (visibility == com.notesphere.entity.enums.JournalVisibility.COMMUNITY) {
+            if (request.getCommunityId() == null || request.getCommunityId().isBlank()) {
+                throw new com.notesphere.exception.BadRequestException("Community ID is required when publishing a journal");
+            }
+            com.notesphere.entity.Community community = communityRepository.findById(request.getCommunityId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Community", "id", request.getCommunityId()));
+            if (!communityMemberRepository.existsByCommunityIdAndUserId(community.getId(), userId)) {
+                throw new org.springframework.security.access.AccessDeniedException("You must be a member of " + community.getName() + " to publish journals to it");
+            }
+            communityId = community.getId();
+            communityName = community.getName();
+            publishedAt = Instant.now();
+        }
+
         JournalEntry entry = JournalEntry.builder()
                 .userId(userId)
                 .title(request.getTitle().trim())
@@ -55,6 +80,10 @@ public class JournalService {
                 .category(category)
                 .favorite(favorite)
                 .pinned(pinned)
+                .visibility(visibility)
+                .communityId(communityId)
+                .communityName(communityName)
+                .publishedAt(publishedAt)
                 .sentimentLabel(sentiment.getLabel())
                 .compoundScore(sentiment.getCompound())
                 .positiveScore(sentiment.getPositive())
@@ -63,20 +92,34 @@ public class JournalService {
                 .build();
 
         JournalEntry savedEntry = journalRepository.save(entry);
-        log.info("Journal entry {} created for user: {}", savedEntry.getId(), userId);
-        return mapToResponse(savedEntry);
+        log.info("Journal entry {} created for user: {} with visibility: {}", savedEntry.getId(), userId, visibility);
+        return mapToResponse(savedEntry, userId);
     }
 
     @Transactional(readOnly = true)
     public JournalResponse getJournalById(String userId, String id) {
-        JournalEntry entry = findEntryAndVerifyOwnership(userId, id);
-        return mapToResponse(entry);
+        JournalEntry entry = journalRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("JournalEntry", "id", id));
+
+        // If author, allow access
+        if (entry.getUserId().equals(userId)) {
+            return mapToResponse(entry, userId);
+        }
+
+        // If published to a community, verify user is a member of that community
+        if (entry.getVisibility() == com.notesphere.entity.enums.JournalVisibility.COMMUNITY && entry.getCommunityId() != null) {
+            if (communityMemberRepository.existsByCommunityIdAndUserId(entry.getCommunityId(), userId)) {
+                return mapToResponse(entry, userId);
+            }
+        }
+
+        throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access this journal entry");
     }
 
     @Transactional(readOnly = true)
     public PagedResponse<JournalResponse> getUserJournals(String userId, Pageable pageable) {
         Page<JournalEntry> page = journalRepository.findByUserId(userId, pageable);
-        return mapToPagedResponse(page);
+        return mapToPagedResponse(page, userId);
     }
 
     @Transactional(readOnly = true)
@@ -91,12 +134,28 @@ public class JournalService {
             Instant startDate,
             Instant endDate,
             Pageable pageable) {
+        return getFilteredJournals(userId, query, sentiment, category, tag, favorite, pinned, null, startDate, endDate, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public PagedResponse<JournalResponse> getFilteredJournals(
+            String userId,
+            String query,
+            SentimentLabel sentiment,
+            String category,
+            String tag,
+            Boolean favorite,
+            Boolean pinned,
+            com.notesphere.entity.enums.JournalVisibility visibility,
+            Instant startDate,
+            Instant endDate,
+            Pageable pageable) {
 
         Specification<JournalEntry> spec = JournalSpecification.filter(
-                userId, query, sentiment, category, tag, favorite, pinned, startDate, endDate);
+                userId, query, sentiment, category, tag, favorite, pinned, visibility, startDate, endDate);
 
         Page<JournalEntry> page = journalRepository.findAll(spec, pageable);
-        return mapToPagedResponse(page);
+        return mapToPagedResponse(page, userId);
     }
 
     @Transactional
@@ -206,7 +265,64 @@ public class JournalService {
         return entry;
     }
 
+    @Transactional
+    public JournalResponse publishJournal(String userId, String id, com.notesphere.dto.request.PublishJournalRequest request) {
+        JournalEntry entry = findEntryAndVerifyOwnership(userId, id);
+
+        com.notesphere.entity.Community community = communityRepository.findById(request.getCommunityId())
+                .orElseThrow(() -> new ResourceNotFoundException("Community", "id", request.getCommunityId()));
+
+        if (!communityMemberRepository.existsByCommunityIdAndUserId(community.getId(), userId)) {
+            throw new org.springframework.security.access.AccessDeniedException("You must be a member of " + community.getName() + " to publish journals to it");
+        }
+
+        entry.setVisibility(com.notesphere.entity.enums.JournalVisibility.COMMUNITY);
+        entry.setCommunityId(community.getId());
+        entry.setCommunityName(community.getName());
+        entry.setPublishedAt(Instant.now());
+
+        JournalEntry saved = journalRepository.save(entry);
+        log.info("Journal entry {} published to community {} by user {}", id, community.getName(), userId);
+        return mapToResponse(saved, userId);
+    }
+
+    @Transactional
+    public JournalResponse unpublishJournal(String userId, String id) {
+        JournalEntry entry = findEntryAndVerifyOwnership(userId, id);
+        entry.setVisibility(com.notesphere.entity.enums.JournalVisibility.PRIVATE);
+        entry.setCommunityId(null);
+        entry.setCommunityName(null);
+        entry.setPublishedAt(null);
+
+        JournalEntry saved = journalRepository.save(entry);
+        log.info("Journal entry {} unpublished to private by user {}", id, userId);
+        return mapToResponse(saved, userId);
+    }
+
+    @Transactional(readOnly = true)
+    public PagedResponse<JournalResponse> getUserPublishedJournals(String userId, Pageable pageable) {
+        Page<JournalEntry> page = journalRepository.findByUserIdAndVisibility(
+                userId, com.notesphere.entity.enums.JournalVisibility.COMMUNITY, pageable);
+        return mapToPagedResponse(page, userId);
+    }
+
     public JournalResponse mapToResponse(JournalEntry entry) {
+        return mapToResponse(entry, null);
+    }
+
+    public JournalResponse mapToResponse(JournalEntry entry, String currentUserId) {
+        String authorName = null;
+        if (userRepository != null && entry.getUserId() != null) {
+            authorName = userRepository.findById(entry.getUserId())
+                    .map(com.notesphere.entity.User::getUsername)
+                    .orElse(null);
+        }
+
+        boolean liked = false;
+        if (postReactionRepository != null && currentUserId != null) {
+            liked = postReactionRepository.existsByJournalIdAndUserId(entry.getId(), currentUserId);
+        }
+
         return JournalResponse.builder()
                 .id(entry.getId())
                 .title(entry.getTitle())
@@ -215,6 +331,15 @@ public class JournalService {
                 .category(entry.getCategory())
                 .favorite(entry.isFavorite())
                 .pinned(entry.isPinned())
+                .visibility(entry.getVisibility())
+                .communityId(entry.getCommunityId())
+                .communityName(entry.getCommunityName())
+                .publishedAt(entry.getPublishedAt())
+                .likeCount(entry.getLikeCount())
+                .commentCount(entry.getCommentCount())
+                .likedByCurrentUser(liked)
+                .authorId(entry.getUserId())
+                .authorName(authorName)
                 .sentimentLabel(entry.getSentimentLabel())
                 .compoundScore(entry.getCompoundScore())
                 .positiveScore(entry.getPositiveScore())
@@ -226,8 +351,12 @@ public class JournalService {
     }
 
     public PagedResponse<JournalResponse> mapToPagedResponse(Page<JournalEntry> page) {
+        return mapToPagedResponse(page, null);
+    }
+
+    public PagedResponse<JournalResponse> mapToPagedResponse(Page<JournalEntry> page, String currentUserId) {
         List<JournalResponse> content = page.getContent().stream()
-                .map(this::mapToResponse)
+                .map(entry -> mapToResponse(entry, currentUserId))
                 .collect(Collectors.toList());
 
         return PagedResponse.<JournalResponse>builder()

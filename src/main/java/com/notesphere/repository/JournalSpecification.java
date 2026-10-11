@@ -27,6 +27,7 @@ public final class JournalSpecification {
             String tag,
             Boolean favorite,
             Boolean pinned,
+            com.notesphere.entity.enums.JournalVisibility visibility,
             Instant startDate,
             Instant endDate) {
 
@@ -35,6 +36,11 @@ public final class JournalSpecification {
 
             // Always scope to the authenticated user
             predicates.add(cb.equal(root.get("userId"), userId));
+
+            // Visibility filter (e.g. PRIVATE or COMMUNITY)
+            if (visibility != null) {
+                predicates.add(cb.equal(root.get("visibility"), visibility));
+            }
 
             // Search query across title and content
             if (StringUtils.hasText(query)) {

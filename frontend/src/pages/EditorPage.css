@@ -131,10 +131,52 @@
   pointer-events: none;
 }
 
+/* Category suggestion banner */
+.nlp-suggestion-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #E0F2FE 0%, #E7F8F5 100%);
+  border: 1px solid rgba(0, 182, 155, 0.25);
+  border-radius: var(--radius-md);
+  font-size: 0.86rem;
+  color: var(--text-primary);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.nlp-suggestion-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.nlp-apply-btn {
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 0.8rem;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.nlp-apply-btn:hover {
+  background: var(--primary-hover);
+}
+
 /* Category & Suggested Tags Row */
 .meta-controls-row {
   display: grid;
-  grid-template-columns: 200px 1fr;
+  grid-template-columns: 260px 1fr;
   gap: 24px;
   align-items: flex-start;
 }
@@ -144,18 +186,31 @@
   font-weight: 700;
   color: var(--text-primary);
   margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .category-dropdown-box {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 14px;
+  padding: 9px 12px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
   background: #FFFFFF;
   font-size: 0.88rem;
   font-weight: 600;
+}
+
+.btn-manage-categories {
+  font-size: 0.76rem;
+  color: var(--primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  padding: 0;
 }
 
 .suggested-tags-container {
@@ -208,25 +263,112 @@
   background: var(--primary-light);
 }
 
-.save-journal-big-btn {
-  width: 100%;
+/* Visibility Selection Row */
+.visibility-card-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.visibility-option-box {
+  border: 2px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #FFFFFF;
+  transition: all var(--transition-fast);
+}
+
+.visibility-option-box.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.visibility-option-info h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.visibility-option-info p {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* Community dropdown when Community visibility is selected */
+.community-picker-box {
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Action buttons row */
+.editor-actions-row {
+  display: flex;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.save-private-btn {
+  flex: 1;
   padding: 14px;
   border-radius: var(--radius-pill);
-  background: var(--primary);
-  color: #FFFFFF;
-  font-size: 1rem;
+  background: #FFFFFF;
+  border: 2px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 0.96rem;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.save-private-btn:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+.publish-community-btn {
+  flex: 1.2;
+  padding: 14px;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  border: none;
+  color: #FFFFFF;
+  font-size: 0.96rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   box-shadow: 0 4px 14px var(--primary-glow);
   cursor: pointer;
   transition: all var(--transition-fast);
-  margin-top: 10px;
 }
 
-.save-journal-big-btn:hover {
+.publish-community-btn:hover:not(:disabled) {
   background: var(--primary-hover);
   transform: translateY(-1px);
+}
+
+.publish-community-btn:disabled,
+.save-private-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }

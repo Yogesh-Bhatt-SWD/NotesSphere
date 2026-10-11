@@ -59,6 +59,7 @@ public class JournalController {
             @RequestParam(required = false) String tag,
             @RequestParam(required = false) Boolean favorite,
             @RequestParam(required = false) Boolean pinned,
+            @RequestParam(required = false) com.notesphere.entity.enums.JournalVisibility visibility,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant endDate) {
 
@@ -75,7 +76,7 @@ public class JournalController {
         Pageable pageable = PageRequest.of(page, Math.min(size, AppConstants.MAX_PAGE_SIZE), sort);
 
         PagedResponse<JournalResponse> journals = journalService.getFilteredJournals(
-                currentUser.getId(), query, sentiment, category, tag, favorite, pinned, startDate, endDate, pageable);
+                currentUser.getId(), query, sentiment, category, tag, favorite, pinned, visibility, startDate, endDate, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(journals));
     }
@@ -124,6 +125,37 @@ public class JournalController {
             @PathVariable String id) {
         JournalResponse journal = journalService.togglePinned(currentUser.getId(), id);
         return ResponseEntity.ok(ApiResponse.success("Pinned status updated", journal));
+    }
+
+    @PostMapping("/{id}/publish")
+    @Operation(summary = "Publish a journal entry to a community")
+    public ResponseEntity<ApiResponse<JournalResponse>> publishJournal(
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @PathVariable String id,
+            @Valid @RequestBody com.notesphere.dto.request.PublishJournalRequest request) {
+        JournalResponse journal = journalService.publishJournal(currentUser.getId(), id, request);
+        return ResponseEntity.ok(ApiResponse.success("Journal published successfully", journal));
+    }
+
+    @PostMapping("/{id}/unpublish")
+    @Operation(summary = "Unpublish a journal entry and revert it to private")
+    public ResponseEntity<ApiResponse<JournalResponse>> unpublishJournal(
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @PathVariable String id) {
+        JournalResponse journal = journalService.unpublishJournal(currentUser.getId(), id);
+        return ResponseEntity.ok(ApiResponse.success("Journal unpublished successfully", journal));
+    }
+
+    @GetMapping("/published")
+    @Operation(summary = "Get all journals published by the authenticated user")
+    public ResponseEntity<ApiResponse<PagedResponse<JournalResponse>>> getPublishedJournals(
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) int page,
+            @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_SIZE) int size) {
+        Pageable pageable = PageRequest.of(page, Math.min(size, AppConstants.MAX_PAGE_SIZE),
+                Sort.by(Sort.Direction.DESC, "publishedAt"));
+        PagedResponse<JournalResponse> journals = journalService.getUserPublishedJournals(currentUser.getId(), pageable);
+        return ResponseEntity.ok(ApiResponse.success(journals));
     }
 
     @GetMapping("/search")

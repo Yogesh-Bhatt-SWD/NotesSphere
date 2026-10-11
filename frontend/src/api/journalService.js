@@ -13,6 +13,7 @@ export const journalService = {
     if (params.tag) query.append('tag', params.tag);
     if (params.favorite !== undefined) query.append('favorite', params.favorite);
     if (params.pinned !== undefined) query.append('pinned', params.pinned);
+    if (params.visibility) query.append('visibility', params.visibility);
 
     const queryString = query.toString() ? `?${query.toString()}` : '';
     return apiClient.get(`/journals${queryString}`);
@@ -29,6 +30,20 @@ export const journalService = {
   toggleFavorite: (id) => apiClient.patch(`/journals/${id}/favorite`),
 
   togglePin: (id) => apiClient.patch(`/journals/${id}/pin`),
+
+  publishJournal: (id, communityId) =>
+    apiClient.post(`/journals/${id}/publish`, { communityId }),
+
+  unpublishJournal: (id) =>
+    apiClient.post(`/journals/${id}/unpublish`),
+
+  getPublishedJournals: (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.page !== undefined) query.append('page', params.page);
+    if (params.size !== undefined) query.append('size', params.size);
+    const queryString = query.toString() ? `?${query.toString()}` : '';
+    return apiClient.get(`/journals/published${queryString}`);
+  },
 
   getUserTags: () => apiClient.get('/journals/tags'),
 

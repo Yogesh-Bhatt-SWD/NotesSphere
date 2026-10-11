@@ -25,6 +25,15 @@ public class JournalResponse {
     private String category;
     private boolean favorite;
     private boolean pinned;
+    private com.notesphere.entity.enums.JournalVisibility visibility;
+    private String communityId;
+    private String communityName;
+    private Instant publishedAt;
+    private int likeCount;
+    private int commentCount;
+    private boolean likedByCurrentUser;
+    private String authorId;
+    private String authorName;
     private SentimentLabel sentimentLabel;
     private double compoundScore;
     private double positiveScore;

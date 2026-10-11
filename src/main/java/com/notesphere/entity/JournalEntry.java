@@ -19,7 +19,8 @@ import java.util.List;
         @Index(name = "idx_journal_user_id", columnList = "user_id"),
         @Index(name = "idx_journal_created_at", columnList = "created_at"),
         @Index(name = "idx_journal_favorite", columnList = "user_id, is_favorite"),
-        @Index(name = "idx_journal_pinned", columnList = "user_id, is_pinned")
+        @Index(name = "idx_journal_pinned", columnList = "user_id, is_pinned"),
+        @Index(name = "idx_journal_visibility", columnList = "visibility, community_id")
 })
 @EntityListeners(AuditingEntityListener.class)
 @Data
@@ -56,6 +57,28 @@ public class JournalEntry {
     @Column(name = "is_pinned", nullable = false)
     @Builder.Default
     private boolean pinned = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "visibility", nullable = false, length = 30)
+    @Builder.Default
+    private com.notesphere.entity.enums.JournalVisibility visibility = com.notesphere.entity.enums.JournalVisibility.PRIVATE;
+
+    @Column(name = "community_id", length = 36)
+    private String communityId;
+
+    @Column(name = "community_name", length = 100)
+    private String communityName;
+
+    @Column(name = "published_at")
+    private Instant publishedAt;
+
+    @Column(name = "like_count", nullable = false)
+    @Builder.Default
+    private int likeCount = 0;
+
+    @Column(name = "comment_count", nullable = false)
+    @Builder.Default
+    private int commentCount = 0;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "sentiment_label")
