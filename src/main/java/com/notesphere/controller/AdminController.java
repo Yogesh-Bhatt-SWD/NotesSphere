@@ -24,6 +24,7 @@ import java.util.Set;
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")
 @SecurityRequirement(name = "Bearer Authentication")
 @Tag(name = "Admin", description = "Protected endpoints for platform administrators only")
 public class AdminController {

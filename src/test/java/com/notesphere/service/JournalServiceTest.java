@@ -95,10 +95,11 @@ public class JournalServiceTest {
     }
 
     @Test
-    void getJournalById_ThrowsUnauthorized_WhenUserDoesNotMatch() {
+    void getJournalById_ThrowsAccessDenied_WhenUserDoesNotMatch() {
         when(journalRepository.findById("j1")).thenReturn(Optional.of(journalEntry));
 
-        assertThrows(UnauthorizedException.class, () -> journalService.getJournalById("other-user", "j1"));
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> journalService.getJournalById("other-user", "j1"));
     }
 
     @Test

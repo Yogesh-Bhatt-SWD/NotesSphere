@@ -60,7 +60,10 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
     token VARCHAR(255) NOT NULL UNIQUE,
     user_id VARCHAR(36) NOT NULL,
     expiry_date TIMESTAMP NOT NULL,
-    INDEX idx_refresh_token_user_id (user_id)
+    is_revoked BOOLEAN NOT NULL DEFAULT FALSE,
+    replaced_by_token VARCHAR(255) NULL,
+    INDEX idx_refresh_token_user_id (user_id),
+    INDEX idx_refresh_token_token (token)
 );
 
 -- 6. Reminder Preferences Table

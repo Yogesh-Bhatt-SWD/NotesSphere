@@ -1,6 +1,7 @@
 package com.notesphere.service;
 
 import com.notesphere.dto.request.LoginRequest;
+import com.notesphere.dto.request.RefreshTokenRequest;
 import com.notesphere.dto.request.RegisterRequest;
 import com.notesphere.dto.response.AuthResponse;
 import com.notesphere.entity.RefreshToken;
@@ -117,5 +118,37 @@ public class AuthServiceTest {
         assertNotNull(response);
         assertEquals("access_token", response.getAccessToken());
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
+    }
+
+    @Test
+    void refreshToken_Success() {
+        RefreshTokenRequest request = new RefreshTokenRequest("valid_refresh_token");
+        RefreshToken rotatedToken = RefreshToken.builder()
+                .userId("user123")
+                .token("new_rotated_refresh_token")
+                .build();
+
+        when(refreshTokenService.rotateRefreshToken("valid_refresh_token")).thenReturn(rotatedToken);
+        when(userRepository.findById("user123")).thenReturn(Optional.of(user));
+        when(tokenProvider.generateTokenFromUserId("user123")).thenReturn("new_access_token");
+
+        AuthResponse response = authService.refreshToken(request);
+
+        assertNotNull(response);
+        assertEquals("new_access_token", response.getAccessToken());
+        assertEquals("new_rotated_refresh_token", response.getRefreshToken());
+        verify(refreshTokenService).rotateRefreshToken("valid_refresh_token");
+    }
+
+    @Test
+    void logout_Success() {
+        authService.logout("user123");
+        verify(refreshTokenService).deleteByUserId("user123");
+    }
+
+    @Test
+    void logoutByToken_Success() {
+        authService.logoutByToken("refresh_token_to_revoke");
+        verify(refreshTokenService).deleteByToken("refresh_token_to_revoke");
     }
 }

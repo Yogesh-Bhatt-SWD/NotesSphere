@@ -21,6 +21,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.notesphere.exception.ResourceNotFoundException;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -85,17 +87,19 @@ public class AuthService {
     }
 
     /**
-     * Validate refresh token and issue a new access token.
+     * Validate and rotate refresh token, issuing a new access token and rotated refresh token.
      */
+    @Transactional
     public AuthResponse refreshToken(RefreshTokenRequest request) {
-        RefreshToken refreshToken = refreshTokenService.validateRefreshToken(request.getRefreshToken());
-        User user = userRepository.findById(refreshToken.getUserId()).orElseThrow();
+        RefreshToken newRefreshToken = refreshTokenService.rotateRefreshToken(request.getRefreshToken());
+        User user = userRepository.findById(newRefreshToken.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", newRefreshToken.getUserId()));
 
         String accessToken = tokenProvider.generateTokenFromUserId(user.getId());
 
         return AuthResponse.builder()
                 .accessToken(accessToken)
-                .refreshToken(refreshToken.getToken())
+                .refreshToken(newRefreshToken.getToken())
                 .tokenType("Bearer")
                 .expiresIn(tokenProvider.getAccessTokenExpirationMs())
                 .user(mapToUserResponse(user))
@@ -105,9 +109,23 @@ public class AuthService {
     /**
      * Logout — invalidate all refresh tokens for the user.
      */
+    @Transactional
     public void logout(String userId) {
-        refreshTokenService.deleteByUserId(userId);
-        log.info("User logged out: {}", userId);
+        if (userId != null) {
+            refreshTokenService.deleteByUserId(userId);
+            log.info("User logged out: {}", userId);
+        }
+    }
+
+    /**
+     * Logout by refresh token string.
+     */
+    @Transactional
+    public void logoutByToken(String refreshToken) {
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            refreshTokenService.deleteByToken(refreshToken.trim());
+            log.info("Refresh token invalidated upon logout");
+        }
     }
 
     private AuthResponse buildAuthResponse(Authentication authentication, User user) {

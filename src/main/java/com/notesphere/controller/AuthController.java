@@ -46,9 +46,14 @@ public class AuthController {
 
     @PostMapping("/logout")
     @Operation(summary = "Logout user and invalidate refresh tokens")
-    public ResponseEntity<ApiResponse<Void>> logout(@AuthenticationPrincipal UserPrincipal currentUser) {
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @RequestBody(required = false) RefreshTokenRequest request) {
         if (currentUser != null) {
             authService.logout(currentUser.getId());
+        }
+        if (request != null && request.getRefreshToken() != null) {
+            authService.logoutByToken(request.getRefreshToken());
         }
         return ResponseEntity.ok(ApiResponse.success("Logged out successfully", null));
     }

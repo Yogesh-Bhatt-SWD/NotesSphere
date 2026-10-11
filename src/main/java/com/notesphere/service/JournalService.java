@@ -201,7 +201,7 @@ public class JournalService {
                 .orElseThrow(() -> new ResourceNotFoundException("JournalEntry", "id", id));
 
         if (!entry.getUserId().equals(userId)) {
-            throw new UnauthorizedException("You do not have permission to access this journal entry");
+            throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access this journal entry");
         }
         return entry;
     }
