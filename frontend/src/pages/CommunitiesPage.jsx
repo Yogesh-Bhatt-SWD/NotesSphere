@@ -19,7 +19,11 @@ import {
   PenTool,
   Activity,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  UserPlus,
+  LogOut,
+  ArrowRight,
+  Loader2
 } from 'lucide-react';
 import communityService from '../api/communityService';
 import journalService from '../api/journalService';
@@ -41,6 +45,7 @@ export function CommunitiesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [isLoading, setIsLoading] = useState(false);
+  const [actionLoadingId, setActionLoadingId] = useState(null);
   const [notification, setNotification] = useState(null);
 
   // Feed state
@@ -109,31 +114,59 @@ export function CommunitiesPage() {
 
   const handleJoin = async (communityId, e) => {
     e?.stopPropagation();
+    setActionLoadingId(communityId);
     try {
       await communityService.joinCommunity(communityId);
       showToast('Successfully joined community!');
-      loadCommunities();
+      const targetComm = communities.find((c) => c.id === communityId);
+      if (targetComm) {
+        setJoinedCommunities((prev) => {
+          if (prev.some((c) => c.id === communityId)) return prev;
+          return [...prev, { ...targetComm, member: true }];
+        });
+      }
+      setCommunities((prev) =>
+        prev.map((c) =>
+          c.id === communityId
+            ? { ...c, member: true, memberCount: (c.memberCount || 0) + 1 }
+            : c
+        )
+      );
       loadJoinedCommunities();
+      loadCommunities();
     } catch (err) {
       showToast(err.message || 'Failed to join community', 'error');
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
   const handleLeave = async (communityId, e) => {
     e?.stopPropagation();
     if (!window.confirm('Are you sure you want to leave this community?')) return;
+    setActionLoadingId(communityId);
     try {
       await communityService.leaveCommunity(communityId);
       showToast('Left community');
+      setJoinedCommunities((prev) => prev.filter((c) => c.id !== communityId));
+      setCommunities((prev) =>
+        prev.map((c) =>
+          c.id === communityId
+            ? { ...c, member: false, memberCount: Math.max(0, (c.memberCount || 1) - 1) }
+            : c
+        )
+      );
       if (selectedCommunity?.id === communityId) {
         setActiveTab('explore');
         setSelectedCommunity(null);
         setSearchParams({});
       }
-      loadCommunities();
       loadJoinedCommunities();
+      loadCommunities();
     } catch (err) {
       showToast(err.message || 'Failed to leave community', 'error');
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
@@ -269,8 +302,11 @@ export function CommunitiesPage() {
     }
   };
 
-  const isJoined = (communityId) =>
-    joinedCommunities.some((c) => c.id === communityId);
+  const isJoined = (comm) => {
+    if (!comm) return false;
+    const commId = typeof comm === 'object' ? comm.id : comm;
+    return joinedCommunities.some((c) => c.id === commId);
+  };
 
   return (
     <div className="communities-page">
@@ -492,7 +528,12 @@ export function CommunitiesPage() {
                       <div className="community-meta-row">
                         <span className="community-tag-pill">{comm.category || 'General'}</span>
                         <span>•</span>
-                        <span>{comm.memberCount} members</span>
+                        <span>{comm.memberCount} {comm.memberCount === 1 ? 'member' : 'members'}</span>
+                        {joined && (
+                          <span className="community-joined-tag">
+                            <CheckCircle2 size={12} /> Joined
+                          </span>
+                        )}
                       </div>
 
                       <div className="community-card-actions">
@@ -504,22 +545,49 @@ export function CommunitiesPage() {
                                 e.stopPropagation();
                                 setSearchParams({ id: comm.id });
                               }}
+                              title="Open community feed and journals"
                             >
-                              <MessageSquare size={14} /> Open Feed
+                              <MessageSquare size={14} />
+                              <span>Open Feed</span>
+                              <ArrowRight size={13} className="btn-arrow-icon" />
                             </button>
                             <button
                               className="btn-community-action btn-community-leave"
+                              disabled={actionLoadingId === comm.id}
                               onClick={(e) => handleLeave(comm.id, e)}
+                              title="Leave this community"
                             >
-                              Leave
+                              {actionLoadingId === comm.id ? (
+                                <>
+                                  <Loader2 size={13} className="spin-icon" />
+                                  <span>Leaving...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <LogOut size={13} />
+                                  <span>Leave</span>
+                                </>
+                              )}
                             </button>
                           </>
                         ) : (
                           <button
                             className="btn-community-action btn-community-join"
+                            disabled={actionLoadingId === comm.id}
                             onClick={(e) => handleJoin(comm.id, e)}
+                            title="Join this community space"
                           >
-                            <Plus size={14} /> Join Space
+                            {actionLoadingId === comm.id ? (
+                              <>
+                                <Loader2 size={14} className="spin-icon" />
+                                <span>Joining...</span>
+                              </>
+                            ) : (
+                              <>
+                                <UserPlus size={15} />
+                                <span>Join Space</span>
+                              </>
+                            )}
                           </button>
                         )}
                       </div>
