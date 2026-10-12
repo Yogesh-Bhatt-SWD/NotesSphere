@@ -146,6 +146,29 @@ public class JournalController {
         return ResponseEntity.ok(ApiResponse.success("Journal unpublished successfully", journal));
     }
 
+    @GetMapping("/public")
+    @Operation(summary = "Get all public journal entries across NoteSphere with pagination and filters")
+    public ResponseEntity<ApiResponse<PagedResponse<JournalResponse>>> getPublicJournals(
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) int page,
+            @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_SIZE) int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = AppConstants.DEFAULT_SORT_DIRECTION) String sortDir,
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String tag) {
+
+        Sort.Direction direction = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name())
+                ? Sort.Direction.ASC : Sort.Direction.DESC;
+
+        Sort sort = Sort.by(direction, sortBy);
+        Pageable pageable = PageRequest.of(page, Math.min(size, AppConstants.MAX_PAGE_SIZE), sort);
+
+        PagedResponse<JournalResponse> journals = journalService.getPublicJournals(
+                currentUser != null ? currentUser.getId() : null, query, category, tag, pageable);
+        return ResponseEntity.ok(ApiResponse.success(journals));
+    }
+
     @GetMapping("/published")
     @Operation(summary = "Get all journals published by the authenticated user")
     public ResponseEntity<ApiResponse<PagedResponse<JournalResponse>>> getPublishedJournals(

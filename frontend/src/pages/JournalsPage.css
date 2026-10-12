@@ -274,6 +274,11 @@
   color: #0284C7;
 }
 
+.badge-visibility-tag.public {
+  background: #DCFCE7;
+  color: #15803D;
+}
+
 .btn-card-publish {
   padding: 4px 10px;
   border-radius: var(--radius-pill);

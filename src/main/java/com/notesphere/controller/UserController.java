@@ -140,7 +140,8 @@ public class UserController {
             @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_SIZE) int size) {
         Pageable pageable = PageRequest.of(page, Math.min(size, AppConstants.MAX_PAGE_SIZE),
                 Sort.by(Sort.Direction.DESC, "createdAt"));
-        PagedResponse<JournalResponse> journals = journalService.getUserPublishedJournals(targetUserId, pageable);
+        PagedResponse<JournalResponse> journals = journalService.getUserPublishedJournals(
+                targetUserId, currentUser != null ? currentUser.getId() : null, pageable);
         return ResponseEntity.ok(ApiResponse.success(journals));
     }
 }

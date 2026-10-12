@@ -251,4 +251,158 @@ class CommunityPublishingTest {
         verify(reactionRepository).save(any());
         verify(journalRepository).save(publishedJournal);
     }
+
+    @Test
+    @DisplayName("Author can publish journal to PUBLIC feed without community membership")
+    void publishJournal_Public_Success() {
+        PublishJournalRequest request = PublishJournalRequest.builder()
+                .visibility(JournalVisibility.PUBLIC)
+                .build();
+
+        when(journalRepository.findById("j-priv")).thenReturn(Optional.of(privateJournal));
+        when(journalRepository.save(any(JournalEntry.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        JournalResponse response = journalService.publishJournal("user-author", "j-priv", request);
+
+        assertNotNull(response);
+        assertEquals(JournalVisibility.PUBLIC, response.getVisibility());
+        assertNull(response.getCommunityId());
+        assertNull(response.getCommunityName());
+        assertNotNull(response.getPublishedAt());
+        verify(journalRepository).save(privateJournal);
+        verify(communityMemberRepository, never()).existsByCommunityIdAndUserId(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("Any authenticated user can read a PUBLIC journal without community membership")
+    void getJournalById_PublicPost_Allowed_ForAnyUser() {
+        JournalEntry publicEntry = JournalEntry.builder()
+                .id("j-public-feed")
+                .userId("user-author")
+                .title("Public Worldwide Story")
+                .content("Free for all readers")
+                .visibility(JournalVisibility.PUBLIC)
+                .publishedAt(Instant.now())
+                .build();
+
+        when(journalRepository.findById("j-public-feed")).thenReturn(Optional.of(publicEntry));
+
+        JournalResponse response = journalService.getJournalById("unrelated-random-user", "j-public-feed");
+
+        assertNotNull(response);
+        assertEquals("j-public-feed", response.getId());
+        assertEquals(JournalVisibility.PUBLIC, response.getVisibility());
+        verify(communityMemberRepository, never()).existsByCommunityIdAndUserId(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("createJournal in PUBLIC mode succeeds without community selection and sets publishedAt")
+    void createJournal_PublicMode_Success() {
+        com.notesphere.dto.request.JournalRequest request = com.notesphere.dto.request.JournalRequest.builder()
+                .title("Public Story")
+                .content("This is a public journal entry content")
+                .visibility(JournalVisibility.PUBLIC)
+                .build();
+
+        when(sentimentAnalysisService.analyzeSentiment(anyString()))
+                .thenReturn(com.notesphere.dto.response.SentimentResponse.builder().label(com.notesphere.entity.enums.SentimentLabel.NEUTRAL).build());
+        when(taggingService.classifyCategory(anyString())).thenReturn("General");
+        when(journalRepository.save(any(JournalEntry.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        JournalResponse response = journalService.createJournal("user-author", request);
+
+        assertNotNull(response);
+        assertEquals(JournalVisibility.PUBLIC, response.getVisibility());
+        assertNull(response.getCommunityId());
+        assertNull(response.getCommunityName());
+        assertNotNull(response.getPublishedAt());
+        verify(communityMemberRepository, never()).existsByCommunityIdAndUserId(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("createJournal in COMMUNITY mode fails when communityId is missing")
+    void createJournal_CommunityMode_Fails_WhenCommunityMissing() {
+        com.notesphere.dto.request.JournalRequest request = com.notesphere.dto.request.JournalRequest.builder()
+                .title("Community Story")
+                .content("This is community content")
+                .visibility(JournalVisibility.COMMUNITY)
+                .communityId(null)
+                .build();
+
+        when(sentimentAnalysisService.analyzeSentiment(anyString()))
+                .thenReturn(com.notesphere.dto.response.SentimentResponse.builder().label(com.notesphere.entity.enums.SentimentLabel.POSITIVE).build());
+        when(taggingService.classifyCategory(anyString())).thenReturn("General");
+
+        assertThrows(BadRequestException.class, () ->
+                journalService.createJournal("user-author", request));
+    }
+
+    @Test
+    @DisplayName("createJournal in COMMUNITY mode fails when author is not a member of the selected community")
+    void createJournal_CommunityMode_Fails_WhenNotMember() {
+        com.notesphere.dto.request.JournalRequest request = com.notesphere.dto.request.JournalRequest.builder()
+                .title("Community Story")
+                .content("This is community content")
+                .visibility(JournalVisibility.COMMUNITY)
+                .communityId("comm-1")
+                .build();
+
+        when(sentimentAnalysisService.analyzeSentiment(anyString()))
+                .thenReturn(com.notesphere.dto.response.SentimentResponse.builder().label(com.notesphere.entity.enums.SentimentLabel.POSITIVE).build());
+        when(taggingService.classifyCategory(anyString())).thenReturn("General");
+        when(communityRepository.findById("comm-1")).thenReturn(Optional.of(community));
+        when(communityMemberRepository.existsByCommunityIdAndUserId("comm-1", "user-author")).thenReturn(false);
+
+        assertThrows(AccessDeniedException.class, () ->
+                journalService.createJournal("user-author", request));
+    }
+
+    @Test
+    @DisplayName("createJournal in COMMUNITY mode succeeds when author is an active community member")
+    void createJournal_CommunityMode_Success() {
+        com.notesphere.dto.request.JournalRequest request = com.notesphere.dto.request.JournalRequest.builder()
+                .title("Community Story")
+                .content("This is community content")
+                .visibility(JournalVisibility.COMMUNITY)
+                .communityId("comm-1")
+                .build();
+
+        when(sentimentAnalysisService.analyzeSentiment(anyString()))
+                .thenReturn(com.notesphere.dto.response.SentimentResponse.builder().label(com.notesphere.entity.enums.SentimentLabel.POSITIVE).build());
+        when(taggingService.classifyCategory(anyString())).thenReturn("General");
+        when(communityRepository.findById("comm-1")).thenReturn(Optional.of(community));
+        when(communityMemberRepository.existsByCommunityIdAndUserId("comm-1", "user-author")).thenReturn(true);
+        when(journalRepository.save(any(JournalEntry.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        JournalResponse response = journalService.createJournal("user-author", request);
+
+        assertNotNull(response);
+        assertEquals(JournalVisibility.COMMUNITY, response.getVisibility());
+        assertEquals("comm-1", response.getCommunityId());
+        assertEquals("Mindful Living", response.getCommunityName());
+        assertNotNull(response.getPublishedAt());
+    }
+
+    @Test
+    @DisplayName("createJournal in PRIVATE mode sets visibility to PRIVATE and leaves publishedAt null")
+    void createJournal_PrivateMode_Success() {
+        com.notesphere.dto.request.JournalRequest request = com.notesphere.dto.request.JournalRequest.builder()
+                .title("Private Journal")
+                .content("Private thoughts and diary")
+                .visibility(JournalVisibility.PRIVATE)
+                .build();
+
+        when(sentimentAnalysisService.analyzeSentiment(anyString()))
+                .thenReturn(com.notesphere.dto.response.SentimentResponse.builder().label(com.notesphere.entity.enums.SentimentLabel.NEUTRAL).build());
+        when(taggingService.classifyCategory(anyString())).thenReturn("General");
+        when(journalRepository.save(any(JournalEntry.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        JournalResponse response = journalService.createJournal("user-author", request);
+
+        assertNotNull(response);
+        assertEquals(JournalVisibility.PRIVATE, response.getVisibility());
+        assertNull(response.getCommunityId());
+        assertNull(response.getCommunityName());
+        assertNull(response.getPublishedAt());
+    }
 }

@@ -266,15 +266,21 @@
 /* Visibility Selection Row */
 .visibility-card-group {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
   margin-top: 4px;
+}
+
+@media (max-width: 860px) {
+  .visibility-card-group {
+    grid-template-columns: 1fr;
+  }
 }
 
 .visibility-option-box {
   border: 2px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  padding: 14px 18px;
+  padding: 14px 16px;
   cursor: pointer;
   display: flex;
   align-items: flex-start;
@@ -299,7 +305,7 @@
 }
 
 .visibility-option-info p {
-  font-size: 0.82rem;
+  font-size: 0.81rem;
   color: var(--text-secondary);
   line-height: 1.4;
 }
@@ -342,6 +348,20 @@
   border-color: var(--primary);
   color: var(--primary);
   background: var(--primary-light);
+}
+
+.save-private-btn.primary-action-btn {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #FFFFFF;
+  box-shadow: 0 4px 14px var(--primary-glow);
+}
+
+.save-private-btn.primary-action-btn:hover:not(:disabled) {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  color: #FFFFFF;
+  transform: translateY(-1px);
 }
 
 .publish-community-btn {

@@ -60,7 +60,7 @@ public class JournalService {
 
         if (visibility == com.notesphere.entity.enums.JournalVisibility.COMMUNITY) {
             if (request.getCommunityId() == null || request.getCommunityId().isBlank()) {
-                throw new com.notesphere.exception.BadRequestException("Community ID is required when publishing a journal");
+                throw new com.notesphere.exception.BadRequestException("Community ID is required when publishing a journal to a community");
             }
             com.notesphere.entity.Community community = communityRepository.findById(request.getCommunityId())
                     .orElseThrow(() -> new ResourceNotFoundException("Community", "id", request.getCommunityId()));
@@ -70,6 +70,15 @@ public class JournalService {
             communityId = community.getId();
             communityName = community.getName();
             publishedAt = Instant.now();
+        } else if (visibility == com.notesphere.entity.enums.JournalVisibility.PUBLIC) {
+            publishedAt = Instant.now();
+            communityId = null;
+            communityName = null;
+        } else {
+            visibility = com.notesphere.entity.enums.JournalVisibility.PRIVATE;
+            communityId = null;
+            communityName = null;
+            publishedAt = null;
         }
 
         JournalEntry entry = JournalEntry.builder()
@@ -103,6 +112,11 @@ public class JournalService {
 
         // If author, allow access
         if (entry.getUserId().equals(userId)) {
+            return mapToResponse(entry, userId);
+        }
+
+        // If PUBLIC, allow access to all authenticated users
+        if (entry.getVisibility() == com.notesphere.entity.enums.JournalVisibility.PUBLIC) {
             return mapToResponse(entry, userId);
         }
 
@@ -191,9 +205,43 @@ public class JournalService {
             entry.setPinned(request.getPinned());
         }
 
+        if (request.getVisibility() != null) {
+            if (request.getVisibility() == com.notesphere.entity.enums.JournalVisibility.COMMUNITY) {
+                String targetCommId = (request.getCommunityId() != null && !request.getCommunityId().isBlank())
+                        ? request.getCommunityId()
+                        : entry.getCommunityId();
+                if (targetCommId == null || targetCommId.isBlank()) {
+                    throw new com.notesphere.exception.BadRequestException("Community ID is required when publishing a journal to a community");
+                }
+                com.notesphere.entity.Community community = communityRepository.findById(targetCommId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Community", "id", targetCommId));
+                if (!communityMemberRepository.existsByCommunityIdAndUserId(community.getId(), userId)) {
+                    throw new org.springframework.security.access.AccessDeniedException("You must be a member of " + community.getName() + " to publish journals to it");
+                }
+                entry.setVisibility(com.notesphere.entity.enums.JournalVisibility.COMMUNITY);
+                entry.setCommunityId(community.getId());
+                entry.setCommunityName(community.getName());
+                if (entry.getPublishedAt() == null) {
+                    entry.setPublishedAt(Instant.now());
+                }
+            } else if (request.getVisibility() == com.notesphere.entity.enums.JournalVisibility.PUBLIC) {
+                entry.setVisibility(com.notesphere.entity.enums.JournalVisibility.PUBLIC);
+                entry.setCommunityId(null);
+                entry.setCommunityName(null);
+                if (entry.getPublishedAt() == null) {
+                    entry.setPublishedAt(Instant.now());
+                }
+            } else if (request.getVisibility() == com.notesphere.entity.enums.JournalVisibility.PRIVATE) {
+                entry.setVisibility(com.notesphere.entity.enums.JournalVisibility.PRIVATE);
+                entry.setCommunityId(null);
+                entry.setCommunityName(null);
+                entry.setPublishedAt(null);
+            }
+        }
+
         JournalEntry updatedEntry = journalRepository.save(entry);
         log.info("Journal entry {} updated by user: {}", id, userId);
-        return mapToResponse(updatedEntry);
+        return mapToResponse(updatedEntry, userId);
     }
 
     @Transactional
@@ -269,6 +317,26 @@ public class JournalService {
     public JournalResponse publishJournal(String userId, String id, com.notesphere.dto.request.PublishJournalRequest request) {
         JournalEntry entry = findEntryAndVerifyOwnership(userId, id);
 
+        com.notesphere.entity.enums.JournalVisibility targetVisibility = request.getVisibility() != null
+                ? request.getVisibility()
+                : (request.getCommunityId() != null && !request.getCommunityId().isBlank()
+                        ? com.notesphere.entity.enums.JournalVisibility.COMMUNITY
+                        : com.notesphere.entity.enums.JournalVisibility.PUBLIC);
+
+        if (targetVisibility == com.notesphere.entity.enums.JournalVisibility.PUBLIC) {
+            entry.setVisibility(com.notesphere.entity.enums.JournalVisibility.PUBLIC);
+            entry.setCommunityId(null);
+            entry.setCommunityName(null);
+            entry.setPublishedAt(Instant.now());
+            JournalEntry saved = journalRepository.save(entry);
+            log.info("Journal entry {} published to public feed by user {}", id, userId);
+            return mapToResponse(saved, userId);
+        }
+
+        if (request.getCommunityId() == null || request.getCommunityId().isBlank()) {
+            throw new com.notesphere.exception.BadRequestException("Community ID is required for publishing to a community");
+        }
+
         com.notesphere.entity.Community community = communityRepository.findById(request.getCommunityId())
                 .orElseThrow(() -> new ResourceNotFoundException("Community", "id", request.getCommunityId()));
 
@@ -300,9 +368,26 @@ public class JournalService {
     }
 
     @Transactional(readOnly = true)
-    public PagedResponse<JournalResponse> getUserPublishedJournals(String userId, Pageable pageable) {
-        Page<JournalEntry> page = journalRepository.findPublishedByUserId(userId, pageable);
-        return mapToPagedResponse(page, userId);
+    public PagedResponse<JournalResponse> getPublicJournals(
+            String currentUserId,
+            String query,
+            String category,
+            String tag,
+            Pageable pageable) {
+        Specification<JournalEntry> spec = JournalSpecification.publicFeed(query, category, tag);
+        Page<JournalEntry> page = journalRepository.findAll(spec, pageable);
+        return mapToPagedResponse(page, currentUserId);
+    }
+
+    @Transactional(readOnly = true)
+    public PagedResponse<JournalResponse> getUserPublishedJournals(String authorId, String viewerId, Pageable pageable) {
+        Page<JournalEntry> page = journalRepository.findPublishedByUserId(authorId, pageable);
+        return mapToPagedResponse(page, viewerId);
+    }
+
+    @Transactional(readOnly = true)
+    public PagedResponse<JournalResponse> getUserPublishedJournals(String authorId, Pageable pageable) {
+        return getUserPublishedJournals(authorId, authorId, pageable);
     }
 
     public JournalResponse mapToResponse(JournalEntry entry) {

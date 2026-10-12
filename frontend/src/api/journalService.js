@@ -31,11 +31,30 @@ export const journalService = {
 
   togglePin: (id) => apiClient.patch(`/journals/${id}/pin`),
 
-  publishJournal: (id, communityId) =>
-    apiClient.post(`/journals/${id}/publish`, { communityId }),
+  publishJournal: (id, payloadOrCommunityId) => {
+    const body = typeof payloadOrCommunityId === 'object'
+      ? payloadOrCommunityId
+      : { communityId: payloadOrCommunityId, visibility: 'COMMUNITY' };
+    return apiClient.post(`/journals/${id}/publish`, body);
+  },
 
   unpublishJournal: (id) =>
     apiClient.post(`/journals/${id}/unpublish`),
+
+  getPublicJournals: (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.page !== undefined) query.append('page', params.page);
+    if (params.size !== undefined) query.append('size', params.size);
+    if (params.sortBy) query.append('sortBy', params.sortBy);
+    if (params.direction) query.append('direction', params.direction);
+    if (params.query) query.append('query', params.query);
+    if (params.search) query.append('query', params.search);
+    if (params.category) query.append('category', params.category);
+    if (params.tag) query.append('tag', params.tag);
+
+    const queryString = query.toString() ? `?${query.toString()}` : '';
+    return apiClient.get(`/journals/public${queryString}`);
+  },
 
   getPublishedJournals: (params = {}) => {
     const query = new URLSearchParams();

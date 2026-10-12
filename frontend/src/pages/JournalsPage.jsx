@@ -58,6 +58,7 @@ export function JournalsPage() {
 
   // Quick publish modal
   const [publishingEntry, setPublishingEntry] = useState(null);
+  const [publishMode, setPublishMode] = useState('PUBLIC'); // 'PUBLIC' | 'COMMUNITY'
   const [selectedCommunityId, setSelectedCommunityId] = useState('');
 
   const showToast = (msg, type = 'success') => {
@@ -208,13 +209,25 @@ export function JournalsPage() {
   };
 
   const handleConfirmPublish = async () => {
-    if (!publishingEntry || !selectedCommunityId) return;
+    if (!publishingEntry) return;
 
     try {
-      await journalService.publishJournal(publishingEntry.id, selectedCommunityId);
-      showToast('Journal published to community feed successfully!');
+      if (publishMode === 'PUBLIC') {
+        await journalService.publishJournal(publishingEntry.id, { visibility: 'PUBLIC' });
+        showToast('Journal published to public feed successfully!');
+      } else {
+        if (!selectedCommunityId) {
+          showToast('Please select a community to publish to', 'error');
+          return;
+        }
+        await journalService.publishJournal(publishingEntry.id, { communityId: selectedCommunityId, visibility: 'COMMUNITY' });
+        showToast('Journal published to community feed successfully!');
+      }
       setPublishingEntry(null);
       loadJournals();
+      if (activeTab === 'published') {
+        loadPublishedJournals();
+      }
     } catch (err) {
       showToast(err.message || 'Failed to publish journal', 'error');
     }
@@ -495,7 +508,8 @@ export function JournalsPage() {
                   options={[
                     { value: 'ALL', label: 'All Visibilities' },
                     { value: 'PRIVATE', label: 'Private Only', icon: Lock },
-                    { value: 'COMMUNITY', label: 'Published Feed', icon: Globe },
+                    { value: 'PUBLIC', label: 'Public Posts', icon: Globe },
+                    { value: 'COMMUNITY', label: 'Community Feed', icon: Users },
                   ]}
                   placeholder="Visibility"
                 />
@@ -543,6 +557,7 @@ export function JournalsPage() {
           <div className="horizontal-journals-list">
             {entries.map((item) => {
               const isCommunity = item.visibility === 'COMMUNITY';
+              const isPublic = item.visibility === 'PUBLIC';
               const formattedDate = item.createdAt
                 ? new Date(item.createdAt).toLocaleDateString(undefined, {
                     month: 'short',
@@ -573,7 +588,11 @@ export function JournalsPage() {
                       {/* Visibility Badge */}
                       {isCommunity ? (
                         <span className="badge-visibility-tag community">
-                          <Globe size={12} /> {item.communityName || 'Community'}
+                          <Users size={12} /> {item.communityName || 'Community'}
+                        </span>
+                      ) : isPublic ? (
+                        <span className="badge-visibility-tag public">
+                          <Globe size={12} /> Public
                         </span>
                       ) : (
                         <span className="badge-visibility-tag private">
@@ -588,7 +607,7 @@ export function JournalsPage() {
 
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       {/* Publish / Unpublish button */}
-                      {isCommunity ? (
+                      {isCommunity || isPublic ? (
                         <button
                           type="button"
                           className="btn-card-unpublish"
@@ -602,7 +621,7 @@ export function JournalsPage() {
                           type="button"
                           className="btn-card-publish"
                           onClick={(e) => handleOpenPublishModal(item, e)}
-                          title="Publish to a community"
+                          title="Publish journal"
                         >
                           <Share2 size={13} /> Publish
                         </button>
@@ -681,12 +700,12 @@ export function JournalsPage() {
         )}
       </div>
 
-      {/* Quick Publish to Community Modal */}
+      {/* Quick Publish Modal */}
       {publishingEntry && (
         <div className="modal-overlay" onClick={() => setPublishingEntry(null)}>
           <div className="modal-content-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-title-row">
-              <h2>Publish to Community</h2>
+              <h2>Publish Journal Entry</h2>
               <button
                 onClick={() => setPublishingEntry(null)}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}
@@ -696,44 +715,94 @@ export function JournalsPage() {
             </div>
 
             <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-              Publishing "<strong>{publishingEntry.title}</strong>" will make it visible in the selected community feed.
+              Publishing "<strong>{publishingEntry.title}</strong>" allows other NoteSphere readers to view your reflection.
             </p>
 
-            <div className="modal-field">
-              <label>Choose Community</label>
-              {joinedCommunities.length === 0 ? (
-                <div>
-                  <p style={{ color: '#EF4444', fontSize: '0.86rem', marginBottom: '8px' }}>
-                    You have not joined any communities yet.
-                  </p>
-                  <button
-                    type="button"
-                    className="btn-create-community"
-                    onClick={() => {
-                      setPublishingEntry(null);
-                      navigate('/communities');
-                    }}
-                  >
-                    Explore Communities
-                  </button>
-                </div>
-              ) : (
-                <CustomDropdown
-                  value={selectedCommunityId}
-                  onChange={(val) => setSelectedCommunityId(val)}
-                  options={joinedCommunities.map((c) => ({
-                    value: c.id,
-                    label: c.name,
-                    badge: `${c.memberCount || 1} members`,
-                    icon: Users,
-                  }))}
-                  placeholder="Select community..."
-                  icon={Users}
-                  searchable={true}
-                  searchPlaceholder="Search community..."
-                />
-              )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', margin: '14px 0' }}>
+              <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                Publication Destination:
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setPublishMode('PUBLIC')}
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: 'var(--radius-md)',
+                    border: publishMode === 'PUBLIC' ? '2px solid var(--primary)' : '1px solid var(--border-subtle)',
+                    background: publishMode === 'PUBLIC' ? 'var(--primary-light)' : '#FFFFFF',
+                    color: publishMode === 'PUBLIC' ? 'var(--primary)' : 'var(--text-secondary)',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <Globe size={15} /> Public Feed
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPublishMode('COMMUNITY')}
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: 'var(--radius-md)',
+                    border: publishMode === 'COMMUNITY' ? '2px solid var(--primary)' : '1px solid var(--border-subtle)',
+                    background: publishMode === 'COMMUNITY' ? 'var(--primary-light)' : '#FFFFFF',
+                    color: publishMode === 'COMMUNITY' ? 'var(--primary)' : 'var(--text-secondary)',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <Users size={15} /> Community Space
+                </button>
+              </div>
             </div>
+
+            {publishMode === 'COMMUNITY' && (
+              <div className="modal-field">
+                <label>Choose Community Feed *</label>
+                {joinedCommunities.length === 0 ? (
+                  <div>
+                    <p style={{ color: '#EF4444', fontSize: '0.86rem', marginBottom: '8px' }}>
+                      You have not joined any communities yet. Join one to publish to its feed!
+                    </p>
+                    <button
+                      type="button"
+                      className="btn-create-community"
+                      onClick={() => {
+                        setPublishingEntry(null);
+                        navigate('/communities');
+                      }}
+                    >
+                      Explore Communities
+                    </button>
+                  </div>
+                ) : (
+                  <CustomDropdown
+                    value={selectedCommunityId}
+                    onChange={(val) => setSelectedCommunityId(val)}
+                    options={joinedCommunities.map((c) => ({
+                      value: c.id,
+                      label: c.name,
+                      badge: `${c.memberCount || 1} members`,
+                      icon: Users,
+                    }))}
+                    placeholder="Select community..."
+                    icon={Users}
+                    searchable={true}
+                    searchPlaceholder="Search community..."
+                  />
+                )}
+              </div>
+            )}
 
             <div className="modal-buttons-row">
               <button
@@ -747,9 +816,9 @@ export function JournalsPage() {
                 type="button"
                 className="btn-community-action btn-community-join"
                 onClick={handleConfirmPublish}
-                disabled={!selectedCommunityId || joinedCommunities.length === 0}
+                disabled={publishMode === 'COMMUNITY' && (!selectedCommunityId || joinedCommunities.length === 0)}
               >
-                Publish Now
+                {publishMode === 'PUBLIC' ? 'Publish Publicly' : 'Publish to Community'}
               </button>
             </div>
           </div>

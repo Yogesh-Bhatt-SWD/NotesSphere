@@ -191,12 +191,14 @@ public class CommunityService {
         JournalEntry journal = journalRepository.findById(journalId)
                 .orElseThrow(() -> new ResourceNotFoundException("JournalEntry", "id", journalId));
 
-        if (journal.getVisibility() != JournalVisibility.COMMUNITY || journal.getCommunityId() == null) {
-            throw new BadRequestException("Comments can only be added to published community journals.");
+        if (journal.getVisibility() == JournalVisibility.PRIVATE) {
+            throw new BadRequestException("Comments cannot be added to private journals.");
         }
 
-        if (!memberRepository.existsByCommunityIdAndUserId(journal.getCommunityId(), userId)) {
-            throw new AccessDeniedException("You must be a member of the community to comment.");
+        if (journal.getVisibility() == JournalVisibility.COMMUNITY) {
+            if (journal.getCommunityId() == null || !memberRepository.existsByCommunityIdAndUserId(journal.getCommunityId(), userId)) {
+                throw new AccessDeniedException("You must be a member of the community to comment.");
+            }
         }
 
         PostComment comment = PostComment.builder()
@@ -227,12 +229,14 @@ public class CommunityService {
         JournalEntry journal = journalRepository.findById(journalId)
                 .orElseThrow(() -> new ResourceNotFoundException("JournalEntry", "id", journalId));
 
-        if (journal.getVisibility() != JournalVisibility.COMMUNITY || journal.getCommunityId() == null) {
-            throw new BadRequestException("Comments are only accessible on published community journals.");
+        if (journal.getVisibility() == JournalVisibility.PRIVATE) {
+            throw new BadRequestException("Comments are not accessible on private journals.");
         }
 
-        if (!memberRepository.existsByCommunityIdAndUserId(journal.getCommunityId(), userId)) {
-            throw new AccessDeniedException("You must be a member of the community to read comments.");
+        if (journal.getVisibility() == JournalVisibility.COMMUNITY) {
+            if (journal.getCommunityId() == null || !memberRepository.existsByCommunityIdAndUserId(journal.getCommunityId(), userId)) {
+                throw new AccessDeniedException("You must be a member of the community to read comments.");
+            }
         }
 
         List<PostComment> comments = commentRepository.findByJournalIdOrderByCreatedAtAsc(journalId);
@@ -257,12 +261,14 @@ public class CommunityService {
         JournalEntry journal = journalRepository.findById(journalId)
                 .orElseThrow(() -> new ResourceNotFoundException("JournalEntry", "id", journalId));
 
-        if (journal.getVisibility() != JournalVisibility.COMMUNITY || journal.getCommunityId() == null) {
-            throw new BadRequestException("Reactions are only allowed on published community journals.");
+        if (journal.getVisibility() == JournalVisibility.PRIVATE) {
+            throw new BadRequestException("Reactions are not allowed on private journals.");
         }
 
-        if (!memberRepository.existsByCommunityIdAndUserId(journal.getCommunityId(), userId)) {
-            throw new AccessDeniedException("You must be a member of the community to react.");
+        if (journal.getVisibility() == JournalVisibility.COMMUNITY) {
+            if (journal.getCommunityId() == null || !memberRepository.existsByCommunityIdAndUserId(journal.getCommunityId(), userId)) {
+                throw new AccessDeniedException("You must be a member of the community to react.");
+            }
         }
 
         Optional<PostReaction> existing = reactionRepository.findByJournalIdAndUserId(journalId, userId);
@@ -292,8 +298,8 @@ public class CommunityService {
         JournalEntry journal = journalRepository.findById(journalId)
                 .orElseThrow(() -> new ResourceNotFoundException("JournalEntry", "id", journalId));
 
-        if (journal.getVisibility() != JournalVisibility.COMMUNITY) {
-            throw new BadRequestException("Only published community journals can be reported.");
+        if (journal.getVisibility() == JournalVisibility.PRIVATE) {
+            throw new BadRequestException("Private journals cannot be reported.");
         }
 
         if (reportRepository.existsByJournalIdAndReporterId(journalId, userId)) {

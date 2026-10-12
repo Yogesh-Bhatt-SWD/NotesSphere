@@ -23,7 +23,9 @@ import {
   UserPlus,
   LogOut,
   ArrowRight,
-  Loader2
+  Loader2,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import communityService from '../api/communityService';
 import journalService from '../api/journalService';
@@ -48,12 +50,18 @@ export function CommunitiesPage() {
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [notification, setNotification] = useState(null);
 
-  // Feed state
+  // Community Feed state
   const [feedPosts, setFeedPosts] = useState([]);
   const [isFeedLoading, setIsFeedLoading] = useState(false);
   const [commentsMap, setCommentsMap] = useState({});
   const [expandedComments, setExpandedComments] = useState({});
   const [commentInputs, setCommentInputs] = useState({});
+
+  // Global Public Feed state
+  const [publicPosts, setPublicPosts] = useState([]);
+  const [isPublicLoading, setIsPublicLoading] = useState(false);
+  const [publicPage, setPublicPage] = useState(0);
+  const [totalPublicPages, setTotalPublicPages] = useState(1);
 
   // Create community modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -94,16 +102,45 @@ export function CommunitiesPage() {
     }
   };
 
-  useEffect(() => {
-    loadCommunities();
-    loadJoinedCommunities();
-  }, [searchQuery, selectedCategory]);
+  const fetchPublicFeed = async (page = 0) => {
+    setIsPublicLoading(true);
+    try {
+      const res = await journalService.getPublicJournals({
+        page,
+        size: 10,
+        query: searchQuery || undefined,
+        category: selectedCategory !== 'ALL' ? selectedCategory : undefined,
+      });
+      if (res?.data?.content) {
+        setPublicPosts(res.data.content);
+        setTotalPublicPages(res.data.totalPages || 1);
+        setPublicPage(page);
+      }
+    } catch (err) {
+      console.error('Failed to load public feed:', err);
+    } finally {
+      setIsPublicLoading(false);
+    }
+  };
 
-  // Check URL params for community feed
+  useEffect(() => {
+    if (activeTab === 'publicFeed') {
+      fetchPublicFeed(0);
+    } else {
+      loadCommunities();
+      loadJoinedCommunities();
+    }
+  }, [searchQuery, selectedCategory, activeTab]);
+
+  // Check URL params for community feed or public feed
   useEffect(() => {
     const communityId = searchParams.get('id');
+    const tabParam = searchParams.get('tab');
     if (communityId) {
       fetchCommunityFeed(communityId);
+    } else if (tabParam === 'public') {
+      setActiveTab('publicFeed');
+      fetchPublicFeed(0);
     }
   }, [searchParams]);
 
@@ -216,7 +253,7 @@ export function CommunitiesPage() {
     try {
       const res = await communityService.toggleReaction(postId);
       if (res?.data) {
-        setFeedPosts((prev) =>
+        const updater = (prev) =>
           prev.map((post) =>
             post.id === postId
               ? {
@@ -225,8 +262,9 @@ export function CommunitiesPage() {
                   likeCount: res.data.likeCount,
                 }
               : post
-          )
-        );
+          );
+        setFeedPosts(updater);
+        setPublicPosts(updater);
       }
     } catch (err) {
       showToast(err.message || 'Failed to react to post', 'error');
@@ -260,13 +298,14 @@ export function CommunitiesPage() {
           ...prev,
           [postId]: [...(prev[postId] || []), res.data],
         }));
-        setFeedPosts((prev) =>
+        const updater = (prev) =>
           prev.map((post) =>
             post.id === postId
               ? { ...post, commentCount: (post.commentCount || 0) + 1 }
               : post
-          )
-        );
+          );
+        setFeedPosts(updater);
+        setPublicPosts(updater);
         setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
       }
     } catch (err) {
@@ -306,6 +345,156 @@ export function CommunitiesPage() {
     if (!comm) return false;
     const commId = typeof comm === 'object' ? comm.id : comm;
     return joinedCommunities.some((c) => c.id === commId);
+  };
+
+  const renderPostCard = (post, isPublic = false) => {
+    const comments = commentsMap[post.id] || [];
+    const isExpanded = !!expandedComments[post.id];
+
+    return (
+      <div key={post.id} className="feed-post-card">
+        <div className="feed-post-header">
+          <div className="author-meta">
+            <div className="author-avatar">
+              {(post.authorName || 'U').charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <div className="author-name">
+                {post.authorName || 'Anonymous Member'}
+                {isPublic && (
+                  <span
+                    style={{
+                      marginLeft: '8px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '0.74rem',
+                      fontWeight: 600,
+                      color: '#0284C7',
+                      background: '#E0F2FE',
+                      padding: '2px 8px',
+                      borderRadius: 'var(--radius-pill)',
+                      verticalAlign: 'middle',
+                    }}
+                  >
+                    <Globe size={11} /> Public
+                  </span>
+                )}
+              </div>
+              <div className="post-date">
+                {post.publishedAt
+                  ? new Date(post.publishedAt).toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })
+                  : 'Recently'}
+              </div>
+            </div>
+          </div>
+
+          <button
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+            }}
+            onClick={() => setReportingPostId(post.id)}
+            title="Report Post"
+          >
+            <Flag size={15} />
+          </button>
+        </div>
+
+        <div>
+          <h3 className="feed-post-title">{post.title}</h3>
+          <p className="feed-post-body">{post.content}</p>
+        </div>
+
+        <div className="feed-post-badges">
+          {post.category && (
+            <span className="community-tag-pill">{post.category}</span>
+          )}
+          {post.tags?.map((t) => (
+            <span
+              key={t}
+              style={{
+                fontSize: '0.76rem',
+                color: 'var(--text-secondary)',
+                background: 'var(--bg-subtle)',
+                padding: '3px 8px',
+                borderRadius: 'var(--radius-pill)',
+              }}
+            >
+              #{t}
+            </span>
+          ))}
+        </div>
+
+        <div className="feed-post-actions-row">
+          <button
+            className={`reaction-btn ${post.likedByCurrentUser ? 'liked' : ''}`}
+            onClick={() => handleToggleLike(post.id)}
+          >
+            <Heart size={16} /> {post.likeCount || 0} Likes
+          </button>
+
+          <button
+            className="reaction-btn"
+            onClick={() => toggleComments(post.id)}
+          >
+            <MessageSquare size={16} /> {post.commentCount || 0} Comments
+          </button>
+        </div>
+
+        {/* Expandable comments list */}
+        {isExpanded && (
+          <div className="comments-panel">
+            {comments.length === 0 ? (
+              <div style={{ fontSize: '0.84rem', color: 'var(--text-muted)' }}>
+                No comments yet. Start the conversation!
+              </div>
+            ) : (
+              comments.map((c) => (
+                <div key={c.id} className="comment-item">
+                  <div className="comment-author-row">
+                    <span>{c.authorName || 'Member'}</span>
+                    <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                      {new Date(c.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="comment-text">{c.content}</div>
+                </div>
+              ))
+            )}
+
+            <div className="comment-input-box">
+              <input
+                type="text"
+                placeholder="Write a supportive comment..."
+                value={commentInputs[post.id] || ''}
+                onChange={(e) =>
+                  setCommentInputs({
+                    ...commentInputs,
+                    [post.id]: e.target.value,
+                  })
+                }
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handlePostComment(post.id);
+                }}
+              />
+              <button
+                className="comment-post-btn"
+                onClick={() => handlePostComment(post.id)}
+              >
+                <Send size={14} /> Send
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -379,6 +568,18 @@ export function CommunitiesPage() {
           <Users size={16} /> Joined Spaces ({joinedCommunities.length})
         </button>
 
+        <button
+          className={`community-tab-btn ${activeTab === 'publicFeed' ? 'active' : ''}`}
+          onClick={() => {
+            setActiveTab('publicFeed');
+            setSelectedCommunity(null);
+            setSearchParams({ tab: 'public' });
+            fetchPublicFeed(0);
+          }}
+        >
+          <Globe size={16} /> Public Feed
+        </button>
+
         {selectedCommunity && (
           <button
             className={`community-tab-btn ${activeTab === 'feed' ? 'active' : ''}`}
@@ -389,7 +590,7 @@ export function CommunitiesPage() {
         )}
       </div>
 
-      {/* View 1 & 2: Communities Discovery or Joined */}
+      {/* View 1, 2 & Public Feed */}
       {activeTab !== 'feed' && (
         <>
           <div className="communities-filter-bar">
@@ -400,7 +601,11 @@ export function CommunitiesPage() {
               />
               <input
                 type="text"
-                placeholder="Search communities by name or topic..."
+                placeholder={
+                  activeTab === 'publicFeed'
+                    ? 'Search public journals by title or topic...'
+                    : 'Search communities by name or topic...'
+                }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -426,7 +631,96 @@ export function CommunitiesPage() {
             </div>
           </div>
 
-          {(() => {
+          {activeTab === 'publicFeed' ? (
+            <div>
+              {isPublicLoading ? (
+                <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--text-muted)' }}>
+                  <Loader2 size={32} className="spin-icon" style={{ margin: '0 auto 12px' }} />
+                  <p>Loading public publications...</p>
+                </div>
+              ) : publicPosts.length === 0 ? (
+                <div className="community-not-found-card">
+                  <div className="community-not-found-icon">
+                    <Globe size={30} />
+                  </div>
+                  <h3>No Public Publications Found</h3>
+                  {searchQuery || selectedCategory !== 'ALL' ? (
+                    <p>
+                      We couldn't find any public journals matching your search criteria.
+                      <br />
+                      Try adjusting your keywords or category filters.
+                    </p>
+                  ) : (
+                    <p>
+                      No public journals have been published yet. Be the first to share an inspiring reflection with the world!
+                    </p>
+                  )}
+
+                  <div className="community-not-found-actions">
+                    {(searchQuery || selectedCategory !== 'ALL') && (
+                      <button
+                        type="button"
+                        className="btn-clear-search"
+                        onClick={() => {
+                          setSearchQuery('');
+                          setSelectedCategory('ALL');
+                        }}
+                      >
+                        Clear Search & Filter
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="btn-create-community"
+                      onClick={() => navigate('/editor')}
+                    >
+                      <Plus size={16} /> Write Public Journal
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="feed-posts-container">
+                    {publicPosts.map((post) => renderPostCard(post, true))}
+                  </div>
+
+                  {totalPublicPages > 1 && (
+                    <div className="pagination-container">
+                      <button
+                        className="page-nav-btn"
+                        disabled={publicPage === 0 || isPublicLoading}
+                        onClick={() => fetchPublicFeed(Math.max(0, publicPage - 1))}
+                        title="Previous page"
+                      >
+                        <ChevronLeft size={16} />
+                      </button>
+
+                      {Array.from({ length: totalPublicPages }, (_, i) => i).map((pageNum) => (
+                        <button
+                          key={pageNum}
+                          className={`page-nav-btn ${publicPage === pageNum ? 'active' : ''}`}
+                          disabled={isPublicLoading}
+                          onClick={() => fetchPublicFeed(pageNum)}
+                        >
+                          {pageNum + 1}
+                        </button>
+                      ))}
+
+                      <button
+                        className="page-nav-btn"
+                        disabled={publicPage >= totalPublicPages - 1 || isPublicLoading}
+                        onClick={() => fetchPublicFeed(Math.min(totalPublicPages - 1, publicPage + 1))}
+                        title="Next page"
+                      >
+                        <ChevronRight size={16} />
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          ) : (
+            (() => {
             const allList = activeTab === 'joined' ? joinedCommunities : communities;
             const displayedCommunities = allList.filter((comm) => {
               if (activeTab === 'joined') {
@@ -596,7 +890,7 @@ export function CommunitiesPage() {
                 })}
               </div>
             );
-          })()}
+          })())}
         </>
       )}
 
@@ -650,134 +944,7 @@ export function CommunitiesPage() {
                 <p style={{ marginTop: '6px' }}>Be the first to share an inspiring reflection!</p>
               </div>
             ) : (
-              feedPosts.map((post) => {
-                const comments = commentsMap[post.id] || [];
-                const isExpanded = !!expandedComments[post.id];
-
-                return (
-                  <div key={post.id} className="feed-post-card">
-                    <div className="feed-post-header">
-                      <div className="author-meta">
-                        <div className="author-avatar">
-                          {(post.authorName || 'U').charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <div className="author-name">{post.authorName || 'Anonymous Member'}</div>
-                          <div className="post-date">
-                            {post.publishedAt
-                              ? new Date(post.publishedAt).toLocaleDateString(undefined, {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  year: 'numeric',
-                                })
-                              : 'Recently'}
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--text-muted)',
-                          cursor: 'pointer',
-                        }}
-                        onClick={() => setReportingPostId(post.id)}
-                        title="Report Post"
-                      >
-                        <Flag size={15} />
-                      </button>
-                    </div>
-
-                    <div>
-                      <h3 className="feed-post-title">{post.title}</h3>
-                      <p className="feed-post-body">{post.content}</p>
-                    </div>
-
-                    <div className="feed-post-badges">
-                      {post.category && (
-                        <span className="community-tag-pill">{post.category}</span>
-                      )}
-                      {post.tags?.map((t) => (
-                        <span
-                          key={t}
-                          style={{
-                            fontSize: '0.76rem',
-                            color: 'var(--text-secondary)',
-                            background: 'var(--bg-subtle)',
-                            padding: '3px 8px',
-                            borderRadius: 'var(--radius-pill)',
-                          }}
-                        >
-                          #{t}
-                        </span>
-                      ))}
-                    </div>
-
-                    <div className="feed-post-actions-row">
-                      <button
-                        className={`reaction-btn ${post.likedByCurrentUser ? 'liked' : ''}`}
-                        onClick={() => handleToggleLike(post.id)}
-                      >
-                        <Heart size={16} /> {post.likeCount || 0} Likes
-                      </button>
-
-                      <button
-                        className="reaction-btn"
-                        onClick={() => toggleComments(post.id)}
-                      >
-                        <MessageSquare size={16} /> {post.commentCount || 0} Comments
-                      </button>
-                    </div>
-
-                    {/* Expandable comments list */}
-                    {isExpanded && (
-                      <div className="comments-panel">
-                        {comments.length === 0 ? (
-                          <div style={{ fontSize: '0.84rem', color: 'var(--text-muted)' }}>
-                            No comments yet. Start the conversation!
-                          </div>
-                        ) : (
-                          comments.map((c) => (
-                            <div key={c.id} className="comment-item">
-                              <div className="comment-author-row">
-                                <span>{c.authorName || 'Member'}</span>
-                                <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-                                  {new Date(c.createdAt).toLocaleDateString()}
-                                </span>
-                              </div>
-                              <div className="comment-text">{c.content}</div>
-                            </div>
-                          ))
-                        )}
-
-                        <div className="comment-input-box">
-                          <input
-                            type="text"
-                            placeholder="Write a supportive comment..."
-                            value={commentInputs[post.id] || ''}
-                            onChange={(e) =>
-                              setCommentInputs({
-                                ...commentInputs,
-                                [post.id]: e.target.value,
-                              })
-                            }
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handlePostComment(post.id);
-                            }}
-                          />
-                          <button
-                            className="comment-post-btn"
-                            onClick={() => handlePostComment(post.id)}
-                          >
-                            <Send size={14} /> Send
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })
+              feedPosts.map((post) => renderPostCard(post, false))
             )}
           </div>
         </div>

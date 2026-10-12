@@ -245,14 +245,18 @@ export function EditorPage() {
     }
   };
 
-  // Save as Private
-  const handleSavePrivate = async () => {
+  // Save / Publish with specific mode
+  const handleSaveWithMode = async (targetMode = visibility) => {
     if (!title.trim()) {
       showToast('Please provide a title for your journal', 'error');
       return;
     }
     if (!content.trim()) {
       showToast('Please write some content for your journal', 'error');
+      return;
+    }
+    if (targetMode === 'COMMUNITY' && !selectedCommunityId) {
+      showToast('Please select a community to publish to', 'error');
       return;
     }
 
@@ -262,7 +266,8 @@ export function EditorPage() {
         content,
         category,
         tags: selectedTags,
-        visibility: 'PRIVATE',
+        visibility: targetMode,
+        communityId: targetMode === 'COMMUNITY' ? selectedCommunityId : null,
       }));
       showToast('You must be signed in to save. Your journal has been preserved as a draft.', 'error');
       return;
@@ -275,100 +280,53 @@ export function EditorPage() {
         content: content.trim(),
         category: category.trim(),
         tags: selectedTags,
-        visibility: 'PRIVATE',
+        visibility: targetMode,
+        communityId: targetMode === 'COMMUNITY' ? selectedCommunityId : null,
       };
 
       if (editId) {
         await journalService.updateJournal(editId, payload);
-        showToast('Private journal updated successfully!');
+        if (targetMode === 'COMMUNITY') {
+          await journalService.publishJournal(editId, { communityId: selectedCommunityId, visibility: 'COMMUNITY' });
+          showToast('Journal updated and published to community feed!');
+          setTimeout(() => navigate(`/communities?id=${selectedCommunityId}`), 600);
+        } else if (targetMode === 'PUBLIC') {
+          await journalService.publishJournal(editId, { visibility: 'PUBLIC' });
+          showToast('Journal updated and published publicly!');
+          setTimeout(() => navigate('/journals?tab=published'), 600);
+        } else {
+          await journalService.unpublishJournal(editId);
+          showToast('Private journal updated successfully!');
+          setTimeout(() => navigate('/journals'), 600);
+        }
       } else {
         await journalService.createJournal(payload);
-        showToast('Journal saved privately!');
+        if (targetMode === 'COMMUNITY') {
+          showToast('Journal successfully published to community feed!');
+          setTimeout(() => navigate(`/communities?id=${selectedCommunityId}`), 600);
+        } else if (targetMode === 'PUBLIC') {
+          showToast('Journal successfully published to public feed!');
+          setTimeout(() => navigate('/journals?tab=published'), 600);
+        } else {
+          showToast('Journal saved privately!');
+          setTimeout(() => navigate('/journals'), 600);
+        }
       }
 
       localStorage.removeItem('notesphere_saved_draft');
-      setTimeout(() => navigate('/journals'), 500);
     } catch (err) {
       localStorage.setItem('notesphere_saved_draft', JSON.stringify({
         title,
         content,
         category,
         tags: selectedTags,
-        visibility: 'PRIVATE',
+        visibility: targetMode,
+        communityId: targetMode === 'COMMUNITY' ? selectedCommunityId : null,
       }));
       if (err.status === 401 || err.message?.includes('Authentication') || err.message?.includes('Unauthorized')) {
         showToast('Your session has expired. Your reflection is saved as a draft. Please sign in.', 'error');
       } else {
         showToast(err.message || 'Failed to save journal', 'error');
-      }
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // Publish to Community
-  const handlePublishToCommunity = async () => {
-    if (!title.trim()) {
-      showToast('Please provide a title before publishing', 'error');
-      return;
-    }
-    if (!content.trim()) {
-      showToast('Please write your reflection before publishing', 'error');
-      return;
-    }
-    if (!selectedCommunityId) {
-      showToast('Please select a community to publish to', 'error');
-      return;
-    }
-
-    if (!authService.isAuthenticated()) {
-      localStorage.setItem('notesphere_saved_draft', JSON.stringify({
-        title,
-        content,
-        category,
-        tags: selectedTags,
-        visibility: 'COMMUNITY',
-        communityId: selectedCommunityId,
-      }));
-      showToast('You must be signed in to publish. Your journal has been preserved as a draft.', 'error');
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      const payload = {
-        title: title.trim(),
-        content: content.trim(),
-        category: category.trim(),
-        tags: selectedTags,
-        visibility: 'COMMUNITY',
-        communityId: selectedCommunityId,
-      };
-
-      if (editId) {
-        await journalService.updateJournal(editId, payload);
-        await journalService.publishJournal(editId, selectedCommunityId);
-        showToast('Journal published to community feed successfully!');
-      } else {
-        await journalService.createJournal(payload);
-        showToast('Journal successfully published to community feed!');
-      }
-
-      localStorage.removeItem('notesphere_saved_draft');
-      setTimeout(() => navigate(`/communities?id=${selectedCommunityId}`), 600);
-    } catch (err) {
-      localStorage.setItem('notesphere_saved_draft', JSON.stringify({
-        title,
-        content,
-        category,
-        tags: selectedTags,
-        visibility: 'COMMUNITY',
-        communityId: selectedCommunityId,
-      }));
-      if (err.status === 401 || err.message?.includes('Authentication') || err.message?.includes('Unauthorized')) {
-        showToast('Your session has expired. Your reflection is saved as a draft. Please sign in.', 'error');
-      } else {
-        showToast(err.message || 'Failed to publish to community', 'error');
       }
     } finally {
       setIsSaving(false);
@@ -575,7 +533,24 @@ export function EditorPage() {
                 />
                 <div className="visibility-option-info">
                   <h4><Lock size={15} /> Private Journal</h4>
-                  <p>Visible only to you. Never appears in any community feed.</p>
+                  <p>Visible only to you. Never appears in any public or community feed.</p>
+                </div>
+              </div>
+
+              <div
+                className={`visibility-option-box ${visibility === 'PUBLIC' ? 'active' : ''}`}
+                onClick={() => setVisibility('PUBLIC')}
+              >
+                <input
+                  type="radio"
+                  name="visibility"
+                  checked={visibility === 'PUBLIC'}
+                  onChange={() => setVisibility('PUBLIC')}
+                  style={{ marginTop: '3px' }}
+                />
+                <div className="visibility-option-info">
+                  <h4><Globe size={15} /> Public Publication</h4>
+                  <p>Accessible to all users across NoteSphere and on your public profile.</p>
                 </div>
               </div>
 
@@ -591,14 +566,14 @@ export function EditorPage() {
                   style={{ marginTop: '3px' }}
                 />
                 <div className="visibility-option-info">
-                  <h4><Globe size={15} /> Community Publication</h4>
-                  <p>Publish to a community feed for members to read, like, and comment.</p>
+                  <h4><Users size={15} /> Community Publication</h4>
+                  <p>Publish to a selected community feed for fellow members.</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* If Community Visibility is selected, pick joined community */}
+          {/* Show community selector ONLY when COMMUNITY is selected */}
           {visibility === 'COMMUNITY' && (
             <div className="community-picker-box">
               <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>
@@ -633,25 +608,60 @@ export function EditorPage() {
             </div>
           )}
 
-          {/* Action Buttons */}
+          {/* Action Buttons changing according to selected mode */}
           <div className="editor-actions-row">
-            <button
-              type="button"
-              className="save-private-btn"
-              onClick={handleSavePrivate}
-              disabled={isSaving || !title.trim() || !content.trim()}
-            >
-              <Lock size={16} /> Save as Private
-            </button>
+            {visibility === 'PRIVATE' && (
+              <button
+                type="button"
+                className="save-private-btn primary-action-btn"
+                onClick={() => handleSaveWithMode('PRIVATE')}
+                disabled={isSaving || !title.trim() || !content.trim()}
+              >
+                <Lock size={16} /> {isSaving ? 'Saving...' : (editId ? 'Update Private Journal' : 'Save as Private')}
+              </button>
+            )}
 
-            <button
-              type="button"
-              className="publish-community-btn"
-              onClick={handlePublishToCommunity}
-              disabled={isSaving || !title.trim() || !content.trim() || (visibility === 'COMMUNITY' && !selectedCommunityId)}
-            >
-              <Globe size={16} /> {isSaving ? 'Processing...' : 'Publish to Community'}
-            </button>
+            {visibility === 'PUBLIC' && (
+              <>
+                <button
+                  type="button"
+                  className="save-private-btn"
+                  onClick={() => handleSaveWithMode('PRIVATE')}
+                  disabled={isSaving || !title.trim() || !content.trim()}
+                >
+                  <Lock size={16} /> Save as Private Draft
+                </button>
+                <button
+                  type="button"
+                  className="publish-community-btn"
+                  onClick={() => handleSaveWithMode('PUBLIC')}
+                  disabled={isSaving || !title.trim() || !content.trim()}
+                >
+                  <Globe size={16} /> {isSaving ? 'Processing...' : (editId ? 'Update & Publish Publicly' : 'Publish Publicly')}
+                </button>
+              </>
+            )}
+
+            {visibility === 'COMMUNITY' && (
+              <>
+                <button
+                  type="button"
+                  className="save-private-btn"
+                  onClick={() => handleSaveWithMode('PRIVATE')}
+                  disabled={isSaving || !title.trim() || !content.trim()}
+                >
+                  <Lock size={16} /> Save as Private Draft
+                </button>
+                <button
+                  type="button"
+                  className="publish-community-btn"
+                  onClick={() => handleSaveWithMode('COMMUNITY')}
+                  disabled={isSaving || !title.trim() || !content.trim() || !selectedCommunityId}
+                >
+                  <Users size={16} /> {isSaving ? 'Processing...' : (editId ? 'Update & Publish to Community' : 'Publish to Community')}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

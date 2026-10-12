@@ -89,4 +89,37 @@ public final class JournalSpecification {
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }
+
+    public static Specification<JournalEntry> publicFeed(
+            String query,
+            String category,
+            String tag) {
+        return (root, criteriaQuery, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            // Strictly PUBLIC visibility
+            predicates.add(cb.equal(root.get("visibility"), com.notesphere.entity.enums.JournalVisibility.PUBLIC));
+
+            // Search query across title and content
+            if (StringUtils.hasText(query)) {
+                String pattern = "%" + query.trim().toLowerCase() + "%";
+                Predicate titleMatch = cb.like(cb.lower(root.get("title")), pattern);
+                Predicate contentMatch = cb.like(cb.lower(root.get("content")), pattern);
+                predicates.add(cb.or(titleMatch, contentMatch));
+            }
+
+            // Category filter
+            if (StringUtils.hasText(category)) {
+                predicates.add(cb.equal(cb.lower(root.get("category")), category.trim().toLowerCase()));
+            }
+
+            // Tag filter (element collection)
+            if (StringUtils.hasText(tag)) {
+                predicates.add(cb.isMember(tag.trim(), root.get("tags")));
+            }
+
+            criteriaQuery.distinct(true);
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
 }

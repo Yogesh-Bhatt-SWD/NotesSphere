@@ -15,6 +15,7 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
   const [category, setCategory] = useState('Mindfulness');
   const [content, setContent] = useState('');
   const [tags, setTags] = useState('thoughts, reflection');
+  const [visibility, setVisibility] = useState('PRIVATE');
   const [selectedCommunityId, setSelectedCommunityId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -398,21 +399,92 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
           </div>
         </div>
 
-        {/* Publish to Community Feed Dropdown */}
+        {/* Publication Mode Selector */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-            Publish to Community Feed
+            Publication Mode
           </label>
-          <CustomDropdown
-            value={selectedCommunityId || (communities[0] ? communities[0].id : '')}
-            onChange={setSelectedCommunityId}
-            options={communityOptions}
-            placeholder="Select community space..."
-            icon={Users}
-            searchable={true}
-            searchPlaceholder="Search community feed..."
-          />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            <button
+              type="button"
+              onClick={() => setVisibility('PRIVATE')}
+              style={{
+                padding: '8px 10px',
+                borderRadius: 'var(--radius-md)',
+                border: visibility === 'PRIVATE' ? '2px solid var(--primary)' : '1px solid var(--border-subtle)',
+                background: visibility === 'PRIVATE' ? 'var(--primary-light)' : '#FFFFFF',
+                color: visibility === 'PRIVATE' ? 'var(--primary)' : 'var(--text-secondary)',
+                fontWeight: 600,
+                fontSize: '0.82rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '5px',
+              }}
+            >
+              <Lock size={14} /> Private
+            </button>
+            <button
+              type="button"
+              onClick={() => setVisibility('PUBLIC')}
+              style={{
+                padding: '8px 10px',
+                borderRadius: 'var(--radius-md)',
+                border: visibility === 'PUBLIC' ? '2px solid var(--primary)' : '1px solid var(--border-subtle)',
+                background: visibility === 'PUBLIC' ? 'var(--primary-light)' : '#FFFFFF',
+                color: visibility === 'PUBLIC' ? 'var(--primary)' : 'var(--text-secondary)',
+                fontWeight: 600,
+                fontSize: '0.82rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '5px',
+              }}
+            >
+              <Globe size={14} /> Public
+            </button>
+            <button
+              type="button"
+              onClick={() => setVisibility('COMMUNITY')}
+              style={{
+                padding: '8px 10px',
+                borderRadius: 'var(--radius-md)',
+                border: visibility === 'COMMUNITY' ? '2px solid var(--primary)' : '1px solid var(--border-subtle)',
+                background: visibility === 'COMMUNITY' ? 'var(--primary-light)' : '#FFFFFF',
+                color: visibility === 'COMMUNITY' ? 'var(--primary)' : 'var(--text-secondary)',
+                fontWeight: 600,
+                fontSize: '0.82rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '5px',
+              }}
+            >
+              <Users size={14} /> Community
+            </button>
+          </div>
         </div>
+
+        {/* Publish to Community Feed Dropdown - rendered ONLY when COMMUNITY is selected */}
+        {visibility === 'COMMUNITY' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+              Select Community Feed *
+            </label>
+            <CustomDropdown
+              value={selectedCommunityId || (communities[0] ? communities[0].id : '')}
+              onChange={setSelectedCommunityId}
+              options={communityOptions}
+              placeholder="Select community space..."
+              icon={Users}
+              searchable={true}
+              searchPlaceholder="Search community feed..."
+            />
+          </div>
+        )}
 
         {/* Reflection Content Textarea */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -446,44 +518,96 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
           />
         </div>
 
-        {/* Action Buttons: Publish Journal (Primary) and Save as Private (Secondary) */}
+        {/* Action Buttons changing according to chosen visibility */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
           <Button variant="ghost" onClick={onClose} type="button">
             Cancel
           </Button>
 
           <div style={{ display: 'flex', gap: '10px' }}>
-            <Button
-              variant="secondary"
-              type="button"
-              icon={Lock}
-              disabled={!title.trim() || !content.trim() || submitting}
-              onClick={() => handleAction('PRIVATE')}
-              style={{
-                background: '#FFFFFF',
-                border: '1.5px solid var(--border-subtle)',
-                color: 'var(--text-secondary)',
-                fontWeight: 600,
-              }}
-            >
-              Save as Private
-            </Button>
-
-            <Button
-              variant="primary"
-              type="button"
-              icon={Globe}
-              disabled={!title.trim() || !content.trim() || submitting}
-              onClick={() => handleAction('COMMUNITY')}
-              style={{
-                background: 'var(--primary)',
-                color: '#FFFFFF',
-                fontWeight: 700,
-                boxShadow: '0 4px 14px var(--primary-glow)',
-              }}
-            >
-              {submitting ? 'Publishing...' : 'Publish Journal'}
-            </Button>
+            {visibility === 'PRIVATE' ? (
+              <Button
+                variant="primary"
+                type="button"
+                icon={Lock}
+                disabled={!title.trim() || !content.trim() || submitting}
+                onClick={() => handleAction('PRIVATE')}
+                style={{
+                  background: 'var(--primary)',
+                  color: '#FFFFFF',
+                  fontWeight: 700,
+                  boxShadow: '0 4px 14px var(--primary-glow)',
+                }}
+              >
+                {submitting ? 'Saving...' : 'Save as Private'}
+              </Button>
+            ) : visibility === 'PUBLIC' ? (
+              <>
+                <Button
+                  variant="secondary"
+                  type="button"
+                  icon={Lock}
+                  disabled={!title.trim() || !content.trim() || submitting}
+                  onClick={() => handleAction('PRIVATE')}
+                  style={{
+                    background: '#FFFFFF',
+                    border: '1.5px solid var(--border-subtle)',
+                    color: 'var(--text-secondary)',
+                    fontWeight: 600,
+                  }}
+                >
+                  Save as Private
+                </Button>
+                <Button
+                  variant="primary"
+                  type="button"
+                  icon={Globe}
+                  disabled={!title.trim() || !content.trim() || submitting}
+                  onClick={() => handleAction('PUBLIC')}
+                  style={{
+                    background: 'var(--primary)',
+                    color: '#FFFFFF',
+                    fontWeight: 700,
+                    boxShadow: '0 4px 14px var(--primary-glow)',
+                  }}
+                >
+                  {submitting ? 'Publishing...' : 'Publish Publicly'}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="secondary"
+                  type="button"
+                  icon={Lock}
+                  disabled={!title.trim() || !content.trim() || submitting}
+                  onClick={() => handleAction('PRIVATE')}
+                  style={{
+                    background: '#FFFFFF',
+                    border: '1.5px solid var(--border-subtle)',
+                    color: 'var(--text-secondary)',
+                    fontWeight: 600,
+                  }}
+                >
+                  Save as Private
+                </Button>
+                <Button
+                  variant="primary"
+                  type="button"
+                  icon={Users}
+                  disabled={!title.trim() || !content.trim() || submitting}
+                  onClick={() => handleAction('COMMUNITY')}
+                  style={{
+                    background: 'var(--primary)',
+                    color: '#FFFFFF',
+                    fontWeight: 700,
+                    boxShadow: '0 4px 14px var(--primary-glow)',
+                  }}
+                >
+                  {submitting ? 'Publishing...' : 'Publish to Community'}
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
