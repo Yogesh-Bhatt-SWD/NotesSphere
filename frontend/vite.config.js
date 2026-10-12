@@ -21,6 +21,11 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           secure: false,
         },
+        '/login/oauth2': {
+          target: backendTarget,
+          changeOrigin: true,
+          secure: false,
+        },
         '/ws': {
           target: backendTarget,
           ws: true,

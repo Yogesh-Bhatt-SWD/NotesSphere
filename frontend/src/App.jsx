@@ -18,6 +18,7 @@ import FriendsPage from './pages/FriendsPage';
 import ChatPage from './pages/ChatPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import OAuth2RedirectHandler from './pages/OAuth2RedirectHandler';
 import NotFoundPage from './pages/NotFoundPage';
 
 function ProtectedRoute({ children }) {
@@ -64,6 +65,7 @@ export function App() {
           {/* Public Authentication Routes */}
           <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
           <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
+          <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
 
           {/* Authenticated Dashboard Shell Layout */}
           <Route

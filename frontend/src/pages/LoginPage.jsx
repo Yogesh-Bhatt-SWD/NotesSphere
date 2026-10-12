@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { BookOpen, Mail, Lock, ArrowRight } from 'lucide-react';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
@@ -7,11 +7,14 @@ import { useAuth } from '../context/AuthContext';
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(
+    searchParams.get('error') ? 'Google authentication was cancelled or failed. Please try again.' : ''
+  );
   const [loading, setLoading] = useState(false);
 
   const hasSavedDraft = !!localStorage.getItem('notesphere_saved_draft');
@@ -36,8 +39,8 @@ export function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
-    // Redirects to Spring Boot backend OAuth2 initiation endpoint
-    window.location.href = `${import.meta.env.VITE_API_BASE_URL || ''}/oauth2/authorize/google?redirect_uri=${encodeURIComponent(window.location.origin + '/oauth2/redirect')}`;
+    // Both Vite dev proxy and Vercel edge rewrite route /oauth2 directly to backend
+    window.location.href = '/oauth2/authorization/google';
   };
 
   return (
