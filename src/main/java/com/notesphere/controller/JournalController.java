@@ -90,6 +90,15 @@ public class JournalController {
         return ResponseEntity.ok(ApiResponse.success(journal));
     }
 
+    @PostMapping("/{id}/view")
+    @Operation(summary = "Record a view on a published journal entry")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> recordView(
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @PathVariable String id) {
+        long viewCount = journalService.recordView(currentUser.getId(), id);
+        return ResponseEntity.ok(ApiResponse.success("View recorded", java.util.Map.of("id", id, "viewCount", viewCount)));
+    }
+
     @PutMapping("/{id}")
     @Operation(summary = "Update an existing journal entry")
     public ResponseEntity<ApiResponse<JournalResponse>> updateJournal(

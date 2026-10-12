@@ -109,6 +109,7 @@ CREATE TABLE IF NOT EXISTS journal_entries (
     published_at TIMESTAMP NULL,
     like_count INT NOT NULL DEFAULT 0,
     comment_count INT NOT NULL DEFAULT 0,
+    view_count BIGINT NOT NULL DEFAULT 0,
     sentiment_label VARCHAR(50) NULL,
     compound_score DOUBLE NOT NULL DEFAULT 0.0,
     positive_score DOUBLE NOT NULL DEFAULT 0.0,
@@ -259,3 +260,17 @@ CREATE TABLE IF NOT EXISTS messages (
     CONSTRAINT fk_message_conversation FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
     CONSTRAINT fk_message_sender FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+-- 18. Journal Views Table (Unique deduplicated views tracking)
+CREATE TABLE IF NOT EXISTS journal_views (
+    id VARCHAR(36) PRIMARY KEY,
+    journal_id VARCHAR(36) NOT NULL,
+    viewer_id VARCHAR(36) NOT NULL,
+    last_viewed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_jv_journal_id (journal_id),
+    INDEX idx_jv_viewer_id (viewer_id),
+    UNIQUE INDEX idx_jv_unique_view (journal_id, viewer_id),
+    CONSTRAINT fk_jv_journal FOREIGN KEY (journal_id) REFERENCES journal_entries(id) ON DELETE CASCADE
+);
+

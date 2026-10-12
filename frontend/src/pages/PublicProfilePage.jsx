@@ -16,13 +16,15 @@ import {
   Heart,
   Share2,
   Check,
-  Edit3
+  Edit3,
+  Eye
 } from 'lucide-react';
 import Header from '../components/layout/Header';
 import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
 import EmptyState from '../components/common/EmptyState';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import { ContentDetailModal } from '../components/common/ContentDetailModal';
 import { useAuth } from '../context/AuthContext';
 import userService from '../api/userService';
 import friendService from '../api/friendService';
@@ -60,6 +62,7 @@ export function PublicProfilePage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState(null);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [selectedJournal, setSelectedJournal] = useState(null);
 
   const isOwnProfile = authUser && (authUser.id === userId || authUser.username === userId);
 
@@ -548,13 +551,16 @@ export function PublicProfilePage() {
               {journals.map((entry) => (
                 <div
                   key={entry.id}
+                  onClick={() => setSelectedJournal(entry)}
                   style={{
                     padding: '20px',
                     borderRadius: 'var(--radius-lg)',
                     border: '1px solid var(--border-subtle)',
                     backgroundColor: 'var(--bg-card-hover)',
-                    transition: 'var(--transition-fast)'
+                    transition: 'var(--transition-fast)',
+                    cursor: 'pointer'
                   }}
+                  title="Click to read full story"
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                     <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
@@ -597,6 +603,9 @@ export function PublicProfilePage() {
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--text-muted)' }} title="Total Views">
+                        <Eye size={14} /> {entry.viewCount || 0} {entry.viewCount === 1 ? 'view' : 'views'}
+                      </span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <Heart size={14} color="var(--accent-coral)" /> {entry.likeCount || 0}
                       </span>
@@ -611,6 +620,20 @@ export function PublicProfilePage() {
           )}
         </div>
       </div>
+
+      {/* Story Detail / View Modal */}
+      {selectedJournal && (
+        <ContentDetailModal
+          journal={selectedJournal}
+          onClose={() => setSelectedJournal(null)}
+          onViewCountUpdate={(journalId, newCount) => {
+            setJournals((prev) =>
+              prev.map((j) => (j.id === journalId ? { ...j, viewCount: newCount } : j))
+            );
+            setSelectedJournal((prev) => (prev && prev.id === journalId ? { ...prev, viewCount: newCount } : prev));
+          }}
+        />
+      )}
     </div>
   );
 }

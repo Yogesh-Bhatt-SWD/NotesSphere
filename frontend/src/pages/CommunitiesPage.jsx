@@ -25,12 +25,14 @@ import {
   ArrowRight,
   Loader2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Eye
 } from 'lucide-react';
 import communityService from '../api/communityService';
 import journalService from '../api/journalService';
 import { useAuth } from '../context/AuthContext';
 import { CustomDropdown } from '../components/common/CustomDropdown';
+import ContentDetailModal from '../components/common/ContentDetailModal';
 import './CommunitiesPage.css';
 
 export function CommunitiesPage() {
@@ -72,6 +74,9 @@ export function CommunitiesPage() {
   // Report modal state
   const [reportingPostId, setReportingPostId] = useState(null);
   const [reportReason, setReportReason] = useState('');
+
+  // Content detail reading modal state
+  const [selectedPostDetail, setSelectedPostDetail] = useState(null);
 
   // Load communities
   const loadCommunities = async () => {
@@ -408,7 +413,14 @@ export function CommunitiesPage() {
         </div>
 
         <div>
-          <h3 className="feed-post-title">{post.title}</h3>
+          <h3
+            className="feed-post-title"
+            onClick={() => setSelectedPostDetail(post)}
+            style={{ cursor: 'pointer' }}
+            title="Open and read full story"
+          >
+            {post.title}
+          </h3>
           <p className="feed-post-body">{post.content}</p>
         </div>
 
@@ -445,6 +457,18 @@ export function CommunitiesPage() {
             onClick={() => toggleComments(post.id)}
           >
             <MessageSquare size={16} /> {post.commentCount || 0} Comments
+          </button>
+
+          <span className="post-stat-views" title="Total Views">
+            <Eye size={16} /> {post.viewCount || 0} {post.viewCount === 1 ? 'view' : 'views'}
+          </span>
+
+          <button
+            className="btn-read-more"
+            onClick={() => setSelectedPostDetail(post)}
+            title="Read full story"
+          >
+            Read Story
           </button>
         </div>
 
@@ -1065,6 +1089,22 @@ export function CommunitiesPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal: Content Detail */}
+      {selectedPostDetail && (
+        <ContentDetailModal
+          journal={selectedPostDetail}
+          onClose={() => setSelectedPostDetail(null)}
+          onViewCountUpdate={(journalId, newCount) => {
+            const updater = (prev) =>
+              prev.map((p) => (p.id === journalId ? { ...p, viewCount: newCount } : p));
+            setFeedPosts(updater);
+            setPublicPosts(updater);
+            setSelectedPostDetail((prev) => (prev && prev.id === journalId ? { ...prev, viewCount: newCount } : prev));
+          }}
+          onToggleLike={(journalId) => handleToggleLike(journalId)}
+        />
       )}
     </div>
   );

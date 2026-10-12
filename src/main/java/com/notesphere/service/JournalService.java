@@ -38,6 +38,7 @@ public class JournalService {
     private final com.notesphere.repository.CommunityMemberRepository communityMemberRepository;
     private final com.notesphere.repository.UserRepository userRepository;
     private final com.notesphere.repository.PostReactionRepository postReactionRepository;
+    private final com.notesphere.repository.JournalViewRepository journalViewRepository;
 
     @Transactional
     public JournalResponse createJournal(String userId, JournalRequest request) {
@@ -105,29 +106,92 @@ public class JournalService {
         return mapToResponse(savedEntry, userId);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public JournalResponse getJournalById(String userId, String id) {
         JournalEntry entry = journalRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("JournalEntry", "id", id));
 
-        // If author, allow access
+        // If author, allow access (author's own views are excluded from view counts)
         if (entry.getUserId().equals(userId)) {
             return mapToResponse(entry, userId);
         }
 
-        // If PUBLIC, allow access to all authenticated users
+        // If PUBLIC, allow access to all authenticated users & track view
         if (entry.getVisibility() == com.notesphere.entity.enums.JournalVisibility.PUBLIC) {
-            return mapToResponse(entry, userId);
+            recordView(userId, id);
+            JournalEntry refreshed = journalRepository.findById(id).orElse(entry);
+            return mapToResponse(refreshed, userId);
         }
 
-        // If published to a community, verify user is a member of that community
+        // If published to a community, verify user is a member of that community & track view
         if (entry.getVisibility() == com.notesphere.entity.enums.JournalVisibility.COMMUNITY && entry.getCommunityId() != null) {
             if (communityMemberRepository.existsByCommunityIdAndUserId(entry.getCommunityId(), userId)) {
-                return mapToResponse(entry, userId);
+                recordView(userId, id);
+                JournalEntry refreshed = journalRepository.findById(id).orElse(entry);
+                return mapToResponse(refreshed, userId);
             }
         }
 
         throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access this journal entry");
+    }
+
+    @Transactional
+    public long recordView(String viewerId, String journalId) {
+        JournalEntry journal = journalRepository.findById(journalId)
+                .orElseThrow(() -> new ResourceNotFoundException("JournalEntry", "id", journalId));
+
+        // 1. Never count access to drafts or private content as a public view
+        if (journal.getVisibility() == com.notesphere.entity.enums.JournalVisibility.PRIVATE || journal.getPublishedAt() == null) {
+            return journal.getViewCount();
+        }
+
+        // 2. Author's own views are excluded on backend
+        if (journal.getUserId().equals(viewerId)) {
+            return journal.getViewCount();
+        }
+
+        // 3. Respect community authorization rules
+        if (journal.getVisibility() == com.notesphere.entity.enums.JournalVisibility.COMMUNITY && journal.getCommunityId() != null) {
+            boolean isMember = communityMemberRepository.existsByCommunityIdAndUserId(journal.getCommunityId(), viewerId);
+            if (!isMember) {
+                throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access this community journal");
+            }
+        }
+
+        // 4. Concurrency-safe deduplication with 24-hour window per unique viewer
+        Instant now = Instant.now();
+        java.util.Optional<com.notesphere.entity.JournalView> existingView = journalViewRepository.findByJournalIdAndViewerId(journalId, viewerId);
+
+        if (existingView.isPresent()) {
+            com.notesphere.entity.JournalView viewRecord = existingView.get();
+            if (viewRecord.getLastViewedAt() != null &&
+                    java.time.Duration.between(viewRecord.getLastViewedAt(), now).toHours() < 24) {
+                // Already viewed within 24-hour window: prevent extra increment from re-renders or duplicate requests
+                return journal.getViewCount();
+            }
+            viewRecord.setLastViewedAt(now);
+            journalViewRepository.save(viewRecord);
+        } else {
+            try {
+                com.notesphere.entity.JournalView newView = com.notesphere.entity.JournalView.builder()
+                        .journalId(journalId)
+                        .viewerId(viewerId)
+                        .lastViewedAt(now)
+                        .createdAt(now)
+                        .build();
+                journalViewRepository.save(newView);
+            } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+                // Handled gracefully if another concurrent thread already registered this view
+                return journal.getViewCount();
+            }
+        }
+
+        // 5. Atomic database-side increment in MySQL
+        journalRepository.incrementViewCount(journalId);
+        journal.setViewCount(journal.getViewCount() + 1);
+
+        log.info("Recorded view on journal {} by user {}. Updated view count: {}", journalId, viewerId, journal.getViewCount());
+        return journal.getViewCount();
     }
 
     @Transactional(readOnly = true)
@@ -421,6 +485,7 @@ public class JournalService {
                 .publishedAt(entry.getPublishedAt())
                 .likeCount(entry.getLikeCount())
                 .commentCount(entry.getCommentCount())
+                .viewCount(entry.getViewCount())
                 .likedByCurrentUser(liked)
                 .authorId(entry.getUserId())
                 .authorName(authorName)

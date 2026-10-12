@@ -19,12 +19,14 @@ import {
   Heart,
   MessageSquare,
   ExternalLink,
-  BookOpen
+  BookOpen,
+  Eye
 } from 'lucide-react';
 import journalService from '../api/journalService';
 import categoryService from '../api/categoryService';
 import communityService from '../api/communityService';
 import { CustomDropdown } from '../components/common/CustomDropdown';
+import { ContentDetailModal } from '../components/common/ContentDetailModal';
 import './JournalsPage.css';
 
 export function JournalsPage() {
@@ -60,6 +62,9 @@ export function JournalsPage() {
   const [publishingEntry, setPublishingEntry] = useState(null);
   const [publishMode, setPublishMode] = useState('PUBLIC'); // 'PUBLIC' | 'COMMUNITY'
   const [selectedCommunityId, setSelectedCommunityId] = useState('');
+
+  // Story detail modal
+  const [previewJournal, setPreviewJournal] = useState(null);
 
   const showToast = (msg, type = 'success') => {
     setNotification({ msg, type });
@@ -439,6 +444,10 @@ export function JournalsPage() {
 
                       <div className="timeline-card-footer">
                         <div className="timeline-stats">
+                          <div className="timeline-stat-item views" title="Total Views">
+                            <Eye size={15} />
+                            <span>{item.viewCount || 0} {item.viewCount === 1 ? 'view' : 'views'}</span>
+                          </div>
                           <div className="timeline-stat-item likes">
                             <Heart size={15} fill="#EF4444" />
                             <span>{item.likeCount || 0} Likes</span>
@@ -450,6 +459,13 @@ export function JournalsPage() {
                         </div>
 
                         <div className="timeline-actions">
+                          <button
+                            className="btn-card-publish"
+                            onClick={() => setPreviewJournal(item)}
+                            title="Preview Published Story"
+                          >
+                            <Eye size={13} /> View
+                          </button>
                           <button
                             className="btn-card-publish"
                             onClick={() => navigate(`/editor?id=${item.id}`)}
@@ -599,6 +615,12 @@ export function JournalsPage() {
                           <Lock size={12} /> Private
                         </span>
                       )}
+
+                      {(isCommunity || isPublic) && (
+                        <span className="badge-views-tag" title="Total Views">
+                          <Eye size={12} /> {item.viewCount || 0} {item.viewCount === 1 ? 'view' : 'views'}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -628,6 +650,20 @@ export function JournalsPage() {
                       )}
 
                       <div className="card-action-icons">
+                        {(isCommunity || isPublic) && (
+                          <button
+                            type="button"
+                            className="icon-btn view"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewJournal(item);
+                            }}
+                            title="Preview Published Story"
+                          >
+                            <Eye size={16} />
+                          </button>
+                        )}
+
                         <button
                           type="button"
                           className={`icon-btn star ${item.favorite ? 'active' : ''}`}
@@ -823,6 +859,21 @@ export function JournalsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Story Detail / View Modal */}
+      {previewJournal && (
+        <ContentDetailModal
+          journal={previewJournal}
+          onClose={() => setPreviewJournal(null)}
+          onViewCountUpdate={(journalId, newCount) => {
+            const updater = (prev) =>
+              prev.map((p) => (p.id === journalId ? { ...p, viewCount: newCount } : p));
+            setPublishedEntries(updater);
+            setEntries(updater);
+            setPreviewJournal((prev) => (prev && prev.id === journalId ? { ...prev, viewCount: newCount } : prev));
+          }}
+        />
       )}
     </div>
   );

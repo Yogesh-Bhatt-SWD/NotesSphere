@@ -515,6 +515,23 @@
   color: #3B82F6;
 }
 
+.timeline-stat-item.views {
+  color: var(--text-muted);
+}
+
+.badge-views-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  background: var(--bg-hover, rgba(0, 0, 0, 0.04));
+  color: var(--text-muted);
+  border: 1px solid var(--border-color, #E2E8F0);
+}
+
 .timeline-actions {
   display: flex;
   align-items: center;

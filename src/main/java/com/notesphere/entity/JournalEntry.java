@@ -80,6 +80,10 @@ public class JournalEntry {
     @Builder.Default
     private int commentCount = 0;
 
+    @Column(name = "view_count", nullable = false)
+    @Builder.Default
+    private long viewCount = 0L;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "sentiment_label")
     private SentimentLabel sentimentLabel;

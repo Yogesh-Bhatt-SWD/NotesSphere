@@ -716,3 +716,38 @@
   cursor: not-allowed;
 }
 
+.post-stat-views {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-muted, #64748b);
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-subtle, #f8fafc);
+  border: 1px solid var(--border-subtle, #e2e8f0);
+}
+
+.btn-read-more {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--primary, #00B69B);
+  background: var(--primary-light, #e6f8f5);
+  border: 1px solid rgba(0, 182, 155, 0.25);
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-read-more:hover {
+  background: rgba(0, 182, 155, 0.2);
+  transform: translateY(-1px);
+}
+
+

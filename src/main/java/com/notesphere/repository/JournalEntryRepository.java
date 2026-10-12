@@ -83,4 +83,8 @@ public interface JournalEntryRepository extends JpaRepository<JournalEntry, Stri
 
     @Query("SELECT j.category, COUNT(j) FROM JournalEntry j GROUP BY j.category")
     List<Object[]> countAllPlatformCategories();
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("UPDATE JournalEntry j SET j.viewCount = j.viewCount + 1 WHERE j.id = :id")
+    int incrementViewCount(@Param("id") String id);
 }

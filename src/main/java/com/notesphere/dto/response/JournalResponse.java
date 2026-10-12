@@ -31,6 +31,7 @@ public class JournalResponse {
     private Instant publishedAt;
     private int likeCount;
     private int commentCount;
+    private long viewCount;
     private boolean likedByCurrentUser;
     private String authorId;
     private String authorName;

@@ -8,6 +8,7 @@ import com.notesphere.entity.enums.SentimentLabel;
 import com.notesphere.exception.ResourceNotFoundException;
 import com.notesphere.exception.UnauthorizedException;
 import com.notesphere.repository.JournalEntryRepository;
+import com.notesphere.repository.JournalViewRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +35,9 @@ public class JournalServiceTest {
 
     @Mock
     private TaggingService taggingService;
+
+    @Mock
+    private JournalViewRepository journalViewRepository;
 
     @InjectMocks
     private JournalService journalService;

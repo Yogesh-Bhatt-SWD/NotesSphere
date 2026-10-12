@@ -60,6 +60,9 @@ class CommunityPublishingTest {
     @Mock
     private TaggingService taggingService;
 
+    @Mock
+    private JournalViewRepository journalViewRepository;
+
     @InjectMocks
     private JournalService journalService;
 
