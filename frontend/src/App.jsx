@@ -19,6 +19,7 @@ import ChatPage from './pages/ChatPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import OAuth2RedirectHandler from './pages/OAuth2RedirectHandler';
+import BlogDetailPage from './pages/BlogDetailPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 function ProtectedRoute({ children }) {
@@ -52,7 +53,9 @@ function PublicRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
   if (loading) return null;
   if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+    const params = new URLSearchParams(window.location.search);
+    const redirectUrl = params.get('redirect') || '/';
+    return <Navigate to={redirectUrl} replace />;
   }
   return children;
 }
@@ -66,6 +69,9 @@ export function App() {
           <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
           <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
           <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
+
+          {/* Shareable Blog Detail Page (Public Preview + Login Gate) */}
+          <Route path="/blogs/:slug" element={<BlogDetailPage />} />
 
           {/* Authenticated Dashboard Shell Layout */}
           <Route

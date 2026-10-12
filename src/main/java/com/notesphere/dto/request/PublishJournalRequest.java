@@ -15,7 +15,9 @@ public class PublishJournalRequest {
     private String communityId;
  
     private JournalVisibility visibility;
- 
+
+    private String coverImageUrl;
+
     public PublishJournalRequest(String communityId) {
         this.communityId = communityId;
         this.visibility = JournalVisibility.COMMUNITY;

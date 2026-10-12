@@ -1,6 +1,17 @@
 {
   "rewrites": [
     {
+      "source": "/blogs/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(whatsapp|telegram|twitterbot|facebookexternalhit|linkedinbot|slackbot|discordbot|applebot|bingbot|googlebot|yandex|duckduckbot|baiduspider).*"
+        }
+      ],
+      "destination": "http://13.127.214.25:8080/api/public/blogs/:slug/meta"
+    },
+    {
       "source": "/api/:path*",
       "destination": "http://13.127.214.25:8080/api/:path*"
     },
@@ -9,8 +20,8 @@
       "destination": "http://13.127.214.25:8080/login/oauth2/:path*"
     },
     {
-      "source": "/oauth2/:path*",
-      "destination": "http://13.127.214.25:8080/oauth2/:path*"
+      "source": "/oauth2/authorization/:path*",
+      "destination": "http://13.127.214.25:8080/oauth2/authorization/:path*"
     },
     {
       "source": "/(.*)",

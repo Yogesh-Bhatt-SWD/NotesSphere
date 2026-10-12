@@ -1,6 +1,7 @@
 package com.notesphere.service;
 
 import com.notesphere.dto.request.JournalRequest;
+import com.notesphere.dto.response.BlogPreviewResponse;
 import com.notesphere.dto.response.JournalResponse;
 import com.notesphere.dto.response.PagedResponse;
 import com.notesphere.dto.response.SentimentResponse;
@@ -10,6 +11,7 @@ import com.notesphere.exception.ResourceNotFoundException;
 import com.notesphere.exception.UnauthorizedException;
 import com.notesphere.repository.JournalEntryRepository;
 import com.notesphere.repository.JournalSpecification;
+import com.notesphere.util.SlugUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -82,10 +84,14 @@ public class JournalService {
             publishedAt = null;
         }
 
+        String slug = SlugUtils.toSlug(request.getTitle(), java.util.UUID.randomUUID().toString());
+
         JournalEntry entry = JournalEntry.builder()
                 .userId(userId)
                 .title(request.getTitle().trim())
                 .content(request.getContent().trim())
+                .slug(slug)
+                .coverImageUrl(request.getCoverImageUrl())
                 .tags(combinedTags)
                 .category(category)
                 .favorite(favorite)
@@ -262,6 +268,13 @@ public class JournalService {
             entry.setCategory(taggingService.classifyCategory(request.getContent()));
         }
 
+        if (request.getCoverImageUrl() != null) {
+            entry.setCoverImageUrl(request.getCoverImageUrl());
+        }
+        if (entry.getSlug() == null || entry.getSlug().isBlank()) {
+            entry.setSlug(SlugUtils.toSlug(entry.getTitle(), entry.getId()));
+        }
+
         if (request.getFavorite() != null) {
             entry.setFavorite(request.getFavorite());
         }
@@ -387,6 +400,13 @@ public class JournalService {
                         ? com.notesphere.entity.enums.JournalVisibility.COMMUNITY
                         : com.notesphere.entity.enums.JournalVisibility.PUBLIC);
 
+        if (entry.getSlug() == null || entry.getSlug().isBlank()) {
+            entry.setSlug(SlugUtils.toSlug(entry.getTitle(), entry.getId()));
+        }
+        if (request.getCoverImageUrl() != null && !request.getCoverImageUrl().isBlank()) {
+            entry.setCoverImageUrl(request.getCoverImageUrl().trim());
+        }
+
         if (targetVisibility == com.notesphere.entity.enums.JournalVisibility.PUBLIC) {
             entry.setVisibility(com.notesphere.entity.enums.JournalVisibility.PUBLIC);
             entry.setCommunityId(null);
@@ -460,10 +480,14 @@ public class JournalService {
 
     public JournalResponse mapToResponse(JournalEntry entry, String currentUserId) {
         String authorName = null;
+        String authorAvatarUrl = null;
         if (userRepository != null && entry.getUserId() != null) {
-            authorName = userRepository.findById(entry.getUserId())
-                    .map(com.notesphere.entity.User::getUsername)
-                    .orElse(null);
+            var userOpt = userRepository.findById(entry.getUserId());
+            if (userOpt.isPresent()) {
+                var u = userOpt.get();
+                authorName = (u.getFullName() != null && !u.getFullName().isBlank()) ? u.getFullName() : u.getUsername();
+                authorAvatarUrl = u.getAvatarUrl();
+            }
         }
 
         boolean liked = false;
@@ -471,10 +495,15 @@ public class JournalService {
             liked = postReactionRepository.existsByJournalIdAndUserId(entry.getId(), currentUserId);
         }
 
+        int readingTime = SlugUtils.estimateReadingTime(entry.getContent());
+
         return JournalResponse.builder()
                 .id(entry.getId())
+                .slug(entry.getSlug())
                 .title(entry.getTitle())
                 .content(entry.getContent())
+                .coverImageUrl(entry.getCoverImageUrl())
+                .readingTimeMinutes(readingTime)
                 .tags(entry.getTags())
                 .category(entry.getCategory())
                 .favorite(entry.isFavorite())
@@ -489,6 +518,7 @@ public class JournalService {
                 .likedByCurrentUser(liked)
                 .authorId(entry.getUserId())
                 .authorName(authorName)
+                .authorAvatarUrl(authorAvatarUrl)
                 .sentimentLabel(entry.getSentimentLabel())
                 .compoundScore(entry.getCompoundScore())
                 .positiveScore(entry.getPositiveScore())
@@ -497,6 +527,145 @@ public class JournalService {
                 .createdAt(entry.getCreatedAt())
                 .updatedAt(entry.getUpdatedAt())
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public BlogPreviewResponse getPublicBlogPreview(String identifier) {
+        JournalEntry entry = journalRepository.findBySlugOrId(identifier)
+                .orElseThrow(() -> new ResourceNotFoundException("Blog", "identifier", identifier));
+
+        if (entry.getPublishedAt() == null || entry.getVisibility() == com.notesphere.entity.enums.JournalVisibility.PRIVATE) {
+            throw new ResourceNotFoundException("Blog", "identifier", identifier);
+        }
+
+        String authorName = null;
+        String authorAvatarUrl = null;
+        if (userRepository != null && entry.getUserId() != null) {
+            var userOpt = userRepository.findById(entry.getUserId());
+            if (userOpt.isPresent()) {
+                var u = userOpt.get();
+                authorName = (u.getFullName() != null && !u.getFullName().isBlank()) ? u.getFullName() : u.getUsername();
+                authorAvatarUrl = u.getAvatarUrl();
+            }
+        }
+
+        String excerpt = SlugUtils.extractExcerpt(entry.getContent(), 260);
+        int readingTime = SlugUtils.estimateReadingTime(entry.getContent());
+
+        return BlogPreviewResponse.builder()
+                .id(entry.getId())
+                .slug(entry.getSlug())
+                .title(entry.getTitle())
+                .excerpt(excerpt)
+                .coverImageUrl(entry.getCoverImageUrl())
+                .category(entry.getCategory())
+                .tags(entry.getTags())
+                .publishedAt(entry.getPublishedAt())
+                .readingTimeMinutes(readingTime)
+                .viewCount(entry.getViewCount())
+                .likeCount(entry.getLikeCount())
+                .authorName(authorName)
+                .authorAvatarUrl(authorAvatarUrl)
+                .communityPost(entry.getVisibility() == com.notesphere.entity.enums.JournalVisibility.COMMUNITY)
+                .communityName(entry.getCommunityName())
+                .build();
+    }
+
+    @Transactional
+    public JournalResponse getFullBlog(String currentUserId, String identifier) {
+        if (currentUserId == null || currentUserId.isBlank()) {
+            throw new org.springframework.security.authentication.AuthenticationCredentialsNotFoundException("Authentication required to access full article");
+        }
+
+        JournalEntry entry = journalRepository.findBySlugOrId(identifier)
+                .orElseThrow(() -> new ResourceNotFoundException("Blog", "identifier", identifier));
+
+        // Author can always access their own journal
+        if (entry.getUserId().equals(currentUserId)) {
+            return mapToResponse(entry, currentUserId);
+        }
+
+        // Draft or Private content: never expose to non-author
+        if (entry.getPublishedAt() == null || entry.getVisibility() == com.notesphere.entity.enums.JournalVisibility.PRIVATE) {
+            throw new ResourceNotFoundException("Blog", "identifier", identifier);
+        }
+
+        // If PUBLIC: allow access and record view
+        if (entry.getVisibility() == com.notesphere.entity.enums.JournalVisibility.PUBLIC) {
+            recordView(currentUserId, entry.getId());
+            JournalEntry refreshed = journalRepository.findById(entry.getId()).orElse(entry);
+            return mapToResponse(refreshed, currentUserId);
+        }
+
+        // If COMMUNITY: verify community membership
+        if (entry.getVisibility() == com.notesphere.entity.enums.JournalVisibility.COMMUNITY && entry.getCommunityId() != null) {
+            if (communityMemberRepository.existsByCommunityIdAndUserId(entry.getCommunityId(), currentUserId)) {
+                recordView(currentUserId, entry.getId());
+                JournalEntry refreshed = journalRepository.findById(entry.getId()).orElse(entry);
+                return mapToResponse(refreshed, currentUserId);
+            }
+            throw new org.springframework.security.access.AccessDeniedException("You must be a member of " + entry.getCommunityName() + " to read this article");
+        }
+
+        throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access this blog");
+    }
+
+    @Transactional(readOnly = true)
+    public String getBlogOgMetadata(String identifier, String baseUrl) {
+        JournalEntry entry = journalRepository.findBySlugOrId(identifier)
+                .orElse(null);
+
+        if (entry == null || entry.getPublishedAt() == null || entry.getVisibility() == com.notesphere.entity.enums.JournalVisibility.PRIVATE) {
+            return "<!DOCTYPE html><html><head><title>NoteSphere - Article Not Found</title></head><body><p>Article not found or private.</p></body></html>";
+        }
+
+        String authorName = "NoteSphere Author";
+        if (userRepository != null && entry.getUserId() != null) {
+            var u = userRepository.findById(entry.getUserId());
+            if (u.isPresent()) {
+                var user = u.get();
+                authorName = (user.getFullName() != null && !user.getFullName().isBlank()) ? user.getFullName() : user.getUsername();
+            }
+        }
+
+        String excerpt = SlugUtils.extractExcerpt(entry.getContent(), 200);
+        String title = entry.getTitle() != null ? entry.getTitle().replace("\"", "&quot;") : "NoteSphere Article";
+        String description = excerpt != null ? excerpt.replace("\"", "&quot;") : "Read this article on NoteSphere.";
+        String slug = entry.getSlug() != null ? entry.getSlug() : entry.getId();
+        String fullUrl = (baseUrl != null ? baseUrl : "https://notes-sphere-d2m4.vercel.app") + "/blogs/" + slug;
+        String coverImage = entry.getCoverImageUrl() != null && !entry.getCoverImageUrl().isBlank()
+                ? entry.getCoverImageUrl()
+                : "https://notes-sphere-d2m4.vercel.app/og-image.png";
+
+        return "<!DOCTYPE html>\n" +
+                "<html lang=\"en\">\n" +
+                "<head>\n" +
+                "    <meta charset=\"UTF-8\">\n" +
+                "    <title>" + title + " | NoteSphere</title>\n" +
+                "    <meta name=\"description\" content=\"" + description + "\">\n" +
+                "    <meta name=\"author\" content=\"" + authorName + "\">\n" +
+                "    <!-- Open Graph -->\n" +
+                "    <meta property=\"og:title\" content=\"" + title + "\">\n" +
+                "    <meta property=\"og:description\" content=\"" + description + "\">\n" +
+                "    <meta property=\"og:image\" content=\"" + coverImage + "\">\n" +
+                "    <meta property=\"og:url\" content=\"" + fullUrl + "\">\n" +
+                "    <meta property=\"og:type\" content=\"article\">\n" +
+                "    <meta property=\"og:site_name\" content=\"NoteSphere\">\n" +
+                "    <!-- Twitter Card -->\n" +
+                "    <meta name=\"twitter:card\" content=\"summary_large_image\">\n" +
+                "    <meta name=\"twitter:title\" content=\"" + title + "\">\n" +
+                "    <meta name=\"twitter:description\" content=\"" + description + "\">\n" +
+                "    <meta name=\"twitter:image\" content=\"" + coverImage + "\">\n" +
+                "    <!-- Auto-redirect human users if opened directly in browser -->\n" +
+                "    <meta http-equiv=\"refresh\" content=\"0;url=" + fullUrl + "\">\n" +
+                "</head>\n" +
+                "<body>\n" +
+                "    <h1>" + title + "</h1>\n" +
+                "    <p>" + description + "</p>\n" +
+                "    <p>By " + authorName + "</p>\n" +
+                "    <a href=\"" + fullUrl + "\">Read full article on NoteSphere</a>\n" +
+                "</body>\n" +
+                "</html>";
     }
 
     public PagedResponse<JournalResponse> mapToPagedResponse(Page<JournalEntry> page) {

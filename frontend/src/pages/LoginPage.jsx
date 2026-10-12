@@ -30,7 +30,8 @@ export function LoginPage() {
 
     try {
       await login(email, password);
-      navigate('/');
+      const redirectTarget = searchParams.get('redirect') || '/';
+      navigate(redirectTarget);
     } catch (err) {
       setError(err.message || 'Login failed. Please check credentials.');
     } finally {
@@ -39,6 +40,10 @@ export function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
+    const redirectTarget = searchParams.get('redirect');
+    if (redirectTarget) {
+      sessionStorage.setItem('notesphere_oauth2_redirect', redirectTarget);
+    }
     // Both Vite dev proxy and Vercel edge rewrite route /oauth2 directly to backend
     window.location.href = '/oauth2/authorization/google';
   };
@@ -187,7 +192,10 @@ export function LoginPage() {
 
         <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
           Don't have an account?{' '}
-          <Link to="/register" style={{ color: 'var(--primary)', fontWeight: 700 }}>
+          <Link
+            to={searchParams.get('redirect') ? `/register?redirect=${encodeURIComponent(searchParams.get('redirect'))}` : '/register'}
+            style={{ color: 'var(--primary)', fontWeight: 700 }}
+          >
             Create Account
           </Link>
         </p>

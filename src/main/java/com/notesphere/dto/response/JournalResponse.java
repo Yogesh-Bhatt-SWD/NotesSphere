@@ -19,8 +19,11 @@ import java.util.List;
 public class JournalResponse {
 
     private String id;
+    private String slug;
     private String title;
     private String content;
+    private String coverImageUrl;
+    private int readingTimeMinutes;
     private List<String> tags;
     private String category;
     private boolean favorite;
@@ -35,6 +38,7 @@ public class JournalResponse {
     private boolean likedByCurrentUser;
     private String authorId;
     private String authorName;
+    private String authorAvatarUrl;
     private SentimentLabel sentimentLabel;
     private double compoundScore;
     private double positiveScore;

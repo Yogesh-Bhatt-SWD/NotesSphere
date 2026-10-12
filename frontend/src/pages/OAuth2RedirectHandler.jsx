@@ -37,13 +37,15 @@ export function OAuth2RedirectHandler() {
             ...userData,
             name: userData.name || userData.username || userData.email?.split('@')[0] || 'Member',
           };
-          localStorage.setItem('notesphere_user', JSON.stringify(normalized));
-          setUser(normalized);
-          navigate('/', { replace: true });
+          const redirectTarget = sessionStorage.getItem('notesphere_oauth2_redirect') || '/';
+          sessionStorage.removeItem('notesphere_oauth2_redirect');
+          navigate(redirectTarget, { replace: true });
         })
         .catch((err) => {
           console.warn('Could not immediately fetch user profile after OAuth, continuing to dashboard:', err);
-          navigate('/', { replace: true });
+          const redirectTarget = sessionStorage.getItem('notesphere_oauth2_redirect') || '/';
+          sessionStorage.removeItem('notesphere_oauth2_redirect');
+          navigate(redirectTarget, { replace: true });
         });
     } else {
       navigate('/login', { replace: true });

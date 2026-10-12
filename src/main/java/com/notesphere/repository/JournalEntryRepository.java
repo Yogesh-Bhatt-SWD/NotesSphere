@@ -87,4 +87,11 @@ public interface JournalEntryRepository extends JpaRepository<JournalEntry, Stri
     @org.springframework.data.jpa.repository.Modifying
     @Query("UPDATE JournalEntry j SET j.viewCount = j.viewCount + 1 WHERE j.id = :id")
     int incrementViewCount(@Param("id") String id);
+
+    java.util.Optional<JournalEntry> findBySlug(String slug);
+
+    boolean existsBySlug(String slug);
+
+    @Query("SELECT j FROM JournalEntry j WHERE j.slug = :identifier OR j.id = :identifier")
+    java.util.Optional<JournalEntry> findBySlugOrId(@Param("identifier") String identifier);
 }

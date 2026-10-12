@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { BookOpen, User, Mail, Lock, ArrowRight } from 'lucide-react';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 
 export function RegisterPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { register } = useAuth();
 
   const [name, setName] = useState('');
@@ -38,7 +39,8 @@ export function RegisterPage() {
 
     try {
       await register(trimmedName, trimmedEmail, password);
-      navigate('/');
+      const redirectTarget = searchParams.get('redirect') || '/';
+      navigate(redirectTarget);
     } catch (err) {
       setError(err.message || 'Registration failed. Try a different email.');
     } finally {
@@ -182,7 +184,10 @@ export function RegisterPage() {
 
         <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
           Already have an account?{' '}
-          <Link to="/login" style={{ color: 'var(--primary)', fontWeight: 700 }}>
+          <Link
+            to={searchParams.get('redirect') ? `/login?redirect=${encodeURIComponent(searchParams.get('redirect'))}` : '/login'}
+            style={{ color: 'var(--primary)', fontWeight: 700 }}
+          >
             Sign In
           </Link>
         </p>

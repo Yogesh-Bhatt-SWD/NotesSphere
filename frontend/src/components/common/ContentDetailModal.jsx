@@ -134,10 +134,32 @@ export function ContentDetailModal({
     }
   };
 
-  const handleCopyShare = () => {
-    navigator.clipboard?.writeText(window.location.href);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2500);
+  const handleCopyShare = async () => {
+    const slug = currentJournal.slug || currentJournal.id;
+    const shareUrl = `${window.location.origin}/blogs/${slug}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: currentJournal.title || 'NoteSphere Blog',
+          text: currentJournal.content ? currentJournal.content.slice(0, 150) + '...' : currentJournal.title,
+          url: shareUrl,
+        });
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2500);
+        return;
+      } catch (err) {
+        if (err.name === 'AbortError') return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    } catch {
+      console.warn('Could not copy link');
+    }
   };
 
   const formattedDate = currentJournal.publishedAt || currentJournal.createdAt

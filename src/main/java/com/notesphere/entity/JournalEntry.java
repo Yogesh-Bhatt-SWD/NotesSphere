@@ -20,7 +20,8 @@ import java.util.List;
         @Index(name = "idx_journal_created_at", columnList = "created_at"),
         @Index(name = "idx_journal_favorite", columnList = "user_id, is_favorite"),
         @Index(name = "idx_journal_pinned", columnList = "user_id, is_pinned"),
-        @Index(name = "idx_journal_visibility", columnList = "visibility, community_id")
+        @Index(name = "idx_journal_visibility", columnList = "visibility, community_id"),
+        @Index(name = "idx_journal_slug", columnList = "slug")
 })
 @EntityListeners(AuditingEntityListener.class)
 @Data
@@ -34,11 +35,17 @@ public class JournalEntry {
     @Column(name = "id", length = 36, updatable = false, nullable = false)
     private String id;
 
+    @Column(name = "slug", length = 250, unique = true)
+    private String slug;
+
     @Column(name = "title", nullable = false, length = 200)
     private String title;
 
     @Column(name = "content", columnDefinition = "LONGTEXT")
     private String content;
+
+    @Column(name = "cover_image_url", length = 500)
+    private String coverImageUrl;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "journal_entry_tags", joinColumns = @JoinColumn(name = "journal_entry_id"))

@@ -39,6 +39,8 @@ public class JournalRequest {
 
     private String communityId;
 
+    private String coverImageUrl;
+
     public JournalRequest(String title, String content, List<String> tags) {
         this.title = title;
         this.content = content;

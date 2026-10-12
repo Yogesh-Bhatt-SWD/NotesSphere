@@ -110,6 +110,8 @@ CREATE TABLE IF NOT EXISTS journal_entries (
     like_count INT NOT NULL DEFAULT 0,
     comment_count INT NOT NULL DEFAULT 0,
     view_count BIGINT NOT NULL DEFAULT 0,
+    slug VARCHAR(250) NULL UNIQUE,
+    cover_image_url VARCHAR(500) NULL,
     sentiment_label VARCHAR(50) NULL,
     compound_score DOUBLE NOT NULL DEFAULT 0.0,
     positive_score DOUBLE NOT NULL DEFAULT 0.0,
@@ -122,7 +124,8 @@ CREATE TABLE IF NOT EXISTS journal_entries (
     INDEX idx_journal_created_at (created_at),
     INDEX idx_journal_favorite (user_id, is_favorite),
     INDEX idx_journal_pinned (user_id, is_pinned),
-    INDEX idx_journal_visibility (visibility, community_id)
+    INDEX idx_journal_visibility (visibility, community_id),
+    INDEX idx_journal_slug (slug)
 );
 
 -- 7. Journal Entry Tags Table (ElementCollection for JournalEntry)
