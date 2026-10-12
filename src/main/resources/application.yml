@@ -29,7 +29,7 @@ spring:
             client-id: ${GOOGLE_CLIENT_ID:your-google-client-id}
             client-secret: ${GOOGLE_CLIENT_SECRET:your-google-client-secret}
             scope: openid, profile, email
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            redirect-uri: "${GOOGLE_REDIRECT_URI:https://notes-sphere-d2m4.vercel.app/login/oauth2/code/{registrationId}}"
 
 # JWT Configuration
 app:
