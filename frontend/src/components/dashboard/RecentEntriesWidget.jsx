@@ -24,11 +24,13 @@ export function RecentEntriesWidget({ entries: propEntries }) {
             title: j.title,
             category: j.category || 'General',
             timeAgo: j.createdAt ? formatTimeAgo(j.createdAt) : 'Recently',
-            thumbnail: [
-              'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=200&q=80',
-              'https://images.unsplash.com/photo-1526676037777-05a232554f77?auto=format&fit=crop&w=200&q=80',
-              'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=200&q=80',
-            ][idx % 3],
+            thumbnail:
+              j.coverImageUrl ||
+              [
+                'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=200&q=80',
+                'https://images.unsplash.com/photo-1526676037777-05a232554f77?auto=format&fit=crop&w=200&q=80',
+                'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=200&q=80',
+              ][idx % 3],
           }));
           setItems(mapped);
         } else {

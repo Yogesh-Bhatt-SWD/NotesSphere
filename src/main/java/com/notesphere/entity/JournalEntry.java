@@ -44,7 +44,8 @@ public class JournalEntry {
     @Column(name = "content", columnDefinition = "LONGTEXT")
     private String content;
 
-    @Column(name = "cover_image_url", length = 500)
+    @Lob
+    @Column(name = "cover_image_url", columnDefinition = "MEDIUMTEXT")
     private String coverImageUrl;
 
     @ElementCollection(fetch = FetchType.EAGER)

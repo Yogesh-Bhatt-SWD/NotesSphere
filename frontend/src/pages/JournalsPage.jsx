@@ -28,6 +28,7 @@ import communityService from '../api/communityService';
 import { CustomDropdown } from '../components/common/CustomDropdown';
 import { ContentDetailModal } from '../components/common/ContentDetailModal';
 import ShareModal from '../components/common/ShareModal';
+import { formatJournalCardDate } from '../utils/dateUtils';
 import './JournalsPage.css';
 
 export function JournalsPage() {
@@ -401,14 +402,21 @@ export function JournalsPage() {
                     {/* Prominent Published Date & Time Badge */}
                     <div className="timeline-date-badge">
                       <Calendar size={13} />
-                      <span>{formatPublishedDate(item.publishedAt || item.createdAt)}</span>
-                      <span style={{ opacity: 0.5 }}>•</span>
-                      <Clock size={13} />
-                      <span>{formatPublishedTime(item.publishedAt || item.createdAt)}</span>
+                      <span>{formatJournalCardDate(item)}</span>
                     </div>
 
                     {/* Timeline Content Card */}
                     <div className="timeline-card">
+                      {item.coverImageUrl && (
+                        <div style={{ marginBottom: '14px', borderRadius: '10px', overflow: 'hidden', height: '180px', width: '100%' }}>
+                          <img
+                            src={item.coverImageUrl}
+                            alt={item.title}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                          />
+                        </div>
+                      )}
+
                       <div className="timeline-card-header">
                         <div className="timeline-header-meta">
                           <span
@@ -607,6 +615,14 @@ export function JournalsPage() {
                   className="horizontal-journal-card"
                   onClick={() => navigate(`/editor?id=${item.id}`)}
                 >
+                  {item.coverImageUrl && (
+                    <img
+                      src={item.coverImageUrl}
+                      alt={item.title}
+                      className="card-thumbnail-img"
+                    />
+                  )}
+
                   <div className="card-content-center">
                     <h3 className="card-entry-title">{item.title}</h3>
                     <p className="card-entry-excerpt">{item.content}</p>
@@ -644,7 +660,10 @@ export function JournalsPage() {
                   </div>
 
                   <div className="card-actions-right">
-                    <span className="card-date-label">{formattedDate}</span>
+                    <span className="card-date-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      <Calendar size={12} style={{ opacity: 0.7 }} />
+                      <span>{formatJournalCardDate(item)}</span>
+                    </span>
 
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       {/* Publish / Unpublish button */}

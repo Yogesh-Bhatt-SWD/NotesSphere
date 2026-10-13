@@ -10,7 +10,6 @@ import {
   Quote,
   Code,
   Maximize2,
-  Save,
   Plus,
   Briefcase,
   Lock,
@@ -18,9 +17,7 @@ import {
   Sparkles,
   CheckCircle2,
   AlertCircle,
-  FolderPlus,
   Trash2,
-  Edit2,
   Users
 } from 'lucide-react';
 import journalService from '../api/journalService';
@@ -29,6 +26,7 @@ import communityService from '../api/communityService';
 import authService from '../api/authService';
 import { CustomDropdown } from '../components/common/CustomDropdown';
 import ShareModal from '../components/common/ShareModal';
+import CoverPhotoUploader from '../components/common/CoverPhotoUploader';
 import './EditorPage.css';
 
 export function EditorPage() {
@@ -39,6 +37,7 @@ export function EditorPage() {
   // Form fields
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [coverImageUrl, setCoverImageUrl] = useState('');
   const [publishedToShare, setPublishedToShare] = useState(null);
   const [category, setCategory] = useState('Daily Life');
   const [visibility, setVisibility] = useState('PRIVATE'); // 'PRIVATE' | 'COMMUNITY'
@@ -106,6 +105,7 @@ export function EditorPage() {
         const j = res.data;
         setTitle(j.title || '');
         setContent(j.content || '');
+        setCoverImageUrl(j.coverImageUrl || '');
         if (j.category) {
           setCategory(j.category);
           userManuallySetCategory.current = true;
@@ -131,6 +131,7 @@ export function EditorPage() {
           const draft = JSON.parse(savedDraft);
           if (draft.title) setTitle(draft.title);
           if (draft.content) setContent(draft.content);
+          if (draft.coverImageUrl) setCoverImageUrl(draft.coverImageUrl);
           if (draft.category) {
             setCategory(draft.category);
             userManuallySetCategory.current = true;
@@ -267,6 +268,7 @@ export function EditorPage() {
         title,
         content,
         category,
+        coverImageUrl,
         tags: selectedTags,
         visibility: targetMode,
         communityId: targetMode === 'COMMUNITY' ? selectedCommunityId : null,
@@ -284,6 +286,7 @@ export function EditorPage() {
         tags: selectedTags,
         visibility: targetMode,
         communityId: targetMode === 'COMMUNITY' ? selectedCommunityId : null,
+        coverImageUrl: coverImageUrl || '',
       };
 
       if (editId) {
@@ -326,6 +329,7 @@ export function EditorPage() {
         title,
         content,
         category,
+        coverImageUrl,
         tags: selectedTags,
         visibility: targetMode,
         communityId: targetMode === 'COMMUNITY' ? selectedCommunityId : null,
@@ -402,6 +406,13 @@ export function EditorPage() {
 
       <div className="center-page-body">
         <div className="editor-container-card">
+          {/* Optional Cover Photo Field */}
+          <CoverPhotoUploader
+            value={coverImageUrl}
+            onChange={setCoverImageUrl}
+            onError={(msg) => showToast(msg, 'error')}
+          />
+
           {/* Title Input */}
           <input
             type="text"

@@ -20,6 +20,7 @@ import { blogService } from '../api/blogService';
 import { communityService } from '../api/communityService';
 import { useAuth } from '../context/AuthContext';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import { formatPublishedDateIST } from '../utils/dateUtils';
 import './BlogDetailPage.css';
 
 export function BlogDetailPage() {
@@ -166,16 +167,7 @@ export function BlogDetailPage() {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'Recently';
-    try {
-      return new Date(dateString).toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-    } catch {
-      return 'Recently';
-    }
+    return formatPublishedDateIST(dateString);
   };
 
   if (loading) {

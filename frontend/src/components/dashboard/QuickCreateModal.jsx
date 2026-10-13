@@ -4,6 +4,7 @@ import Input from '../common/Input';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
 import CustomDropdown from '../common/CustomDropdown';
+import CoverPhotoUploader from '../common/CoverPhotoUploader';
 import { Sparkles, Save, Globe, Lock, Plus, Check, Users, Leaf, Laptop, PenTool, Activity, Briefcase } from 'lucide-react';
 import journalService from '../../api/journalService';
 import categoryService from '../../api/categoryService';
@@ -12,6 +13,7 @@ import authService from '../../api/authService';
 
 export function QuickCreateModal({ isOpen, onClose, onCreated }) {
   const [title, setTitle] = useState('');
+  const [coverImageUrl, setCoverImageUrl] = useState('');
   const [category, setCategory] = useState('Mindfulness');
   const [content, setContent] = useState('');
   const [tags, setTags] = useState('thoughts, reflection');
@@ -50,6 +52,7 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
           const draft = JSON.parse(savedDraft);
           if (draft.title && !title) setTitle(draft.title);
           if (draft.content && !content) setContent(draft.content);
+          if (draft.coverImageUrl) setCoverImageUrl(draft.coverImageUrl);
           if (draft.category) setCategory(draft.category);
           if (draft.tags) setTags(draft.tags);
           if (draft.communityId) setSelectedCommunityId(draft.communityId);
@@ -178,6 +181,7 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
       localStorage.setItem('notesphere_saved_draft', JSON.stringify({
         title,
         content,
+        coverImageUrl,
         category,
         tags,
         visibility: chosenVisibility,
@@ -207,6 +211,7 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
         tags: tags.split(',').map(t => t.trim()).filter(Boolean),
         visibility: chosenVisibility,
         communityId: chosenVisibility === 'COMMUNITY' ? effectiveCommunityId : null,
+        coverImageUrl: coverImageUrl || null,
       };
 
       const res = await journalService.createJournal(payload);
@@ -215,7 +220,8 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
         ...payload,
         createdAt: new Date().toLocaleDateString('en-GB'),
         sentiment: estimatedSentiment.label.toUpperCase(),
-        coverImage: 'https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=600&q=80',
+        coverImageUrl: coverImageUrl || 'https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=600&q=80',
+        coverImage: coverImageUrl || 'https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=600&q=80',
       };
 
       // Clean up saved draft on success
@@ -226,12 +232,14 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
       // Reset form and close
       setTitle('');
       setContent('');
+      setCoverImageUrl('');
       onClose();
     } catch (err) {
       // Auto-save draft on failure so the user never loses content
       localStorage.setItem('notesphere_saved_draft', JSON.stringify({
         title,
         content,
+        coverImageUrl,
         category,
         tags,
         visibility: chosenVisibility,
@@ -294,6 +302,18 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
           onChange={(e) => setTitle(e.target.value)}
           required
         />
+
+        {/* Cover Photo Field (Optional) */}
+        <div>
+          <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', display: 'block', marginBottom: '6px' }}>
+            Cover Photo (Optional)
+          </label>
+          <CoverPhotoUploader
+            value={coverImageUrl}
+            onChange={setCoverImageUrl}
+            onError={(err) => setErrorMsg(err)}
+          />
+        </div>
 
         {/* Category & Tags Row */}
         <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '14px' }}>

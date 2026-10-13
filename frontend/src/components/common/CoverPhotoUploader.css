@@ -1,0 +1,227 @@
+/* CoverPhotoUploader.css */
+
+.cover-photo-uploader-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+/* Image Preview State */
+.cover-photo-preview-wrapper {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  border-radius: var(--radius-xl, 14px);
+  overflow: hidden;
+  background-color: #F1F5F9;
+  border: 1px solid var(--border-card, #E2E8F0);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.cover-photo-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.cover-photo-preview-wrapper:hover .cover-photo-preview-img {
+  transform: scale(1.02);
+}
+
+/* Frosted glass action buttons overlay */
+.cover-photo-preview-overlay {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 2;
+}
+
+.btn-cover-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--text-primary, #1E293B);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transition: all var(--transition-fast, 0.15s ease);
+}
+
+.btn-cover-action:hover {
+  background: #FFFFFF;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16);
+}
+
+.btn-cover-action.replace:hover {
+  color: var(--primary, #00B69B);
+  border-color: var(--primary, #00B69B);
+}
+
+.btn-cover-action.remove {
+  color: #EF4444;
+}
+
+.btn-cover-action.remove:hover {
+  background: #FEF2F2;
+  border-color: #FCA5A5;
+}
+
+/* Empty Placeholder Dropzone State */
+.cover-photo-placeholder-box {
+  width: 100%;
+  height: 130px;
+  border-radius: var(--radius-xl, 14px);
+  border: 1.5px dashed var(--border-subtle, #CBD5E1);
+  background-color: var(--bg-subtle, #F8FAFC);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all var(--transition-normal, 0.2s ease);
+  text-align: center;
+}
+
+.cover-photo-placeholder-box:hover {
+  border-color: var(--primary, #00B69B);
+  background-color: rgba(0, 182, 155, 0.04);
+}
+
+.cover-photo-placeholder-box.dragging {
+  border-color: var(--primary, #00B69B);
+  background-color: rgba(0, 182, 155, 0.08);
+  transform: scale(0.99);
+}
+
+.placeholder-icon-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background-color: rgba(0, 182, 155, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary, #00B69B);
+  margin-bottom: 2px;
+}
+
+.placeholder-icon {
+  stroke-width: 2px;
+}
+
+.placeholder-text-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.placeholder-primary-text {
+  font-size: 0.88rem;
+  color: var(--text-primary, #1E293B);
+  font-weight: 500;
+}
+
+.upload-link-text {
+  color: var(--primary, #00B69B);
+  font-weight: 700;
+}
+
+.placeholder-sub-text {
+  font-size: 0.76rem;
+  color: var(--text-muted, #94A3B8);
+}
+
+.placeholder-url-toggle-wrap {
+  margin-top: 4px;
+}
+
+.btn-toggle-url {
+  background: none;
+  border: none;
+  color: var(--text-muted, #64748B);
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+
+.btn-toggle-url:hover {
+  color: var(--primary, #00B69B);
+}
+
+/* URL input mode */
+.cover-photo-url-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.cover-photo-url-input {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 0.84rem;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--border-subtle, #CBD5E1);
+  background: #FFFFFF;
+  color: var(--text-primary, #1E293B);
+  outline: none;
+}
+
+.cover-photo-url-input:focus {
+  border-color: var(--primary, #00B69B);
+  box-shadow: 0 0 0 2px rgba(0, 182, 155, 0.15);
+}
+
+.cover-photo-url-submit {
+  padding: 8px 14px;
+  border-radius: var(--radius-md, 8px);
+  border: none;
+  background: var(--primary, #00B69B);
+  color: #FFFFFF;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s ease;
+}
+
+.cover-photo-url-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Error banner */
+.cover-photo-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md, 8px);
+  background-color: #FEE2E2;
+  color: #B91C1C;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid #FCA5A5;
+}

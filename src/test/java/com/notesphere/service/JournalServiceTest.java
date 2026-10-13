@@ -345,4 +345,40 @@ public class JournalServiceTest {
         assertEquals(7, insights.getDailyActivities().size());
         assertTrue(insights.getRecentActivities().isEmpty());
     }
+
+    @Test
+    void uploadCoverImage_Success() {
+        when(journalRepository.findById("j1")).thenReturn(Optional.of(journalEntry));
+        when(journalRepository.save(any(JournalEntry.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        String testCoverUrl = "https://images.unsplash.com/photo-test";
+        JournalResponse response = journalService.uploadCoverImage("u1", "j1", null, testCoverUrl);
+
+        assertNotNull(response);
+        assertEquals(testCoverUrl, response.getCoverImageUrl());
+        verify(journalRepository).save(argThat(j -> testCoverUrl.equals(j.getCoverImageUrl())));
+    }
+
+    @Test
+    void deleteCoverImage_Success() {
+        journalEntry.setCoverImageUrl("https://images.unsplash.com/photo-old");
+        when(journalRepository.findById("j1")).thenReturn(Optional.of(journalEntry));
+        when(journalRepository.save(any(JournalEntry.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        JournalResponse response = journalService.deleteCoverImage("u1", "j1");
+
+        assertNotNull(response);
+        assertNull(response.getCoverImageUrl());
+        verify(journalRepository).save(argThat(j -> j.getCoverImageUrl() == null));
+    }
+
+    @Test
+    void uploadCoverImage_Unauthorized() {
+        when(journalRepository.findById("j1")).thenReturn(Optional.of(journalEntry));
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class, () ->
+                journalService.uploadCoverImage("other-user", "j1", null, "https://test.com/image.jpg")
+        );
+        verify(journalRepository, never()).save(any());
+    }
 }

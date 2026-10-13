@@ -42,6 +42,19 @@ export const journalService = {
     return apiClient.post(`/journals/${id}/publish`, body);
   },
 
+  uploadCoverImage: (id, fileOrDataUrl) => {
+    if (fileOrDataUrl instanceof File || fileOrDataUrl instanceof Blob) {
+      const formData = new FormData();
+      formData.append('file', fileOrDataUrl);
+      return apiClient.post(`/journals/${id}/cover`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    }
+    return apiClient.post(`/journals/${id}/cover`, { coverImageUrl: fileOrDataUrl });
+  },
+
+  deleteCoverImage: (id) => apiClient.delete(`/journals/${id}/cover`),
+
   unpublishJournal: (id) =>
     apiClient.post(`/journals/${id}/unpublish`),
 

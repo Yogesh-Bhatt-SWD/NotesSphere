@@ -16,6 +16,7 @@ import {
 import journalService from '../../api/journalService';
 import communityService from '../../api/communityService';
 import ShareModal from './ShareModal';
+import { formatJournalCardDate } from '../../utils/dateUtils';
 import './ContentDetailModal.css';
 
 export function ContentDetailModal({
@@ -178,7 +179,7 @@ export function ContentDetailModal({
               </div>
               <div className="publish-date-row">
                 <Calendar size={12} />
-                <span>{formattedDate}</span>
+                <span>{formatJournalCardDate(currentJournal)}</span>
                 {currentJournal.category && (
                   <>
                     <span>•</span>
@@ -209,6 +210,16 @@ export function ContentDetailModal({
 
         {/* Scrollable Body */}
         <div className="content-detail-body">
+          {currentJournal.coverImageUrl && (
+            <div style={{ width: '100%', height: '220px', borderRadius: '12px', overflow: 'hidden', marginBottom: '18px' }}>
+              <img
+                src={currentJournal.coverImageUrl}
+                alt={currentJournal.title}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
+            </div>
+          )}
+
           <h1 className="content-detail-title">{currentJournal.title}</h1>
 
           {currentJournal.tags && currentJournal.tags.length > 0 && (

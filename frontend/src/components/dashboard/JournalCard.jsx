@@ -1,5 +1,6 @@
 import React from 'react';
-import { BookOpen, Rocket, Hourglass, Bookmark } from 'lucide-react';
+import { BookOpen, Rocket, Hourglass, Bookmark, Calendar } from 'lucide-react';
+import { formatJournalCardDate } from '../../utils/dateUtils';
 import './JournalCard.css';
 
 export function JournalCard({ journal, onClick }) {
@@ -14,11 +15,18 @@ export function JournalCard({ journal, onClick }) {
     }
   };
 
+  const coverUrl =
+    journal.coverImageUrl ||
+    journal.coverImage ||
+    'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=600&q=80';
+
+  const dateDisplay = formatJournalCardDate(journal);
+
   return (
     <div className="journal-card" onClick={onClick}>
       <div className="journal-card-cover-wrapper">
         <img
-          src={journal.coverImage || 'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=600&q=80'}
+          src={coverUrl}
           alt={journal.title}
           className="journal-card-cover"
           loading="lazy"
@@ -35,7 +43,8 @@ export function JournalCard({ journal, onClick }) {
       <div className="journal-card-body">
         <h4 className="journal-card-title">{journal.title}</h4>
         <div className="journal-card-meta">
-          Created at {journal.createdAt}
+          <Calendar size={13} className="journal-card-meta-icon" />
+          <span>{dateDisplay}</span>
         </div>
       </div>
     </div>

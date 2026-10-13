@@ -118,6 +118,36 @@ public class JournalController {
         return ResponseEntity.ok(ApiResponse.success("Journal updated successfully", journal));
     }
 
+    @PostMapping(value = "/{id}/cover", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload journal cover image via multipart file")
+    public ResponseEntity<ApiResponse<JournalResponse>> uploadCoverImageMultipart(
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @PathVariable String id,
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        JournalResponse journal = journalService.uploadCoverImage(currentUser.getId(), id, file, null);
+        return ResponseEntity.ok(ApiResponse.success("Cover image uploaded successfully", journal));
+    }
+
+    @PostMapping(value = "/{id}/cover", consumes = org.springframework.http.MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Upload journal cover image via JSON data URL or link")
+    public ResponseEntity<ApiResponse<JournalResponse>> uploadCoverImageJson(
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @PathVariable String id,
+            @RequestBody java.util.Map<String, String> request) {
+        String coverUrl = request.getOrDefault("coverImageUrl", request.get("coverImage"));
+        JournalResponse journal = journalService.uploadCoverImage(currentUser.getId(), id, null, coverUrl);
+        return ResponseEntity.ok(ApiResponse.success("Cover image updated successfully", journal));
+    }
+
+    @DeleteMapping("/{id}/cover")
+    @Operation(summary = "Remove journal cover image")
+    public ResponseEntity<ApiResponse<JournalResponse>> deleteCoverImage(
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @PathVariable String id) {
+        JournalResponse journal = journalService.deleteCoverImage(currentUser.getId(), id);
+        return ResponseEntity.ok(ApiResponse.success("Cover image removed successfully", journal));
+    }
+
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete a journal entry")
     public ResponseEntity<ApiResponse<Void>> deleteJournal(

@@ -97,7 +97,7 @@ public class JournalService {
                 .title(request.getTitle().trim())
                 .content(request.getContent().trim())
                 .slug(slug)
-                .coverImageUrl(request.getCoverImageUrl())
+                .coverImageUrl(request.getCoverImageUrl() != null && !request.getCoverImageUrl().isBlank() ? request.getCoverImageUrl().trim() : null)
                 .tags(combinedTags)
                 .category(category)
                 .favorite(favorite)
@@ -279,7 +279,7 @@ public class JournalService {
         }
 
         if (request.getCoverImageUrl() != null) {
-            entry.setCoverImageUrl(request.getCoverImageUrl());
+            entry.setCoverImageUrl(request.getCoverImageUrl().isBlank() ? null : request.getCoverImageUrl().trim());
         }
         if (entry.getSlug() == null || entry.getSlug().isBlank()) {
             entry.setSlug(SlugUtils.toSlug(entry.getTitle(), entry.getId()));
@@ -398,6 +398,47 @@ public class JournalService {
             throw new org.springframework.security.access.AccessDeniedException("You do not have permission to access this journal entry");
         }
         return entry;
+    }
+
+    @Transactional
+    public JournalResponse uploadCoverImage(String userId, String id, org.springframework.web.multipart.MultipartFile file, String dataUrl) {
+        JournalEntry entry = findEntryAndVerifyOwnership(userId, id);
+
+        if (file != null && !file.isEmpty()) {
+            if (file.getSize() > 5 * 1024 * 1024) {
+                throw new com.notesphere.exception.BadRequestException("Cover image file must be under 5MB");
+            }
+            String ct = file.getContentType();
+            if (ct != null && !ct.startsWith("image/")) {
+                throw new com.notesphere.exception.BadRequestException("Uploaded file must be a valid image");
+            }
+            try {
+                byte[] bytes = file.getBytes();
+                String contentType = ct != null ? ct : "image/jpeg";
+                String base64 = "data:" + contentType + ";base64," + java.util.Base64.getEncoder().encodeToString(bytes);
+                entry.setCoverImageUrl(base64);
+            } catch (java.io.IOException e) {
+                log.error("Failed to read cover image bytes for journal {}", id, e);
+                throw new com.notesphere.exception.BadRequestException("Failed to process cover image file");
+            }
+        } else if (org.springframework.util.StringUtils.hasText(dataUrl)) {
+            entry.setCoverImageUrl(dataUrl.trim());
+        } else {
+            throw new com.notesphere.exception.BadRequestException("No cover image file or URL provided");
+        }
+
+        JournalEntry saved = journalRepository.save(entry);
+        log.info("Cover image updated for journal entry: {} by user: {}", id, userId);
+        return mapToResponse(saved, userId);
+    }
+
+    @Transactional
+    public JournalResponse deleteCoverImage(String userId, String id) {
+        JournalEntry entry = findEntryAndVerifyOwnership(userId, id);
+        entry.setCoverImageUrl(null);
+        JournalEntry saved = journalRepository.save(entry);
+        log.info("Cover image removed for journal entry: {} by user: {}", id, userId);
+        return mapToResponse(saved, userId);
     }
 
     @Transactional
