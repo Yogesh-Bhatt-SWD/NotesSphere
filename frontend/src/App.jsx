@@ -20,6 +20,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import OAuth2RedirectHandler from './pages/OAuth2RedirectHandler';
 import BlogDetailPage from './pages/BlogDetailPage';
+import SearchPage from './pages/SearchPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 function ProtectedRoute({ children }) {
@@ -92,6 +93,7 @@ export function App() {
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="tags" element={<TagsPage />} />
             <Route path="reminders" element={<RemindersPage />} />
+            <Route path="search" element={<SearchPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="profile/:userId" element={<PublicProfilePage />} />
             <Route path="profile" element={<Navigate to="/settings" replace />} />

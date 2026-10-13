@@ -21,4 +21,10 @@ public interface CommunityRepository extends JpaRepository<Community, String> {
             "(:query IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(c.description) LIKE LOWER(CONCAT('%', :query, '%'))) AND " +
             "(:category IS NULL OR LOWER(c.category) = LOWER(:category))")
     Page<Community> searchCommunities(@Param("query") String query, @Param("category") String category, Pageable pageable);
+
+    @Query("SELECT c FROM Community c WHERE " +
+            "LOWER(c.name) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+            "LOWER(c.description) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+            "LOWER(c.category) LIKE LOWER(CONCAT('%', :query, '%'))")
+    java.util.List<Community> searchCommunitiesByQuery(@Param("query") String query);
 }

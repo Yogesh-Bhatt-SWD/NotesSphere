@@ -26,4 +26,14 @@ public interface UserRepository extends JpaRepository<User, String> {
     org.springframework.data.domain.Page<User> findByUsernameContainingIgnoreCaseAndIdNot(String username, String currentUserId, org.springframework.data.domain.Pageable pageable);
 
     org.springframework.data.domain.Page<User> findByIdNot(String currentUserId, org.springframework.data.domain.Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query("SELECT u FROM User u WHERE u.id != :currentUserId AND (" +
+            "LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+            "LOWER(u.fullName) LIKE LOWER(CONCAT('%', :query, '%')))")
+    java.util.List<User> searchUsers(@org.springframework.data.repository.query.Param("query") String query, @org.springframework.data.repository.query.Param("currentUserId") String currentUserId);
+
+    @org.springframework.data.jpa.repository.Query("SELECT u FROM User u WHERE " +
+            "LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+            "LOWER(u.fullName) LIKE LOWER(CONCAT('%', :query, '%'))")
+    java.util.List<User> searchAllUsers(@org.springframework.data.repository.query.Param("query") String query);
 }

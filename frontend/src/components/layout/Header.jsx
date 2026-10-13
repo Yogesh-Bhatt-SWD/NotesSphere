@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Search, Menu } from 'lucide-react';
+import { Bell, Search, Menu, X } from 'lucide-react';
 import { Badge } from '../common/Badge';
 import { useAuth } from '../../context/AuthContext';
 import { mockCurrentUser } from '../../mock/mockData';
+import { GlobalSearchDropdown } from '../common/GlobalSearchDropdown';
 import './Header.css';
 
 export function Header({
@@ -11,7 +12,7 @@ export function Header({
   subtitle = "How it's going on ?",
   badgeText = null,
   onSearchChange,
-  searchPlaceholder = "Search Journal...",
+  searchPlaceholder = "Search NoteSphere...",
   onToggleMobileMenu,
 }) {
   const navigate = useNavigate();
@@ -22,6 +23,24 @@ export function Header({
   const userFirstName = userName.split(' ')[0];
   const avatarUrl = currentUser?.avatarUrl || currentUser?.avatar || null;
   const displayName = title || `Hello, ${userName}`;
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // 300ms debounce for global search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+      if (searchQuery.trim().length > 0) {
+        setIsDropdownOpen(true);
+      } else {
+        setIsDropdownOpen(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   return (
     <header className="app-header">
@@ -79,8 +98,8 @@ export function Header({
           <span className="header-user-name-label">{userFirstName}</span>
         </div>
 
-        {/* Pill Search Input */}
-        <div className="header-search-box">
+        {/* Pill Search Input with Global Discovery Dropdown */}
+        <div className="header-search-box" style={{ position: 'relative' }}>
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
             <Search
               size={18}
@@ -94,10 +113,31 @@ export function Header({
             <input
               type="text"
               placeholder={searchPlaceholder}
-              onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
+              value={searchQuery}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSearchQuery(val);
+                if (onSearchChange) onSearchChange(val);
+              }}
+              onFocus={() => {
+                if (debouncedQuery.trim().length > 0) {
+                  setIsDropdownOpen(true);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const trimmed = searchQuery.trim();
+                  if (trimmed) {
+                    setIsDropdownOpen(false);
+                    navigate(`/search?q=${encodeURIComponent(trimmed)}`);
+                  }
+                } else if (e.key === 'Escape') {
+                  setIsDropdownOpen(false);
+                }
+              }}
               style={{
                 width: '100%',
-                padding: '12px 18px 12px 42px',
+                padding: '12px 38px 12px 42px',
                 borderRadius: '9999px',
                 background: '#FFFFFF',
                 border: '1px solid var(--border-subtle)',
@@ -106,7 +146,39 @@ export function Header({
                 boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
               }}
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setDebouncedQuery('');
+                  setIsDropdownOpen(false);
+                  if (onSearchChange) onSearchChange('');
+                }}
+                style={{
+                  position: 'absolute',
+                  right: '14px',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '2px'
+                }}
+                aria-label="Clear search"
+              >
+                <X size={15} />
+              </button>
+            )}
           </div>
+
+          {/* Interactive Global Search Dropdown */}
+          <GlobalSearchDropdown
+            query={debouncedQuery}
+            isOpen={isDropdownOpen}
+            onClose={() => setIsDropdownOpen(false)}
+          />
         </div>
       </div>
     </header>
@@ -114,3 +186,4 @@ export function Header({
 }
 
 export default Header;
+

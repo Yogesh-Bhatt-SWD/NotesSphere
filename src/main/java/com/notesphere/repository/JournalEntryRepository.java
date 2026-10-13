@@ -100,4 +100,20 @@ public interface JournalEntryRepository extends JpaRepository<JournalEntry, Stri
 
     @Query("SELECT COALESCE(SUM(j.wordCount), 0) FROM JournalEntry j WHERE j.userId = :userId AND j.createdAt >= :startDate")
     Long sumWordCountByUserIdAndCreatedAtAfter(@Param("userId") String userId, @Param("startDate") Instant startDate);
+
+    @Query("SELECT DISTINCT j FROM JournalEntry j LEFT JOIN j.tags t WHERE j.visibility = com.notesphere.entity.enums.JournalVisibility.PUBLIC " +
+           "AND j.publishedAt IS NOT NULL AND (" +
+           "LOWER(j.title) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(j.content) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(j.category) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(t) LIKE LOWER(CONCAT('%', :query, '%')))")
+    List<JournalEntry> searchPublicBlogs(@Param("query") String query);
+
+    @Query("SELECT DISTINCT j FROM JournalEntry j LEFT JOIN j.tags t WHERE j.visibility = com.notesphere.entity.enums.JournalVisibility.COMMUNITY " +
+           "AND j.publishedAt IS NOT NULL AND j.communityId IN :communityIds AND (" +
+           "LOWER(j.title) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(j.content) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(j.category) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(t) LIKE LOWER(CONCAT('%', :query, '%')))")
+    List<JournalEntry> searchCommunityPostsByCommunityIds(@Param("query") String query, @Param("communityIds") List<String> communityIds);
 }
