@@ -7,8 +7,6 @@ import {
   Globe,
   Users,
   Lock,
-  Send,
-  Flag,
   Calendar,
   Share2,
   Check
@@ -39,6 +37,18 @@ export function ContentDetailModal({
     setCurrentJournal(journal);
     setViewCount(journal.viewCount || 0);
 
+    // If content is not present, fetch the full journal entry by ID
+    if (!journal.content) {
+      journalService.getJournalById(journal.id)
+        .then((res) => {
+          const fullData = res?.data?.data || res?.data || res;
+          if (fullData && typeof fullData === 'object') {
+            setCurrentJournal((prev) => ({ ...prev, ...fullData }));
+          }
+        })
+        .catch(() => {});
+    }
+
     // Track view once per modal open
     if (!hasTrackedViewRef.current) {
       hasTrackedViewRef.current = true;
@@ -57,7 +67,6 @@ export function ContentDetailModal({
             }
           })
           .catch((err) => {
-            // Silently handle any non-fatal tracking error
             console.debug('View tracking check:', err?.message);
           });
       }
@@ -106,18 +115,10 @@ export function ContentDetailModal({
     setShowShareModal(true);
   };
 
-  const formattedDate = currentJournal.publishedAt || currentJournal.createdAt
-    ? new Date(currentJournal.publishedAt || currentJournal.createdAt).toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      })
-    : 'Recently';
-
   return (
     <div className="content-detail-overlay" onClick={onClose}>
       <div className="content-detail-modal" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
+        {/* 1. Fixed Header */}
         <div className="content-detail-header">
           <div className="content-detail-author-row">
             <div className="content-detail-avatar">
@@ -173,77 +174,78 @@ export function ContentDetailModal({
           </div>
         </div>
 
-        {/* Scrollable Body */}
-        <div className="content-detail-body">
-          {(currentJournal.coverImageUrl || currentJournal.coverImage) && (
-            <div style={{ width: '100%', height: '220px', borderRadius: '12px', overflow: 'hidden', marginBottom: '18px', backgroundColor: 'var(--bg-subtle)' }}>
-              <img
-                src={currentJournal.coverImageUrl || currentJournal.coverImage}
-                alt={currentJournal.title}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                onError={(e) => {
-                  if (e.currentTarget.parentElement) {
-                    e.currentTarget.parentElement.style.display = 'none';
-                  }
-                }}
-              />
-            </div>
-          )}
+        {/* 2. Unified Scrollable Content Area: Article + Stats + Comments */}
+        <div className="content-detail-scroll-area">
+          <div className="content-detail-body">
+            {(currentJournal.coverImageUrl || currentJournal.coverImage) && (
+              <div style={{ width: '100%', height: '240px', borderRadius: '12px', overflow: 'hidden', marginBottom: '20px', backgroundColor: 'var(--bg-subtle)' }}>
+                <img
+                  src={currentJournal.coverImageUrl || currentJournal.coverImage}
+                  alt={currentJournal.title}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  onError={(e) => {
+                    if (e.currentTarget.parentElement) {
+                      e.currentTarget.parentElement.style.display = 'none';
+                    }
+                  }}
+                />
+              </div>
+            )}
 
-          <h1 className="content-detail-title">{currentJournal.title}</h1>
+            <h1 className="content-detail-title">{currentJournal.title}</h1>
 
-          {currentJournal.tags && currentJournal.tags.length > 0 && (
-            <div className="content-detail-tags">
-              {currentJournal.tags.map((tag) => (
-                <span key={tag} className="tag-item">
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          )}
+            {currentJournal.tags && currentJournal.tags.length > 0 && (
+              <div className="content-detail-tags">
+                {currentJournal.tags.map((tag) => (
+                  <span key={tag} className="tag-item">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
 
-          <div className="content-detail-text">
-            {currentJournal.content}
-          </div>
-        </div>
-
-        {/* Engagement Stats Bar */}
-        <div className="content-detail-stats-bar">
-          <div className="stats-group">
-            {/* View Count Display with Eye Icon */}
-            <div className="stat-pill views" title="Total content views">
-              <Eye size={17} />
-              <span>{viewCount} {viewCount === 1 ? 'view' : 'views'}</span>
-            </div>
-
-            <button
-              className={`stat-pill likes-btn ${currentJournal.likedByCurrentUser ? 'active' : ''}`}
-              onClick={handleLike}
-              title="Like this publication"
-            >
-              <Heart
-                size={17}
-                fill={currentJournal.likedByCurrentUser ? '#EF4444' : 'none'}
-                color={currentJournal.likedByCurrentUser ? '#EF4444' : 'currentColor'}
-              />
-              <span>{currentJournal.likeCount || 0} Likes</span>
-            </button>
-
-            <div className="stat-pill comments">
-              <MessageSquare size={17} />
-              <span>{currentJournal.commentCount || 0} Comments</span>
+            <div className="content-detail-text">
+              {currentJournal.content || 'No content written for this journal entry.'}
             </div>
           </div>
-        </div>
 
-        {/* Comments Section with Emoji Picker */}
-        <div style={{ padding: '0 24px 24px' }}>
-          <CommentSection
-            journalId={currentJournal.id}
-            onCommentCountChange={(newCount) => {
-              setCurrentJournal((prev) => ({ ...prev, commentCount: newCount }));
-            }}
-          />
+          {/* 3. Engagement Stats Bar */}
+          <div className="content-detail-stats-bar">
+            <div className="stats-group">
+              <div className="stat-pill views" title="Total content views">
+                <Eye size={17} />
+                <span>{viewCount} {viewCount === 1 ? 'view' : 'views'}</span>
+              </div>
+
+              <button
+                className={`stat-pill likes-btn ${currentJournal.likedByCurrentUser ? 'active' : ''}`}
+                onClick={handleLike}
+                title="Like this publication"
+              >
+                <Heart
+                  size={17}
+                  fill={currentJournal.likedByCurrentUser ? '#EF4444' : 'none'}
+                  color={currentJournal.likedByCurrentUser ? '#EF4444' : 'currentColor'}
+                />
+                <span>{currentJournal.likeCount || 0} Likes</span>
+              </button>
+
+              <div className="stat-pill comments">
+                <MessageSquare size={17} />
+                <span>{currentJournal.commentCount || 0} Comments</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Comments Section with Emoji Picker */}
+          <div className="content-detail-comments-container">
+            <CommentSection
+              journalId={currentJournal.id}
+              onCommentCountChange={(newCount) => {
+                setCurrentJournal((prev) => ({ ...prev, commentCount: newCount }));
+              }}
+            />
+          </div>
         </div>
       </div>
 

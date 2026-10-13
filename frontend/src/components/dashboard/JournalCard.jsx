@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, Rocket, Hourglass, Bookmark, Calendar } from 'lucide-react';
+import { BookOpen, Rocket, Hourglass, Calendar } from 'lucide-react';
 import { formatJournalCardDate } from '../../utils/dateUtils';
 import './JournalCard.css';
 
@@ -11,40 +11,59 @@ export function JournalCard({ journal, onClick }) {
       case 'hourglass':
         return <Hourglass size={20} color="#EF4444" />;
       default:
-        return <BookOpen size={20} color="#6366F1" />;
+        return <BookOpen size={20} color="#00B69B" />;
     }
   };
 
-  const coverUrl =
-    journal.coverImageUrl ||
-    journal.coverImage ||
-    'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=600&q=80';
-
+  const coverUrl = journal.coverImageUrl || journal.coverImage || null;
   const dateDisplay = formatJournalCardDate(journal);
 
   return (
     <div className="journal-card" onClick={onClick}>
-      <div className="journal-card-cover-wrapper">
-        <img
-          src={coverUrl}
-          alt={journal.title}
-          className="journal-card-cover"
-          loading="lazy"
-          onError={(e) => {
-            e.currentTarget.src = 'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=600&q=80';
-          }}
-        />
-        {/* Frosted floating published date badge over cover */}
-        <div className="journal-card-floating-date" title={dateDisplay}>
-          <Calendar size={12} className="journal-card-floating-date-icon" />
-          <span>{dateDisplay}</span>
-        </div>
+      {coverUrl ? (
+        <div className="journal-card-cover-wrapper">
+          <img
+            src={coverUrl}
+            alt={journal.title}
+            className="journal-card-cover"
+            loading="lazy"
+            onError={(e) => {
+              // Hide broken image gracefully without falling back to stock mock photos
+              e.currentTarget.style.display = 'none';
+              if (e.currentTarget.parentElement) {
+                e.currentTarget.parentElement.classList.add('no-cover');
+              }
+            }}
+          />
+          {/* Frosted floating published date badge over cover */}
+          <div className="journal-card-floating-date" title={dateDisplay}>
+            <Calendar size={12} className="journal-card-floating-date-icon" />
+            <span>{dateDisplay}</span>
+          </div>
 
-        {/* Frosted floating badge */}
-        <div className="journal-card-floating-badge">
-          {getIcon()}
+          {/* Frosted floating badge */}
+          <div className="journal-card-floating-badge">
+            {getIcon()}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="journal-card-cover-wrapper no-cover">
+          <div className="journal-card-watermark">
+            <BookOpen size={56} strokeWidth={1.5} />
+          </div>
+
+          {/* Frosted floating published date badge */}
+          <div className="journal-card-floating-date" title={dateDisplay}>
+            <Calendar size={12} className="journal-card-floating-date-icon" />
+            <span>{dateDisplay}</span>
+          </div>
+
+          {/* Frosted floating badge */}
+          <div className="journal-card-floating-badge">
+            {getIcon()}
+          </div>
+        </div>
+      )}
 
       <div className="journal-card-body">
         <h4 className="journal-card-title">{journal.title}</h4>

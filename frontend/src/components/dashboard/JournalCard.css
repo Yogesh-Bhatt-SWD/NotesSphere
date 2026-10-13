@@ -26,6 +26,27 @@
   background-color: #E2E8F0;
 }
 
+.journal-card-cover-wrapper.no-cover {
+  background: linear-gradient(135deg, #E6F8F5 0%, #EEF2FF 50%, #F8FAFC 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.journal-card-watermark {
+  color: var(--primary, #00B69B);
+  opacity: 0.16;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.journal-card:hover .journal-card-watermark {
+  transform: scale(1.1) rotate(4deg);
+  opacity: 0.24;
+}
+
 .journal-card-cover {
   width: 100%;
   height: 100%;

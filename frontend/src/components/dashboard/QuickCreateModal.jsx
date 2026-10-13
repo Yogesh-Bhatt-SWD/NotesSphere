@@ -220,8 +220,8 @@ export function QuickCreateModal({ isOpen, onClose, onCreated }) {
         ...payload,
         createdAt: new Date().toLocaleDateString('en-GB'),
         sentiment: estimatedSentiment.label.toUpperCase(),
-        coverImageUrl: coverImageUrl || 'https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=600&q=80',
-        coverImage: coverImageUrl || 'https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=600&q=80',
+        coverImageUrl: coverImageUrl || null,
+        coverImage: coverImageUrl || null,
       };
 
       // Clean up saved draft on success
