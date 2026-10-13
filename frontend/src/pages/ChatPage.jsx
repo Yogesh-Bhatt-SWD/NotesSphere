@@ -90,7 +90,7 @@ export default function ChatPage() {
     });
   }, [loadConversations, activeConversationId, setSearchParams]);
 
-  // 3. When activeConversationId changes, load messages & subscribe to STOMP channel
+  // 3. When activeConversationId changes, load messages, start smart polling & subscribe to STOMP channel
   useEffect(() => {
     if (!activeConversationId) {
       setMessages([]);
@@ -100,29 +100,55 @@ export default function ChatPage() {
     let isMounted = true;
     setLoadingMessages(true);
 
-    chatService
-      .getMessages(activeConversationId, 0, 50)
-      .then((data) => {
-        if (!isMounted) return;
-        // Backend returns descending (newest first); reverse for chat timeline display
-        const chronological = (data.content || []).slice().reverse();
-        setMessages(chronological);
-        // Mark conversation messages as read
+    const fetchMessages = async (initial = false) => {
+      try {
+        const data = await chatService.getMessages(activeConversationId, 0, 50);
+        if (!isMounted || !data?.content) return;
+        const chronological = data.content.slice().reverse();
+        setMessages((prev) => {
+          if (initial) return chronological;
+          if (prev.length !== chronological.length) {
+            return chronological;
+          }
+          const hasDiff = chronological.some((nm, idx) => {
+            const pm = prev[idx];
+            return !pm || pm.id !== nm.id || pm.isRead !== nm.isRead || pm.content !== nm.content;
+          });
+          return hasDiff ? chronological : prev;
+        });
+
+        // Mark as read if user is viewing
         chatService.markAsRead(activeConversationId).catch(() => {});
-        // Update local unread counter in conversation list
         setConversations((prev) =>
           prev.map((c) => (c.id === activeConversationId ? { ...c, unreadCount: 0 } : c))
         );
-      })
-      .catch((err) => {
-        console.error('Failed to load messages:', err);
-      })
-      .finally(() => {
-        if (isMounted) setLoadingMessages(false);
-        setTimeout(() => scrollToBottom(false), 100);
-      });
+      } catch (err) {
+        if (initial) console.error('Failed to load messages:', err);
+      } finally {
+        if (initial && isMounted) {
+          setLoadingMessages(false);
+          setTimeout(() => scrollToBottom(false), 80);
+        }
+      }
+    };
 
-    // Subscribe to STOMP topic for this conversation
+    fetchMessages(true);
+
+    // Active polling fallback every 2.5s to ensure messages arrive even when WebSocket is blocked (e.g. Vercel)
+    const pollInterval = setInterval(() => {
+      fetchMessages(false);
+    }, 2500);
+
+    // Instant sync when returning to tab
+    const handleFocusOrVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchMessages(false);
+      }
+    };
+    document.addEventListener('visibilitychange', handleFocusOrVisibility);
+    window.addEventListener('focus', handleFocusOrVisibility);
+
+    // Also subscribe to STOMP topic for instant WebSocket message delivery
     const unsubscribe = websocketService.subscribeToConversation(
       activeConversationId,
       (newMsg) => {
@@ -136,7 +162,6 @@ export default function ChatPage() {
           return [...prev, msgWithDirection];
         });
 
-        // Update last message snippet in conversation sidebar
         setConversations((prev) =>
           prev.map((c) =>
             c.id === activeConversationId
@@ -150,7 +175,6 @@ export default function ChatPage() {
           )
         );
 
-        // Mark as read immediately since user is actively in conversation
         chatService.markAsRead(activeConversationId).catch(() => {});
         setTimeout(() => scrollToBottom(true), 50);
       }
@@ -158,15 +182,43 @@ export default function ChatPage() {
 
     return () => {
       isMounted = false;
+      clearInterval(pollInterval);
+      document.removeEventListener('visibilitychange', handleFocusOrVisibility);
+      window.removeEventListener('focus', handleFocusOrVisibility);
       if (unsubscribe) unsubscribe();
     };
   }, [activeConversationId, user?.id]);
+
+  // Periodic poll for conversations list in sidebar every 4s
+  useEffect(() => {
+    let isMounted = true;
+    const pollConvos = async () => {
+      try {
+        const data = await chatService.getConversations();
+        if (!isMounted || !Array.isArray(data)) return;
+        setConversations((prev) => {
+          if (prev.length !== data.length) return data;
+          const hasDiff = data.some((nc, idx) => {
+            const pc = prev[idx];
+            return !pc || pc.id !== nc.id || pc.lastMessage !== nc.lastMessage || pc.unreadCount !== nc.unreadCount;
+          });
+          return hasDiff ? data : prev;
+        });
+      } catch (_) {}
+    };
+
+    const interval = setInterval(pollConvos, 4000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   useEffect(() => {
     scrollToBottom(true);
   }, [messages]);
 
-  // Handle Send Message
+  // Handle Send Message (Guaranteed REST delivery + WebSocket broadcast)
   const handleSendMessage = async (e) => {
     e?.preventDefault();
     const content = messageText.trim();
@@ -176,28 +228,38 @@ export default function ChatPage() {
     setMessageText('');
 
     try {
+      // 1. Send via REST endpoint (persists to MySQL and triggers backend WebSocket broadcast)
+      const sentMsg = await chatService.sendMessage(activeConversationId, content);
+
+      // 2. Also publish to STOMP if socket is active
       if (wsConnected) {
-        // Primary real-time pathway via STOMP
-        websocketService.sendMessage(activeConversationId, content);
-      } else {
-        // Fallback REST pathway if WebSocket is briefly disconnected
-        const sentMsg = await chatService.sendMessage(activeConversationId, content);
-        setMessages((prev) => [...prev, { ...sentMsg, isOutgoing: true }]);
-        setConversations((prev) =>
-          prev.map((c) =>
-            c.id === activeConversationId
-              ? {
-                  ...c,
-                  lastMessage: sentMsg.content,
-                  lastMessageAt: sentMsg.createdAt,
-                }
-              : c
-          )
-        );
+        try {
+          websocketService.sendMessage(activeConversationId, content);
+        } catch (_) {}
       }
+
+      // 3. Update local state immediately with optimistic outgoing bubble
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === sentMsg.id)) return prev;
+        return [...prev, { ...sentMsg, isOutgoing: true }];
+      });
+
+      // 4. Update conversation list sidebar preview
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === activeConversationId
+            ? {
+                ...c,
+                lastMessage: sentMsg.content,
+                lastMessageAt: sentMsg.createdAt,
+                unreadCount: 0,
+              }
+            : c
+        )
+      );
+      setTimeout(() => scrollToBottom(true), 50);
     } catch (err) {
       console.error('Failed to send message:', err);
-      // Restore input text on error
       setMessageText(content);
     } finally {
       setIsSending(false);

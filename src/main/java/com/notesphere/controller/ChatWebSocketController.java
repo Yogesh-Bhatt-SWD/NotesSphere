@@ -45,33 +45,8 @@ public class ChatWebSocketController {
 
         log.debug("Processing WebSocket chat message from user {} in conversation {}", senderId, conversationId);
 
-        // Save message to MySQL database
-        MessageResponse messageResponse = conversationService.saveMessage(
-                senderId, conversationId, request.getContent());
-
-        // Broadcast message to active conversation subscribers
-        String conversationDestination = "/topic/conversation." + conversationId;
-        messagingTemplate.convertAndSend(conversationDestination, messageResponse);
-
-        // Find recipient and send real-time notification
-        try {
-            Conversation conversation = conversationService.getConversationEntity(conversationId);
-            String recipientId = conversation.getOtherParticipantId(senderId);
-
-            InAppNotification notification = InAppNotification.builder()
-                    .type("NEW_MESSAGE")
-                    .title("New message from " + messageResponse.getSenderUsername())
-                    .message(messageResponse.getContent())
-                    .senderId(senderId)
-                    .senderUsername(messageResponse.getSenderUsername())
-                    .conversationId(conversationId)
-                    .timestamp(Instant.now())
-                    .build();
-
-            messagingTemplate.convertAndSend("/topic/notifications." + recipientId, notification);
-        } catch (Exception ex) {
-            log.warn("Could not dispatch notification for message {}: {}", messageResponse.getId(), ex.getMessage());
-        }
+        // Save message to MySQL database and broadcast to active conversation subscribers & recipient notifications
+        conversationService.saveMessage(senderId, conversationId, request.getContent());
     }
 
     private String resolveUserId(Principal principal) {

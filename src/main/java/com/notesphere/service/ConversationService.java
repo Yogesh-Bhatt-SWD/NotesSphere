@@ -26,6 +26,9 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.notesphere.dto.response.InAppNotification;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+
 /**
  * Service managing private one-to-one conversations and persistent messages.
  */
@@ -38,6 +41,7 @@ public class ConversationService {
     private final MessageRepository messageRepository;
     private final FriendshipRepository friendshipRepository;
     private final UserRepository userRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     /**
      * Get all conversations for current user with unread counts and friend details.
@@ -202,7 +206,7 @@ public class ConversationService {
 
         log.debug("Message {} saved in conversation {}", message.getId(), conversationId);
 
-        return MessageResponse.builder()
+        MessageResponse response = MessageResponse.builder()
                 .id(message.getId())
                 .conversationId(conversationId)
                 .senderId(senderId)
@@ -213,6 +217,30 @@ public class ConversationService {
                 .createdAt(message.getCreatedAt())
                 .isOutgoing(true)
                 .build();
+
+        try {
+            if (messagingTemplate != null) {
+                // Broadcast to conversation channel for both participants
+                String conversationDestination = "/topic/conversation." + conversationId;
+                messagingTemplate.convertAndSend(conversationDestination, response);
+
+                // Send notification to recipient
+                InAppNotification notification = InAppNotification.builder()
+                        .type("NEW_MESSAGE")
+                        .title("New message from " + sender.getUsername())
+                        .message(response.getContent())
+                        .senderId(senderId)
+                        .senderUsername(sender.getUsername())
+                        .conversationId(conversationId)
+                        .timestamp(Instant.now())
+                        .build();
+                messagingTemplate.convertAndSend("/topic/notifications." + recipientId, notification);
+            }
+        } catch (Exception ex) {
+            log.warn("Could not dispatch WebSocket notification for message {}: {}", message.getId(), ex.getMessage());
+        }
+
+        return response;
     }
 
     /**
@@ -229,6 +257,17 @@ public class ConversationService {
 
         int updated = messageRepository.markConversationMessagesAsRead(conversationId, userId, Instant.now());
         log.debug("Marked {} messages as read in conversation {}", updated, conversationId);
+
+        if (updated > 0) {
+            try {
+                if (messagingTemplate != null) {
+                    messagingTemplate.convertAndSend("/topic/conversation." + conversationId + ".read",
+                            Map.of("conversationId", conversationId, "readBy", userId, "timestamp", Instant.now().toString()));
+                }
+            } catch (Exception ex) {
+                log.warn("Could not broadcast read status for conversation {}: {}", conversationId, ex.getMessage());
+            }
+        }
     }
 
     /**
