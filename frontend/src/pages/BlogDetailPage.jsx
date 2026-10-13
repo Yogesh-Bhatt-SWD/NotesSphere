@@ -20,6 +20,7 @@ import { blogService } from '../api/blogService';
 import { communityService } from '../api/communityService';
 import { useAuth } from '../context/AuthContext';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import CommentSection from '../components/common/CommentSection';
 import { formatPublishedDateIST } from '../utils/dateUtils';
 import './BlogDetailPage.css';
 
@@ -284,14 +285,16 @@ export function BlogDetailPage() {
       <main className="blog-content-wrapper">
         <article className="blog-article-card">
           {/* Optional Cover Image */}
-          {blog.coverImageUrl && (
+          {(blog.coverImageUrl || blog.coverImage) && (
             <div className="blog-cover-wrapper">
               <img
-                src={blog.coverImageUrl}
+                src={blog.coverImageUrl || blog.coverImage}
                 alt={blog.title}
                 className="blog-cover-image"
                 onError={(e) => {
-                  e.currentTarget.style.display = 'none';
+                  if (e.currentTarget.parentElement) {
+                    e.currentTarget.parentElement.style.display = 'none';
+                  }
                 }}
               />
             </div>
@@ -396,6 +399,16 @@ export function BlogDetailPage() {
                   <Eye size={16} />
                   <span>{blog.viewCount || 0} total views</span>
                 </div>
+              </div>
+
+              {/* Comments Section with Emoji Picker */}
+              <div style={{ marginTop: '36px', paddingTop: '28px', borderTop: '1px solid var(--border-subtle, #e2e8f0)' }}>
+                <CommentSection
+                  journalId={blog.id}
+                  onCommentCountChange={(count) => {
+                    setBlog((prev) => (prev ? { ...prev, commentCount: count } : prev));
+                  }}
+                />
               </div>
             </div>
           ) : (

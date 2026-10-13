@@ -16,6 +16,7 @@ import {
 import journalService from '../../api/journalService';
 import communityService from '../../api/communityService';
 import ShareModal from './ShareModal';
+import CommentSection from './CommentSection';
 import { formatJournalCardDate } from '../../utils/dateUtils';
 import './ContentDetailModal.css';
 
@@ -27,9 +28,6 @@ export function ContentDetailModal({
 }) {
   const [currentJournal, setCurrentJournal] = useState(journal || null);
   const [viewCount, setViewCount] = useState(journal?.viewCount || 0);
-  const [comments, setComments] = useState([]);
-  const [newComment, setNewComment] = useState('');
-  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
 
@@ -64,16 +62,6 @@ export function ContentDetailModal({
           });
       }
     }
-
-    // Load comments for published post
-    communityService
-      .getComments(journal.id)
-      .then((res) => {
-        if (res?.data) {
-          setComments(res.data);
-        }
-      })
-      .catch(() => {});
   }, [journal?.id]);
 
   // Handle escape key
@@ -111,29 +99,6 @@ export function ContentDetailModal({
       } catch (err) {
         console.error('Failed to react:', err);
       }
-    }
-  };
-
-  const handleAddComment = async (e) => {
-    e?.preventDefault();
-    const content = newComment.trim();
-    if (!content || isSubmittingComment) return;
-
-    setIsSubmittingComment(true);
-    try {
-      const res = await communityService.addComment(currentJournal.id, content);
-      if (res?.data) {
-        setComments((prev) => [...prev, res.data]);
-        setCurrentJournal((prev) => ({
-          ...prev,
-          commentCount: (prev.commentCount || 0) + 1
-        }));
-        setNewComment('');
-      }
-    } catch (err) {
-      console.error('Failed to add comment:', err);
-    } finally {
-      setIsSubmittingComment(false);
     }
   };
 
@@ -210,12 +175,17 @@ export function ContentDetailModal({
 
         {/* Scrollable Body */}
         <div className="content-detail-body">
-          {currentJournal.coverImageUrl && (
-            <div style={{ width: '100%', height: '220px', borderRadius: '12px', overflow: 'hidden', marginBottom: '18px' }}>
+          {(currentJournal.coverImageUrl || currentJournal.coverImage) && (
+            <div style={{ width: '100%', height: '220px', borderRadius: '12px', overflow: 'hidden', marginBottom: '18px', backgroundColor: 'var(--bg-subtle)' }}>
               <img
-                src={currentJournal.coverImageUrl}
+                src={currentJournal.coverImageUrl || currentJournal.coverImage}
                 alt={currentJournal.title}
                 style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                onError={(e) => {
+                  if (e.currentTarget.parentElement) {
+                    e.currentTarget.parentElement.style.display = 'none';
+                  }
+                }}
               />
             </div>
           )}
@@ -261,52 +231,19 @@ export function ContentDetailModal({
 
             <div className="stat-pill comments">
               <MessageSquare size={17} />
-              <span>{comments.length || currentJournal.commentCount || 0} Comments</span>
+              <span>{currentJournal.commentCount || 0} Comments</span>
             </div>
           </div>
         </div>
 
-        {/* Comments Section */}
-        <div className="content-detail-comments-section">
-          <h3>Community Conversation</h3>
-
-          <div className="comments-scroll-list">
-            {comments.length === 0 ? (
-              <div className="empty-comments-box">
-                <MessageSquare size={24} style={{ opacity: 0.35, marginBottom: '6px' }} />
-                <p>No comments yet. Share your supportive reflections!</p>
-              </div>
-            ) : (
-              comments.map((c) => (
-                <div key={c.id} className="comment-bubble">
-                  <div className="comment-header">
-                    <span className="comment-author">{c.authorName || 'Member'}</span>
-                    <span className="comment-time">
-                      {new Date(c.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <p className="comment-text">{c.content}</p>
-                </div>
-              ))
-            )}
-          </div>
-
-          <form className="comment-form-row" onSubmit={handleAddComment}>
-            <input
-              type="text"
-              placeholder="Write a supportive comment..."
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              disabled={isSubmittingComment}
-            />
-            <button
-              type="submit"
-              disabled={!newComment.trim() || isSubmittingComment}
-              className="btn-send-comment"
-            >
-              <Send size={15} /> Post
-            </button>
-          </form>
+        {/* Comments Section with Emoji Picker */}
+        <div style={{ padding: '0 24px 24px' }}>
+          <CommentSection
+            journalId={currentJournal.id}
+            onCommentCountChange={(newCount) => {
+              setCurrentJournal((prev) => ({ ...prev, commentCount: newCount }));
+            }}
+          />
         </div>
       </div>
 

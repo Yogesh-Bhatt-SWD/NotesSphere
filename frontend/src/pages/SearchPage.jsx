@@ -395,8 +395,8 @@ export function SearchPage() {
                       className="search-card-blog"
                       onClick={() => navigate(`/blogs/${blog.slug || blog.id}`)}
                     >
-                      {blog.coverImageUrl ? (
-                        <img src={blog.coverImageUrl} alt={blog.title} className="search-blog-cover" />
+                      {(blog.coverImageUrl || blog.coverImage) ? (
+                        <img src={blog.coverImageUrl || blog.coverImage} alt={blog.title} className="search-blog-cover" />
                       ) : (
                         <div className="search-blog-cover-placeholder">
                           <FileText size={22} />

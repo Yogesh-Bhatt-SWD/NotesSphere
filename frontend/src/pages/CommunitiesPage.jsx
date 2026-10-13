@@ -33,6 +33,7 @@ import journalService from '../api/journalService';
 import { useAuth } from '../context/AuthContext';
 import { CustomDropdown } from '../components/common/CustomDropdown';
 import ContentDetailModal from '../components/common/ContentDetailModal';
+import CommentSection from '../components/common/CommentSection';
 import './CommunitiesPage.css';
 
 export function CommunitiesPage() {
@@ -412,6 +413,32 @@ export function CommunitiesPage() {
           </button>
         </div>
 
+        {(post.coverImageUrl || post.coverImage) && (
+          <div
+            onClick={() => setSelectedPostDetail(post)}
+            style={{
+              width: '100%',
+              height: '210px',
+              borderRadius: 'var(--radius-md)',
+              overflow: 'hidden',
+              margin: '12px 0 14px 0',
+              cursor: 'pointer',
+              backgroundColor: 'var(--bg-subtle)'
+            }}
+          >
+            <img
+              src={post.coverImageUrl || post.coverImage}
+              alt={post.title}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              onError={(e) => {
+                if (e.currentTarget.parentElement) {
+                  e.currentTarget.parentElement.style.display = 'none';
+                }
+              }}
+            />
+          </div>
+        )}
+
         <div>
           <h3
             className="feed-post-title"
@@ -472,49 +499,19 @@ export function CommunitiesPage() {
           </button>
         </div>
 
-        {/* Expandable comments list */}
+        {/* Expandable comments list with Emoji Picker */}
         {isExpanded && (
-          <div className="comments-panel">
-            {comments.length === 0 ? (
-              <div style={{ fontSize: '0.84rem', color: 'var(--text-muted)' }}>
-                No comments yet. Start the conversation!
-              </div>
-            ) : (
-              comments.map((c) => (
-                <div key={c.id} className="comment-item">
-                  <div className="comment-author-row">
-                    <span>{c.authorName || 'Member'}</span>
-                    <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-                      {new Date(c.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="comment-text">{c.content}</div>
-                </div>
-              ))
-            )}
-
-            <div className="comment-input-box">
-              <input
-                type="text"
-                placeholder="Write a supportive comment..."
-                value={commentInputs[post.id] || ''}
-                onChange={(e) =>
-                  setCommentInputs({
-                    ...commentInputs,
-                    [post.id]: e.target.value,
-                  })
-                }
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handlePostComment(post.id);
-                }}
-              />
-              <button
-                className="comment-post-btn"
-                onClick={() => handlePostComment(post.id)}
-              >
-                <Send size={14} /> Send
-              </button>
-            </div>
+          <div className="comments-panel" style={{ padding: '16px 14px' }}>
+            <CommentSection
+              journalId={post.id}
+              initialComments={comments}
+              onCommentCountChange={(count) => {
+                setCommentsMap((prev) => ({
+                  ...prev,
+                  [post.id]: comments,
+                }));
+              }}
+            />
           </div>
         )}
       </div>

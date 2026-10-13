@@ -28,6 +28,7 @@ import { ContentDetailModal } from '../components/common/ContentDetailModal';
 import { useAuth } from '../context/AuthContext';
 import userService from '../api/userService';
 import friendService from '../api/friendService';
+import { formatJournalCardDate } from '../utils/dateUtils';
 
 const TwitterIcon = ({ size = 18, color = 'currentColor' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -562,6 +563,34 @@ export function PublicProfilePage() {
                   }}
                   title="Click to read full story"
                 >
+                  {/* Cover Photo */}
+                  {(entry.coverImageUrl || entry.coverImage) && (
+                    <div style={{
+                      width: '100%',
+                      height: '210px',
+                      borderRadius: 'var(--radius-md)',
+                      overflow: 'hidden',
+                      marginBottom: '14px',
+                      backgroundColor: 'var(--bg-subtle)'
+                    }}>
+                      <img
+                        src={entry.coverImageUrl || entry.coverImage}
+                        alt={entry.title}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          display: 'block'
+                        }}
+                        onError={(e) => {
+                          if (e.currentTarget.parentElement) {
+                            e.currentTarget.parentElement.style.display = 'none';
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                     <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
                       {entry.title}
@@ -588,12 +617,9 @@ export function PublicProfilePage() {
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                      <span>
-                        {new Date(entry.createdAt).toLocaleDateString(undefined, {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })}
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                        <Calendar size={13} style={{ color: 'var(--primary)' }} />
+                        {formatJournalCardDate(entry)}
                       </span>
                       {entry.communityName && (
                         <span style={{ color: 'var(--primary)', fontWeight: 600 }}>
