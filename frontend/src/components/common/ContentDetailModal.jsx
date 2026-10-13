@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import journalService from '../../api/journalService';
 import communityService from '../../api/communityService';
+import ShareModal from './ShareModal';
 import './ContentDetailModal.css';
 
 export function ContentDetailModal({
@@ -29,6 +30,7 @@ export function ContentDetailModal({
   const [newComment, setNewComment] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   // Ref lock to prevent multiple API view calls caused by React re-renders or StrictMode
   const hasTrackedViewRef = useRef(false);
@@ -134,32 +136,8 @@ export function ContentDetailModal({
     }
   };
 
-  const handleCopyShare = async () => {
-    const slug = currentJournal.slug || currentJournal.id;
-    const shareUrl = `${window.location.origin}/blogs/${slug}`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: currentJournal.title || 'NoteSphere Blog',
-          text: currentJournal.content ? currentJournal.content.slice(0, 150) + '...' : currentJournal.title,
-          url: shareUrl,
-        });
-        setCopiedLink(true);
-        setTimeout(() => setCopiedLink(false), 2500);
-        return;
-      } catch (err) {
-        if (err.name === 'AbortError') return;
-      }
-    }
-
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2500);
-    } catch {
-      console.warn('Could not copy link');
-    }
+  const handleCopyShare = () => {
+    setShowShareModal(true);
   };
 
   const formattedDate = currentJournal.publishedAt || currentJournal.createdAt
@@ -320,6 +298,13 @@ export function ContentDetailModal({
           </form>
         </div>
       </div>
+
+      {/* Share Dialog Modal */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        journal={currentJournal}
+      />
     </div>
   );
 }

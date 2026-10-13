@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, Search, Menu } from 'lucide-react';
 import { Badge } from '../common/Badge';
 import { useAuth } from '../../context/AuthContext';
@@ -13,9 +14,13 @@ export function Header({
   searchPlaceholder = "Search Journal...",
   onToggleMobileMenu,
 }) {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const currentUser = user || mockCurrentUser;
-  const userName = currentUser?.name || currentUser?.username || (user ? 'Member' : 'Arthur Fen');
+  const userName = currentUser?.name || currentUser?.fullName || currentUser?.username || (user ? 'Member' : 'Arthur Fen');
+  const userInitial = userName.charAt(0).toUpperCase();
+  const userFirstName = userName.split(' ')[0];
+  const avatarUrl = currentUser?.avatarUrl || currentUser?.avatar || null;
   const displayName = title || `Hello, ${userName}`;
 
   return (
@@ -43,6 +48,36 @@ export function Header({
           <Bell size={20} />
           <span className="notification-dot" />
         </button>
+
+        {/* User Profile Avatar Pill */}
+        <div
+          className="header-user-avatar-pill"
+          onClick={() => navigate('/settings')}
+          title="Account Settings & Profile"
+          role="button"
+          tabIndex={0}
+        >
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={userName}
+              className="header-avatar-image"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                if (e.currentTarget.nextElementSibling) {
+                  e.currentTarget.nextElementSibling.style.display = 'flex';
+                }
+              }}
+            />
+          ) : null}
+          <div
+            className="header-avatar-initial"
+            style={{ display: avatarUrl ? 'none' : 'flex' }}
+          >
+            {userInitial}
+          </div>
+          <span className="header-user-name-label">{userFirstName}</span>
+        </div>
 
         {/* Pill Search Input */}
         <div className="header-search-box">

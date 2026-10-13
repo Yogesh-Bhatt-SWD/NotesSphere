@@ -27,6 +27,7 @@ import categoryService from '../api/categoryService';
 import communityService from '../api/communityService';
 import { CustomDropdown } from '../components/common/CustomDropdown';
 import { ContentDetailModal } from '../components/common/ContentDetailModal';
+import ShareModal from '../components/common/ShareModal';
 import './JournalsPage.css';
 
 export function JournalsPage() {
@@ -65,6 +66,9 @@ export function JournalsPage() {
 
   // Story detail modal
   const [previewJournal, setPreviewJournal] = useState(null);
+
+  // Share Blog Modal
+  const [shareJournal, setShareJournal] = useState(null);
 
   const showToast = (msg, type = 'success') => {
     setNotification({ msg, type });
@@ -217,22 +221,28 @@ export function JournalsPage() {
     if (!publishingEntry) return;
 
     try {
+      let publishedResult = null;
       if (publishMode === 'PUBLIC') {
-        await journalService.publishJournal(publishingEntry.id, { visibility: 'PUBLIC' });
+        const res = await journalService.publishJournal(publishingEntry.id, { visibility: 'PUBLIC' });
+        publishedResult = res?.data || publishingEntry;
         showToast('Journal published to public feed successfully!');
       } else {
         if (!selectedCommunityId) {
           showToast('Please select a community to publish to', 'error');
           return;
         }
-        await journalService.publishJournal(publishingEntry.id, { communityId: selectedCommunityId, visibility: 'COMMUNITY' });
+        const res = await journalService.publishJournal(publishingEntry.id, { communityId: selectedCommunityId, visibility: 'COMMUNITY' });
+        publishedResult = res?.data || publishingEntry;
         showToast('Journal published to community feed successfully!');
       }
+      const entryToShare = publishedResult || publishingEntry;
       setPublishingEntry(null);
       loadJournals();
       if (activeTab === 'published') {
         loadPublishedJournals();
       }
+      // Immediately open ShareModal so author can copy and share link
+      setShareJournal(entryToShare);
     } catch (err) {
       showToast(err.message || 'Failed to publish journal', 'error');
     }
@@ -461,6 +471,14 @@ export function JournalsPage() {
                         <div className="timeline-actions">
                           <button
                             className="btn-card-publish"
+                            onClick={() => setShareJournal(item)}
+                            title="Share Blog Link"
+                            style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)', borderColor: 'rgba(0, 182, 155, 0.4)' }}
+                          >
+                            <Share2 size={13} /> Share Link
+                          </button>
+                          <button
+                            className="btn-card-publish"
                             onClick={() => setPreviewJournal(item)}
                             title="Preview Published Story"
                           >
@@ -630,14 +648,28 @@ export function JournalsPage() {
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       {/* Publish / Unpublish button */}
                       {isCommunity || isPublic ? (
-                        <button
-                          type="button"
-                          className="btn-card-unpublish"
-                          onClick={(e) => handleUnpublish(item.id, e)}
-                          title="Unpublish back to private"
-                        >
-                          Unpublish
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            className="btn-card-publish"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShareJournal(item);
+                            }}
+                            title="Share Blog Link"
+                            style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)', borderColor: 'rgba(0, 182, 155, 0.4)' }}
+                          >
+                            <Share2 size={13} /> Share Link
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-card-unpublish"
+                            onClick={(e) => handleUnpublish(item.id, e)}
+                            title="Unpublish back to private"
+                          >
+                            Unpublish
+                          </button>
+                        </>
                       ) : (
                         <button
                           type="button"
@@ -875,6 +907,13 @@ export function JournalsPage() {
           }}
         />
       )}
+
+      {/* Share Blog Dialog Modal */}
+      <ShareModal
+        isOpen={!!shareJournal}
+        onClose={() => setShareJournal(null)}
+        journal={shareJournal}
+      />
     </div>
   );
 }

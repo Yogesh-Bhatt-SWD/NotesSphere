@@ -117,12 +117,20 @@ export function RightSidebar({ className = '' }) {
             src={currentUser.avatarUrl || currentUser.avatar}
             alt={userName}
             className="user-avatar"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              if (e.currentTarget.nextElementSibling) {
+                e.currentTarget.nextElementSibling.style.display = 'flex';
+              }
+            }}
           />
-        ) : (
-          <div className="user-avatar-initial">
-            {userInitial}
-          </div>
-        )}
+        ) : null}
+        <div
+          className="user-avatar-initial"
+          style={{ display: (currentUser?.avatarUrl || currentUser?.avatar) ? 'none' : 'flex' }}
+        >
+          {userInitial}
+        </div>
         <div className="user-info">
           <div className="user-name">{userName}</div>
           <div className="user-role">{currentUser?.profileLabel || currentUser?.role || 'Writer'}</div>

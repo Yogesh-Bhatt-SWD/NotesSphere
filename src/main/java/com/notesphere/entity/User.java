@@ -57,7 +57,7 @@ public class User {
     private String fullName;
 
     @Lob
-    @Column(name = "avatar_url", columnDefinition = "TEXT")
+    @Column(name = "avatar_url", columnDefinition = "MEDIUMTEXT")
     private String avatarUrl;
 
     @Column(name = "bio", length = 500)

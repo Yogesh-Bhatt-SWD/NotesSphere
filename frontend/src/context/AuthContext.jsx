@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import authService from '../api/authService';
+import userService from '../api/userService';
 import { mockCurrentUser } from '../mock/mockData';
 
 const AuthContext = createContext(null);
@@ -15,16 +16,39 @@ export function AuthProvider({ children }) {
     const savedUser = authService.getCurrentUser();
 
     if (savedUser && (token || refreshToken)) {
-      setUser({
+      const initial = {
         ...savedUser,
-        name: savedUser.name || savedUser.username || savedUser.email?.split('@')[0] || 'Member',
-      });
+        name: savedUser.name || savedUser.fullName || savedUser.username || savedUser.email?.split('@')[0] || 'Member',
+        avatar: savedUser.avatarUrl || savedUser.avatar || null,
+        avatarUrl: savedUser.avatarUrl || savedUser.avatar || null,
+      };
+      setUser(initial);
     } else {
       // Clear stale user if no tokens exist
       localStorage.removeItem('notesphere_user');
       setUser(null);
     }
     setLoading(false);
+
+    // Fetch fresh profile from backend to ensure avatar, name, and settings stay in sync across refreshes
+    if (token || refreshToken) {
+      userService.getMe()
+        .then((freshUser) => {
+          if (freshUser) {
+            const normalized = {
+              ...freshUser,
+              name: freshUser.name || freshUser.fullName || freshUser.username || freshUser.email?.split('@')[0] || 'Member',
+              avatar: freshUser.avatarUrl || freshUser.avatar || null,
+              avatarUrl: freshUser.avatarUrl || freshUser.avatar || null,
+            };
+            setUser(normalized);
+            localStorage.setItem('notesphere_user', JSON.stringify(normalized));
+          }
+        })
+        .catch(() => {
+          // Keep cached state if offline or during silent revalidation
+        });
+    }
 
     // Listen for session expired events from apiClient
     const handleSessionExpired = () => {
@@ -38,7 +62,9 @@ export function AuthProvider({ children }) {
     const data = await authService.login(email, password);
     const normalized = {
       ...data.user,
-      name: data.user?.name || data.user?.username || email.split('@')[0],
+      name: data.user?.name || data.user?.fullName || data.user?.username || email.split('@')[0],
+      avatar: data.user?.avatarUrl || data.user?.avatar || null,
+      avatarUrl: data.user?.avatarUrl || data.user?.avatar || null,
     };
     setUser(normalized);
     return data;
@@ -48,7 +74,9 @@ export function AuthProvider({ children }) {
     const data = await authService.register(name, email, password);
     const normalized = {
       ...data.user,
-      name: data.user?.name || data.user?.username || name,
+      name: data.user?.name || data.user?.fullName || data.user?.username || name,
+      avatar: data.user?.avatarUrl || data.user?.avatar || null,
+      avatarUrl: data.user?.avatarUrl || data.user?.avatar || null,
     };
     setUser(normalized);
     return data;
@@ -58,6 +86,10 @@ export function AuthProvider({ children }) {
     setUser((prev) => {
       const merged = { ...prev, ...updatedFields };
       if (!merged.name) merged.name = merged.fullName || merged.username || 'Member';
+      if (updatedFields.avatarUrl !== undefined) {
+        merged.avatar = updatedFields.avatarUrl;
+        merged.avatarUrl = updatedFields.avatarUrl;
+      }
       localStorage.setItem('notesphere_user', JSON.stringify(merged));
       return merged;
     });

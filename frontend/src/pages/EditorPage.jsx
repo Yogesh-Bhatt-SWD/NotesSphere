@@ -28,6 +28,7 @@ import categoryService from '../api/categoryService';
 import communityService from '../api/communityService';
 import authService from '../api/authService';
 import { CustomDropdown } from '../components/common/CustomDropdown';
+import ShareModal from '../components/common/ShareModal';
 import './EditorPage.css';
 
 export function EditorPage() {
@@ -38,6 +39,7 @@ export function EditorPage() {
   // Form fields
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [publishedToShare, setPublishedToShare] = useState(null);
   const [category, setCategory] = useState('Daily Life');
   const [visibility, setVisibility] = useState('PRIVATE'); // 'PRIVATE' | 'COMMUNITY'
   const [selectedCommunityId, setSelectedCommunityId] = useState('');
@@ -291,22 +293,26 @@ export function EditorPage() {
           showToast('Journal updated and published to community feed!');
           setTimeout(() => navigate(`/communities?id=${selectedCommunityId}`), 600);
         } else if (targetMode === 'PUBLIC') {
-          await journalService.publishJournal(editId, { visibility: 'PUBLIC' });
+          const pubRes = await journalService.publishJournal(editId, { visibility: 'PUBLIC' });
           showToast('Journal updated and published publicly!');
-          setTimeout(() => navigate('/journals?tab=published'), 600);
+          setPublishedToShare(pubRes?.data || { id: editId, title, content, category });
         } else {
           await journalService.unpublishJournal(editId);
           showToast('Private journal updated successfully!');
           setTimeout(() => navigate('/journals'), 600);
         }
       } else {
-        await journalService.createJournal(payload);
+        const createRes = await journalService.createJournal(payload);
+        const created = createRes?.data || createRes;
         if (targetMode === 'COMMUNITY') {
           showToast('Journal successfully published to community feed!');
           setTimeout(() => navigate(`/communities?id=${selectedCommunityId}`), 600);
         } else if (targetMode === 'PUBLIC') {
+          if (created?.id) {
+            await journalService.publishJournal(created.id, { visibility: 'PUBLIC' });
+          }
           showToast('Journal successfully published to public feed!');
-          setTimeout(() => navigate('/journals?tab=published'), 600);
+          setPublishedToShare(created || { title, content, category });
         } else {
           showToast('Journal saved privately!');
           setTimeout(() => navigate('/journals'), 600);
@@ -752,6 +758,16 @@ export function EditorPage() {
           </div>
         </div>
       )}
+
+      {/* Share Published Blog Modal */}
+      <ShareModal
+        isOpen={!!publishedToShare}
+        onClose={() => {
+          setPublishedToShare(null);
+          navigate('/journals?tab=published');
+        }}
+        journal={publishedToShare}
+      />
     </div>
   );
 }

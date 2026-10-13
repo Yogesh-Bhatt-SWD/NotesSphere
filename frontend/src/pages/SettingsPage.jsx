@@ -34,6 +34,7 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import { useAuth } from '../context/AuthContext';
 import userService from '../api/userService';
 import journalService from '../api/journalService';
+import ImageCropModal from '../components/common/ImageCropModal';
 import './SettingsPage.css';
 
 const TwitterIcon = ({ size = 18, color = 'currentColor' }) => (
@@ -89,6 +90,10 @@ export function SettingsPage() {
   const [originalProfile, setOriginalProfile] = useState({});
   const [tagInput, setTagInput] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
+
+  // Avatar Crop & Resize State
+  const [selectedImageForCrop, setSelectedImageForCrop] = useState(null);
+  const [showCropModal, setShowCropModal] = useState(false);
 
   // 2. Preferences & Visibility State
   const [preferences, setPreferences] = useState({
@@ -205,27 +210,66 @@ export function SettingsPage() {
     }, 4500);
   };
 
-  // Avatar Handling
+  // Avatar Handling with Interactive Crop & Resize
   const handleAvatarChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      showAlert('error', 'Avatar image must be under 2MB.');
+    if (file.size > 8 * 1024 * 1024) {
+      showAlert('error', 'Avatar image must be under 8MB.');
       return;
     }
 
     const reader = new FileReader();
     reader.onload = () => {
-      setProfileData(prev => ({ ...prev, avatarUrl: reader.result }));
+      setSelectedImageForCrop(reader.result);
+      setShowCropModal(true);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     };
     reader.readAsDataURL(file);
   };
 
-  const handleRemoveAvatar = () => {
+  const handleCropComplete = async (croppedUrl) => {
+    setProfileData(prev => ({ ...prev, avatarUrl: croppedUrl }));
+    setOriginalProfile(prev => ({ ...prev, avatarUrl: croppedUrl }));
+    try {
+      const updated = await userService.updateProfile({
+        ...profileData,
+        avatarUrl: croppedUrl,
+      });
+      updateUserData({
+        fullName: updated.fullName,
+        username: updated.username,
+        name: updated.fullName || updated.username,
+        avatarUrl: updated.avatarUrl,
+        avatar: updated.avatarUrl,
+      });
+      showAlert('success', 'Profile photo cropped and saved successfully!');
+    } catch (err) {
+      showAlert('error', err.message || 'Failed to save cropped photo.');
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
     setProfileData(prev => ({ ...prev, avatarUrl: null }));
+    setOriginalProfile(prev => ({ ...prev, avatarUrl: null }));
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+    try {
+      const updated = await userService.updateProfile({
+        ...profileData,
+        avatarUrl: '',
+      });
+      updateUserData({
+        avatarUrl: null,
+        avatar: null,
+      });
+      showAlert('success', 'Profile photo removed successfully.');
+    } catch (err) {
+      showAlert('error', err.message || 'Failed to remove photo.');
     }
   };
 
@@ -266,6 +310,7 @@ export function SettingsPage() {
         username: updated.username,
         name: updated.fullName || updated.username,
         avatarUrl: updated.avatarUrl,
+        avatar: updated.avatarUrl,
       });
       showAlert('success', 'Profile information updated successfully!');
     } catch (err) {
@@ -1614,6 +1659,14 @@ export function SettingsPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Interactive Avatar Crop & Resize Modal */}
+      <ImageCropModal
+        isOpen={showCropModal}
+        imageSrc={selectedImageForCrop}
+        onClose={() => setShowCropModal(false)}
+        onCropComplete={handleCropComplete}
+      />
     </div>
   );
 }

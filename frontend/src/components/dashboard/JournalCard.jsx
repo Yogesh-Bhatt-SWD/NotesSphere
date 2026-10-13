@@ -18,10 +18,13 @@ export function JournalCard({ journal, onClick }) {
     <div className="journal-card" onClick={onClick}>
       <div className="journal-card-cover-wrapper">
         <img
-          src={journal.coverImage}
+          src={journal.coverImage || 'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=600&q=80'}
           alt={journal.title}
           className="journal-card-cover"
           loading="lazy"
+          onError={(e) => {
+            e.currentTarget.src = 'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=600&q=80';
+          }}
         />
         {/* Frosted floating badge */}
         <div className="journal-card-floating-badge">
