@@ -52,29 +52,57 @@ export function AnalyticsPage() {
         { day: 'Apr 12', Positive: 15, Neutral: 10, Negative: 3 }
       ];
 
-  // Sentiment Distribution Donut (Screen 3)
-  const sentimentDonut = [
-    { name: 'Positive', value: 68, color: '#10B981' },
-    { name: 'Neutral', value: 20, color: '#64748B' },
-    { name: 'Negative', value: 12, color: '#EF4444' }
-  ];
+  // 1. Real Sentiment Calculation
+  const sentimentCounts = analyticsData?.sentimentDistribution || { POSITIVE: 0, NEUTRAL: 0, NEGATIVE: 0 };
+  const posCount = Number(sentimentCounts.POSITIVE || 0);
+  const neuCount = Number(sentimentCounts.NEUTRAL || 0);
+  const negCount = Number(sentimentCounts.NEGATIVE || 0);
+  const totalSentiments = posCount + neuCount + negCount;
 
-  // Category Distribution Progress Bars (Screen 3)
-  const categoriesList = analyticsData?.categoryDistribution && Object.keys(analyticsData.categoryDistribution).length > 0
-    ? Object.entries(analyticsData.categoryDistribution).map(([name, count], idx) => ({
-        name,
-        count: Number(count),
-        color: ['#10B981', '#6366F1', '#8B5CF6', '#FF8F6B', '#06B6D4', '#94A3B8'][idx % 6],
-        max: Math.max(10, ...Object.values(analyticsData.categoryDistribution).map(Number))
-      }))
+  const posPct = totalSentiments > 0 ? Math.round((posCount / totalSentiments) * 100) : 0;
+  const neuPct = totalSentiments > 0 ? Math.round((neuCount / totalSentiments) * 100) : 0;
+  const negPct = totalSentiments > 0 ? Math.max(0, 100 - posPct - neuPct) : 0;
+
+  const dominantSentiment = posPct >= neuPct && posPct >= negPct
+    ? { label: 'Positive', pct: posPct }
+    : neuPct >= negPct
+      ? { label: 'Neutral', pct: neuPct }
+      : { label: 'Negative', pct: negPct };
+
+  const sentimentDonut = totalSentiments > 0
+    ? [
+        { name: 'Positive', value: posPct, count: posCount, color: '#10B981' },
+        { name: 'Neutral', value: neuPct, count: neuCount, color: '#64748B' },
+        { name: 'Negative', value: negPct, count: negCount, color: '#EF4444' }
+      ]
     : [
-        { name: 'Work', count: 28, color: '#10B981', max: 30 },
-        { name: 'Personal', count: 18, color: '#6366F1', max: 30 },
-        { name: 'Study', count: 12, color: '#8B5CF6', max: 30 },
-        { name: 'Travel', count: 10, color: '#FF8F6B', max: 30 },
-        { name: 'Health', count: 8, color: '#06B6D4', max: 30 },
-        { name: 'Other', count: 4, color: '#94A3B8', max: 30 }
+        { name: 'Positive', value: 0, count: 0, color: '#10B981' },
+        { name: 'Neutral', value: 100, count: 0, color: '#E2E8F0' },
+        { name: 'Negative', value: 0, count: 0, color: '#EF4444' }
       ];
+
+  // 2. Real Category Distribution
+  const rawCategories = analyticsData?.categoryDistribution || {};
+  const hasCategories = Object.keys(rawCategories).length > 0;
+  const maxCategoryCount = hasCategories ? Math.max(...Object.values(rawCategories).map(Number)) : 1;
+
+  const categoriesList = hasCategories
+    ? Object.entries(rawCategories)
+        .sort((a, b) => Number(b[1]) - Number(a[1]))
+        .map(([name, count], idx) => ({
+          name,
+          count: Number(count),
+          color: ['#10B981', '#6366F1', '#8B5CF6', '#FF8F6B', '#06B6D4', '#94A3B8'][idx % 6],
+          max: maxCategoryCount
+        }))
+    : [];
+
+  const getDateRangeLabel = () => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - 6);
+    return `${start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  };
 
   return (
     <div className="analytics-screen">
@@ -86,7 +114,7 @@ export function AnalyticsPage() {
         </div>
 
         <div className="date-range-badge-pill">
-          <span>Apr 6, 2026 - Apr 12, 2026</span>
+          <span>{getDateRangeLabel()}</span>
           <ChevronRight size={14} />
         </div>
       </div>
@@ -162,8 +190,12 @@ export function AnalyticsPage() {
                   transform: 'translate(-50%, -50%)',
                   textAlign: 'center'
                 }}>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary)' }}>68%</div>
-                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>Positive</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: totalSentiments > 0 ? 'var(--primary)' : 'var(--text-muted)' }}>
+                    {totalSentiments > 0 ? `${dominantSentiment.pct}%` : '0%'}
+                  </div>
+                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                    {totalSentiments > 0 ? dominantSentiment.label : 'No Data'}
+                  </div>
                 </div>
               </div>
 
@@ -175,7 +207,7 @@ export function AnalyticsPage() {
                       <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: item.color }} />
                       {item.name}
                     </span>
-                    <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{item.value}%</span>
+                    <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{totalSentiments > 0 ? `${item.value}%` : '0%'}</span>
                   </div>
                 ))}
               </div>
@@ -185,23 +217,38 @@ export function AnalyticsPage() {
           {/* Category Distribution Horizontal Bars */}
           <div className="distribution-card">
             <h3 className="chart-title-text">Category Distribution</h3>
-            <div className="category-bars-list">
-              {categoriesList.map((cat) => (
-                <div key={cat.name} className="category-bar-row">
-                  <span className="cat-label">{cat.name}</span>
-                  <div className="cat-bar-track">
-                    <div
-                      className="cat-bar-progress"
-                      style={{
-                        width: `${(cat.count / cat.max) * 100}%`,
-                        backgroundColor: cat.color
-                      }}
-                    />
+            {categoriesList.length > 0 ? (
+              <div className="category-bars-list">
+                {categoriesList.map((cat) => (
+                  <div key={cat.name} className="category-bar-row">
+                    <span className="cat-label">{cat.name}</span>
+                    <div className="cat-bar-track">
+                      <div
+                        className="cat-bar-progress"
+                        style={{
+                          width: `${(cat.count / cat.max) * 100}%`,
+                          backgroundColor: cat.color
+                        }}
+                      />
+                    </div>
+                    <span className="cat-val">{cat.count}</span>
                   </div>
-                  <span className="cat-val">{cat.count}</span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: 140,
+                color: 'var(--text-muted)',
+                fontSize: '0.85rem',
+                textAlign: 'center',
+                padding: '0 16px'
+              }}>
+                No category data recorded yet. Tag categories when writing journals to see your distribution!
+              </div>
+            )}
           </div>
         </div>
 
