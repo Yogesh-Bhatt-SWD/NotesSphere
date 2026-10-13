@@ -110,6 +110,7 @@ CREATE TABLE IF NOT EXISTS journal_entries (
     like_count INT NOT NULL DEFAULT 0,
     comment_count INT NOT NULL DEFAULT 0,
     view_count BIGINT NOT NULL DEFAULT 0,
+    word_count INT NOT NULL DEFAULT 0,
     slug VARCHAR(250) NULL UNIQUE,
     cover_image_url VARCHAR(500) NULL,
     sentiment_label VARCHAR(50) NULL,

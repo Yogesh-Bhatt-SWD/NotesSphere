@@ -2,6 +2,7 @@ package com.notesphere.controller;
 
 import com.notesphere.dto.request.JournalRequest;
 import com.notesphere.dto.response.ApiResponse;
+import com.notesphere.dto.response.JournalInsightsResponse;
 import com.notesphere.dto.response.JournalResponse;
 import com.notesphere.dto.response.PagedResponse;
 import com.notesphere.entity.enums.SentimentLabel;
@@ -79,6 +80,14 @@ public class JournalController {
                 currentUser.getId(), query, sentiment, category, tag, favorite, pinned, visibility, startDate, endDate, pageable);
 
         return ResponseEntity.ok(ApiResponse.success(journals));
+    }
+
+    @GetMapping("/insights")
+    @Operation(summary = "Get personal journal insights and writing statistics for authenticated user")
+    public ResponseEntity<ApiResponse<JournalInsightsResponse>> getJournalInsights(
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+        JournalInsightsResponse insights = journalService.getJournalInsights(currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success(insights));
     }
 
     @GetMapping("/{id}")

@@ -39,6 +39,9 @@ public class JournalServiceTest {
     @Mock
     private JournalViewRepository journalViewRepository;
 
+    @Mock
+    private com.notesphere.repository.UserRepository userRepository;
+
     @InjectMocks
     private JournalService journalService;
 
@@ -225,5 +228,121 @@ public class JournalServiceTest {
         assertEquals(2, categories.size());
         assertTrue(categories.contains("Work"));
         assertTrue(categories.contains("Health"));
+    }
+
+    @Test
+    void getJournalInsights_ActiveStreakAndWordCalculations() {
+        java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneOffset.UTC);
+        java.time.Instant todayInstant = today.atStartOfDay(java.time.ZoneOffset.UTC).plusSeconds(3600).toInstant();
+        java.time.Instant yesterdayInstant = today.minusDays(1).atStartOfDay(java.time.ZoneOffset.UTC).plusSeconds(3600).toInstant();
+
+        JournalEntry j1 = JournalEntry.builder()
+                .id("j1")
+                .userId("u1")
+                .title("Day 1 Journal")
+                .content("Writing five words in this journal")
+                .wordCount(6)
+                .createdAt(yesterdayInstant)
+                .category("Mindfulness")
+                .build();
+
+        JournalEntry j2 = JournalEntry.builder()
+                .id("j2")
+                .userId("u1")
+                .title("Day 2 Journal")
+                .content("<p>Today I wrote another four words here</p>")
+                .wordCount(7)
+                .createdAt(todayInstant)
+                .category("Goals")
+                .build();
+
+        when(journalRepository.countByUserId("u1")).thenReturn(2L);
+        when(journalRepository.findByUserIdOrderByCreatedAtAsc("u1")).thenReturn(List.of(j1, j2));
+        when(userRepository.findById("u1")).thenReturn(java.util.Optional.of(com.notesphere.entity.User.builder().id("u1").dailyWritingGoalWords(10).build()));
+
+        var insights = journalService.getJournalInsights("u1");
+
+        assertNotNull(insights);
+        assertEquals(2L, insights.getTotalJournals());
+        assertEquals(13L, insights.getTotalWordsWritten());
+        assertEquals(2, insights.getCurrentStreakDays());
+        assertTrue(insights.isActiveToday());
+        assertEquals(10, insights.getDailyWordGoal());
+        assertEquals(70, insights.getWeeklyWordGoal());
+        // 13 words / 70 goal = ~19%
+        assertEquals(19, insights.getWeeklyGoalCompletionPercent());
+        assertEquals(7, insights.getDailyActivities().size());
+        assertEquals(2, insights.getRecentActivities().size());
+    }
+
+    @Test
+    void getJournalInsights_StreakPreservedWhenNotWrittenToday() {
+        java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneOffset.UTC);
+        java.time.Instant yesterdayInstant = today.minusDays(1).atStartOfDay(java.time.ZoneOffset.UTC).plusSeconds(3600).toInstant();
+
+        JournalEntry j1 = JournalEntry.builder()
+                .id("j1")
+                .userId("u1")
+                .title("Yesterday Entry")
+                .content("Wrote something yesterday")
+                .wordCount(3)
+                .createdAt(yesterdayInstant)
+                .build();
+
+        when(journalRepository.countByUserId("u1")).thenReturn(1L);
+        when(journalRepository.findByUserIdOrderByCreatedAtAsc("u1")).thenReturn(List.of(j1));
+        when(userRepository.findById("u1")).thenReturn(java.util.Optional.empty());
+
+        var insights = journalService.getJournalInsights("u1");
+
+        assertNotNull(insights);
+        assertEquals(1, insights.getCurrentStreakDays());
+        assertFalse(insights.isActiveToday());
+        assertEquals(3L, insights.getTotalWordsWritten());
+    }
+
+    @Test
+    void getJournalInsights_BrokenStreakWhenInactiveTwoDays() {
+        java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneOffset.UTC);
+        java.time.Instant twoDaysAgo = today.minusDays(2).atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
+
+        JournalEntry j1 = JournalEntry.builder()
+                .id("j1")
+                .userId("u1")
+                .title("Old Entry")
+                .content("Old entry content")
+                .wordCount(3)
+                .createdAt(twoDaysAgo)
+                .build();
+
+        when(journalRepository.countByUserId("u1")).thenReturn(1L);
+        when(journalRepository.findByUserIdOrderByCreatedAtAsc("u1")).thenReturn(List.of(j1));
+        when(userRepository.findById("u1")).thenReturn(java.util.Optional.empty());
+
+        var insights = journalService.getJournalInsights("u1");
+
+        assertNotNull(insights);
+        assertEquals(0, insights.getCurrentStreakDays());
+        assertFalse(insights.isActiveToday());
+    }
+
+    @Test
+    void getJournalInsights_EmptyState() {
+        when(journalRepository.countByUserId("u-empty")).thenReturn(0L);
+        when(journalRepository.findByUserIdOrderByCreatedAtAsc("u-empty")).thenReturn(List.of());
+        when(userRepository.findById("u-empty")).thenReturn(java.util.Optional.empty());
+
+        var insights = journalService.getJournalInsights("u-empty");
+
+        assertNotNull(insights);
+        assertEquals(0L, insights.getTotalJournals());
+        assertEquals(0, insights.getCurrentStreakDays());
+        assertEquals(0L, insights.getTotalWordsWritten());
+        assertEquals(0L, insights.getWordsWrittenThisWeek());
+        assertEquals(0, insights.getWeeklyGoalCompletionPercent());
+        assertFalse(insights.isActiveToday());
+        assertNull(insights.getLastWritingActivityDate());
+        assertEquals(7, insights.getDailyActivities().size());
+        assertTrue(insights.getRecentActivities().isEmpty());
     }
 }

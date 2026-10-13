@@ -21,6 +21,8 @@ export const journalService = {
 
   getJournalById: (id) => apiClient.get(`/journals/${id}`),
 
+  getInsights: () => apiClient.get('/journals/insights'),
+
   recordView: (id) => apiClient.post(`/journals/${id}/view`),
 
   createJournal: (journalData) => apiClient.post('/journals', journalData),

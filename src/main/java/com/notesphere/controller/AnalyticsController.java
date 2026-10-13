@@ -1,11 +1,13 @@
 package com.notesphere.controller;
 
 import com.notesphere.dto.response.ApiResponse;
+import com.notesphere.dto.response.JournalInsightsResponse;
 import com.notesphere.dto.response.MonthlyCalendarResponse;
 import com.notesphere.dto.response.StreakResponse;
 import com.notesphere.dto.response.UserAnalyticsResponse;
 import com.notesphere.security.UserPrincipal;
 import com.notesphere.service.AnalyticsService;
+import com.notesphere.service.JournalService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,6 +28,15 @@ import java.util.List;
 public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
+    private final JournalService journalService;
+
+    @GetMapping("/insights")
+    @Operation(summary = "Get personal journal insights and writing statistics for authenticated user")
+    public ResponseEntity<ApiResponse<JournalInsightsResponse>> getJournalInsights(
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+        JournalInsightsResponse insights = journalService.getJournalInsights(currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success(insights));
+    }
 
     @GetMapping
     @Operation(summary = "Get user analytics (sentiment distribution, categories, activity timeline, and streaks)")

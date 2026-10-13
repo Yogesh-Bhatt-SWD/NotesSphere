@@ -68,14 +68,36 @@ public final class SlugUtils {
     }
 
     /**
+     * Counts the actual number of words in journal content.
+     * Strips HTML tags, trims whitespace, and counts non-empty tokens.
+     */
+    public static int countWords(String content) {
+        if (content == null || content.isBlank()) {
+            return 0;
+        }
+        String textOnly = content.replaceAll("<[^>]*>", " ").trim();
+        if (textOnly.isEmpty()) {
+            return 0;
+        }
+        String[] tokens = textOnly.split("\\s+");
+        int count = 0;
+        for (String t : tokens) {
+            if (!t.isBlank()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
      * Estimates reading time in minutes based on content word count (assuming 200 words per minute).
      */
     public static int estimateReadingTime(String content) {
-        if (content == null || content.trim().isEmpty()) {
+        int words = countWords(content);
+        if (words <= 0) {
             return 1;
         }
-        String[] words = content.trim().split("\\s+");
-        return Math.max(1, (int) Math.ceil((double) words.length / 200.0));
+        return Math.max(1, (int) Math.ceil((double) words / 200.0));
     }
 
     /**

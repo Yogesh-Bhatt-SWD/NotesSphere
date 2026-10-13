@@ -91,6 +91,10 @@ public class JournalEntry {
     @Builder.Default
     private long viewCount = 0L;
 
+    @Column(name = "word_count", nullable = false)
+    @Builder.Default
+    private int wordCount = 0;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "sentiment_label")
     private SentimentLabel sentimentLabel;

@@ -31,6 +31,7 @@ export function DashboardPage() {
 
   const handleCreateNew = (newEntry) => {
     setFeaturedJournals([newEntry, ...featuredJournals.slice(0, 5)]);
+    window.dispatchEvent(new CustomEvent('notesphere:journal-mutated'));
   };
 
   const filteredJournals = featuredJournals.filter(j =>

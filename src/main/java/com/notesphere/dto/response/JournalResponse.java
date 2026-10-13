@@ -24,6 +24,7 @@ public class JournalResponse {
     private String content;
     private String coverImageUrl;
     private int readingTimeMinutes;
+    private int wordCount;
     private List<String> tags;
     private String category;
     private boolean favorite;

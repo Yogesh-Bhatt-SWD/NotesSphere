@@ -2,10 +2,12 @@ package com.notesphere.service;
 
 import com.notesphere.dto.request.JournalRequest;
 import com.notesphere.dto.response.BlogPreviewResponse;
+import com.notesphere.dto.response.JournalInsightsResponse;
 import com.notesphere.dto.response.JournalResponse;
 import com.notesphere.dto.response.PagedResponse;
 import com.notesphere.dto.response.SentimentResponse;
 import com.notesphere.entity.JournalEntry;
+import com.notesphere.entity.User;
 import com.notesphere.entity.enums.SentimentLabel;
 import com.notesphere.exception.ResourceNotFoundException;
 import com.notesphere.exception.UnauthorizedException;
@@ -21,7 +23,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.List;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -105,6 +111,7 @@ public class JournalService {
                 .positiveScore(sentiment.getPositive())
                 .negativeScore(sentiment.getNegative())
                 .neutralScore(sentiment.getNeutral())
+                .wordCount(SlugUtils.countWords(request.getContent()))
                 .build();
 
         JournalEntry savedEntry = journalRepository.save(entry);
@@ -255,6 +262,9 @@ public class JournalService {
             entry.setPositiveScore(sentiment.getPositive());
             entry.setNegativeScore(sentiment.getNegative());
             entry.setNeutralScore(sentiment.getNeutral());
+            entry.setWordCount(SlugUtils.countWords(request.getContent()));
+        } else if (entry.getWordCount() <= 0 && request.getContent() != null) {
+            entry.setWordCount(SlugUtils.countWords(request.getContent()));
         }
 
         List<String> combinedTags = taggingService.mergeTags(request.getTags(), request.getContent());
@@ -504,6 +514,7 @@ public class JournalService {
                 .content(entry.getContent())
                 .coverImageUrl(entry.getCoverImageUrl())
                 .readingTimeMinutes(readingTime)
+                .wordCount(entry.getWordCount() > 0 ? entry.getWordCount() : SlugUtils.countWords(entry.getContent()))
                 .tags(entry.getTags())
                 .category(entry.getCategory())
                 .favorite(entry.isFavorite())
@@ -684,6 +695,147 @@ public class JournalService {
                 .totalElements(page.getTotalElements())
                 .totalPages(page.getTotalPages())
                 .last(page.isLast())
+                .build();
+    }
+
+    /**
+     * Calculates personal writing insights and statistics for the authenticated user.
+     * Guaranteed to reflect real persisted user data (word count, streak, weekly progress).
+     */
+    @Transactional(readOnly = true)
+    public JournalInsightsResponse getJournalInsights(String userId) {
+        // 1. Daily & Weekly goal calculation from authenticated user's profile
+        int dailyWordGoal = 500;
+        if (userRepository != null) {
+            dailyWordGoal = userRepository.findById(userId)
+                    .map(User::getDailyWritingGoalWords)
+                    .orElse(500);
+        }
+        int weeklyWordGoal = dailyWordGoal * 7;
+
+        // 2. Fetch all entries for user
+        long totalJournals = journalRepository.countByUserId(userId);
+        List<JournalEntry> entries = journalRepository.findByUserIdOrderByCreatedAtAsc(userId);
+
+        // 3. Word counts and activity dates
+        long totalWordsWritten = 0L;
+        long wordsWrittenThisWeek = 0L;
+        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        LocalDate startOfWeek = today.with(TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        Instant startOfWeekInstant = startOfWeek.atStartOfDay(ZoneOffset.UTC).toInstant();
+
+        Set<LocalDate> activityDates = new HashSet<>();
+        Map<LocalDate, Long> wordsByDate = new HashMap<>();
+        Map<LocalDate, Integer> entriesByDate = new HashMap<>();
+
+        for (JournalEntry entry : entries) {
+            int words = entry.getWordCount() > 0 ? entry.getWordCount() : SlugUtils.countWords(entry.getContent());
+            totalWordsWritten += words;
+
+            LocalDate createdDate = entry.getCreatedAt() != null
+                    ? entry.getCreatedAt().atZone(ZoneOffset.UTC).toLocalDate()
+                    : today;
+
+            activityDates.add(createdDate);
+            wordsByDate.put(createdDate, wordsByDate.getOrDefault(createdDate, 0L) + words);
+            entriesByDate.put(createdDate, entriesByDate.getOrDefault(createdDate, 0) + 1);
+
+            if (entry.getUpdatedAt() != null) {
+                LocalDate updatedDate = entry.getUpdatedAt().atZone(ZoneOffset.UTC).toLocalDate();
+                activityDates.add(updatedDate);
+            }
+
+            if (entry.getCreatedAt() != null && !entry.getCreatedAt().isBefore(startOfWeekInstant)) {
+                wordsWrittenThisWeek += words;
+            }
+        }
+
+        // 4. Streak Calculation:
+        // Consecutive calendar days up to today, or up to yesterday if user hasn't written today yet.
+        // If last activity was > 1 day ago, current streak is 0.
+        boolean activeToday = activityDates.contains(today);
+        LocalDate yesterday = today.minusDays(1);
+        int currentStreak = 0;
+        LocalDate cursor = null;
+
+        if (activeToday) {
+            cursor = today;
+        } else if (activityDates.contains(yesterday)) {
+            cursor = yesterday;
+        }
+
+        if (cursor != null) {
+            while (activityDates.contains(cursor)) {
+                currentStreak++;
+                cursor = cursor.minusDays(1);
+            }
+        }
+
+        // Longest Streak across all active dates
+        List<LocalDate> sortedDates = activityDates.stream().sorted().toList();
+        int longestStreak = 0;
+        int tempStreak = 0;
+        LocalDate previousDate = null;
+        for (LocalDate date : sortedDates) {
+            if (previousDate == null) {
+                tempStreak = 1;
+            } else if (date.equals(previousDate.plusDays(1))) {
+                tempStreak++;
+            } else {
+                tempStreak = 1;
+            }
+            if (tempStreak > longestStreak) {
+                longestStreak = tempStreak;
+            }
+            previousDate = date;
+        }
+
+        LocalDate lastWritingActivityDate = sortedDates.isEmpty() ? null : sortedDates.get(sortedDates.size() - 1);
+
+        // 5. Weekly Goal Completion Percentage (0 to 100)
+        int weeklyGoalCompletionPercent = weeklyWordGoal > 0
+                ? (int) Math.min(100L, Math.round(((double) wordsWrittenThisWeek / weeklyWordGoal) * 100.0))
+                : 0;
+
+        // 6. Last 7 Days Activity (for chart)
+        List<JournalInsightsResponse.DailyActivityDto> dailyActivities = new ArrayList<>();
+        DateTimeFormatter dayLabelFormatter = DateTimeFormatter.ofPattern("EEE", Locale.ENGLISH);
+        for (int i = 6; i >= 0; i--) {
+            LocalDate d = today.minusDays(i);
+            dailyActivities.add(JournalInsightsResponse.DailyActivityDto.builder()
+                    .date(d.toString())
+                    .dayLabel(d.format(dayLabelFormatter))
+                    .wordCount(wordsByDate.getOrDefault(d, 0L))
+                    .journalCount(entriesByDate.getOrDefault(d, 0))
+                    .build());
+        }
+
+        // 7. Recent activities (top 5 most recent)
+        List<JournalInsightsResponse.RecentJournalActivityDto> recentActivities = entries.stream()
+                .sorted(Comparator.comparing(JournalEntry::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(5)
+                .map(e -> JournalInsightsResponse.RecentJournalActivityDto.builder()
+                        .id(e.getId())
+                        .title(e.getTitle())
+                        .category(e.getCategory())
+                        .wordCount(e.getWordCount() > 0 ? e.getWordCount() : SlugUtils.countWords(e.getContent()))
+                        .createdAt(e.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
+
+        return JournalInsightsResponse.builder()
+                .totalJournals(totalJournals)
+                .currentStreakDays(currentStreak)
+                .longestStreakDays(longestStreak)
+                .totalWordsWritten(totalWordsWritten)
+                .wordsWrittenThisWeek(wordsWrittenThisWeek)
+                .dailyWordGoal(dailyWordGoal)
+                .weeklyWordGoal(weeklyWordGoal)
+                .weeklyGoalCompletionPercent(weeklyGoalCompletionPercent)
+                .lastWritingActivityDate(lastWritingActivityDate)
+                .activeToday(activeToday)
+                .dailyActivities(dailyActivities)
+                .recentActivities(recentActivities)
                 .build();
     }
 }

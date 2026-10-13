@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   LineChart,
   Line,
@@ -12,19 +12,45 @@ import {
   Cell
 } from 'recharts';
 import { Flame, BookOpen, Target, ChevronRight } from 'lucide-react';
+import journalService from '../api/journalService';
+import analyticsService from '../api/analyticsService';
 import './AnalyticsPage.css';
 
 export function AnalyticsPage() {
-  // 7-day trend matching Screen 3 (Apr 6 to Apr 12)
-  const trendData = [
-    { day: 'Apr 6', Positive: 8, Neutral: 5, Negative: 2 },
-    { day: 'Apr 7', Positive: 11, Neutral: 7, Negative: 3 },
-    { day: 'Apr 8', Positive: 9, Neutral: 6, Negative: 1 },
-    { day: 'Apr 9', Positive: 13, Neutral: 8, Negative: 4 },
-    { day: 'Apr 10', Positive: 10, Neutral: 6, Negative: 2 },
-    { day: 'Apr 11', Positive: 14, Neutral: 9, Negative: 1 },
-    { day: 'Apr 12', Positive: 15, Neutral: 10, Negative: 3 }
-  ];
+  const [insights, setInsights] = useState(null);
+  const [analyticsData, setAnalyticsData] = useState(null);
+
+  useEffect(() => {
+    journalService.getInsights()
+      .then((res) => {
+        if (res?.data) setInsights(res.data);
+      })
+      .catch(() => {});
+
+    analyticsService.getUserAnalytics()
+      .then((res) => {
+        if (res?.data) setAnalyticsData(res.data);
+      })
+      .catch(() => {});
+  }, []);
+
+  // 7-day trend matching real activity or fallback
+  const trendData = (insights?.dailyActivities && insights.dailyActivities.length > 0)
+    ? insights.dailyActivities.map(d => ({
+        day: d.dayLabel,
+        Positive: d.journalCount > 0 ? d.journalCount : 0,
+        Neutral: 0,
+        Negative: 0
+      }))
+    : [
+        { day: 'Apr 6', Positive: 8, Neutral: 5, Negative: 2 },
+        { day: 'Apr 7', Positive: 11, Neutral: 7, Negative: 3 },
+        { day: 'Apr 8', Positive: 9, Neutral: 6, Negative: 1 },
+        { day: 'Apr 9', Positive: 13, Neutral: 8, Negative: 4 },
+        { day: 'Apr 10', Positive: 10, Neutral: 6, Negative: 2 },
+        { day: 'Apr 11', Positive: 14, Neutral: 9, Negative: 1 },
+        { day: 'Apr 12', Positive: 15, Neutral: 10, Negative: 3 }
+      ];
 
   // Sentiment Distribution Donut (Screen 3)
   const sentimentDonut = [
@@ -34,14 +60,21 @@ export function AnalyticsPage() {
   ];
 
   // Category Distribution Progress Bars (Screen 3)
-  const categoriesList = [
-    { name: 'Work', count: 28, color: '#10B981', max: 30 },
-    { name: 'Personal', count: 18, color: '#6366F1', max: 30 },
-    { name: 'Study', count: 12, color: '#8B5CF6', max: 30 },
-    { name: 'Travel', count: 10, color: '#FF8F6B', max: 30 },
-    { name: 'Health', count: 8, color: '#06B6D4', max: 30 },
-    { name: 'Other', count: 4, color: '#94A3B8', max: 30 }
-  ];
+  const categoriesList = analyticsData?.categoryDistribution && Object.keys(analyticsData.categoryDistribution).length > 0
+    ? Object.entries(analyticsData.categoryDistribution).map(([name, count], idx) => ({
+        name,
+        count: Number(count),
+        color: ['#10B981', '#6366F1', '#8B5CF6', '#FF8F6B', '#06B6D4', '#94A3B8'][idx % 6],
+        max: Math.max(10, ...Object.values(analyticsData.categoryDistribution).map(Number))
+      }))
+    : [
+        { name: 'Work', count: 28, color: '#10B981', max: 30 },
+        { name: 'Personal', count: 18, color: '#6366F1', max: 30 },
+        { name: 'Study', count: 12, color: '#8B5CF6', max: 30 },
+        { name: 'Travel', count: 10, color: '#FF8F6B', max: 30 },
+        { name: 'Health', count: 8, color: '#06B6D4', max: 30 },
+        { name: 'Other', count: 4, color: '#94A3B8', max: 30 }
+      ];
 
   return (
     <div className="analytics-screen">
@@ -181,8 +214,14 @@ export function AnalyticsPage() {
             </div>
             <div className="metric-text-details">
               <span className="metric-title-small">Writing Streak</span>
-              <div className="metric-number-big">5 Days</div>
-              <p className="metric-caption-desc">Keep it up! You've written for 5 consecutive days.</p>
+              <div className="metric-number-big">
+                {insights ? `${insights.currentStreakDays} ${insights.currentStreakDays === 1 ? 'Day' : 'Days'}` : '0 Days'}
+              </div>
+              <p className="metric-caption-desc">
+                {insights && insights.currentStreakDays > 0
+                  ? `Keep it up! You've written for ${insights.currentStreakDays} consecutive days.`
+                  : 'Write today to build your writing streak!'}
+              </p>
             </div>
           </div>
 
@@ -193,8 +232,12 @@ export function AnalyticsPage() {
             </div>
             <div className="metric-text-details">
               <span className="metric-title-small">Total Journals</span>
-              <div className="metric-number-big">24</div>
-              <p className="metric-caption-desc">Entries written</p>
+              <div className="metric-number-big">
+                {insights ? insights.totalJournals.toLocaleString() : '0'}
+              </div>
+              <p className="metric-caption-desc">
+                {insights ? `${insights.totalWordsWritten.toLocaleString()} words lifetime` : '0 words written'}
+              </p>
             </div>
           </div>
 
@@ -204,9 +247,15 @@ export function AnalyticsPage() {
               <Target size={24} />
             </div>
             <div className="metric-text-details">
-              <span className="metric-title-small">Daily Goal</span>
-              <div className="metric-number-big">65%</div>
-              <p className="metric-caption-desc">4 of 5 entries this week</p>
+              <span className="metric-title-small">Weekly Goal</span>
+              <div className="metric-number-big">
+                {insights ? `${insights.weeklyGoalCompletionPercent}%` : '0%'}
+              </div>
+              <p className="metric-caption-desc">
+                {insights
+                  ? `${insights.wordsWrittenThisWeek.toLocaleString()} of ${insights.weeklyWordGoal.toLocaleString()} words this week`
+                  : '0 of 3,500 words this week'}
+              </p>
             </div>
           </div>
         </div>

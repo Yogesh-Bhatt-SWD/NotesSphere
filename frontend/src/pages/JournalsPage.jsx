@@ -205,6 +205,7 @@ export function JournalsPage() {
 
     try {
       await journalService.deleteJournal(id);
+      window.dispatchEvent(new CustomEvent('notesphere:journal-mutated'));
       showToast('Journal entry deleted');
       loadJournals();
     } catch (err) {

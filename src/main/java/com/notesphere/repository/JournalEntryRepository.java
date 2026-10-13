@@ -94,4 +94,10 @@ public interface JournalEntryRepository extends JpaRepository<JournalEntry, Stri
 
     @Query("SELECT j FROM JournalEntry j WHERE j.slug = :identifier OR j.id = :identifier")
     java.util.Optional<JournalEntry> findBySlugOrId(@Param("identifier") String identifier);
+
+    @Query("SELECT COALESCE(SUM(j.wordCount), 0) FROM JournalEntry j WHERE j.userId = :userId")
+    Long sumWordCountByUserId(@Param("userId") String userId);
+
+    @Query("SELECT COALESCE(SUM(j.wordCount), 0) FROM JournalEntry j WHERE j.userId = :userId AND j.createdAt >= :startDate")
+    Long sumWordCountByUserIdAndCreatedAtAfter(@Param("userId") String userId, @Param("startDate") Instant startDate);
 }

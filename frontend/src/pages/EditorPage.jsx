@@ -320,6 +320,7 @@ export function EditorPage() {
       }
 
       localStorage.removeItem('notesphere_saved_draft');
+      window.dispatchEvent(new CustomEvent('notesphere:journal-mutated'));
     } catch (err) {
       localStorage.setItem('notesphere_saved_draft', JSON.stringify({
         title,
