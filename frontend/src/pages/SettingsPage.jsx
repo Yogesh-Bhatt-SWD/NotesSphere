@@ -232,19 +232,17 @@ export function SettingsPage() {
   };
 
   const handleCropComplete = async (croppedUrl) => {
-    setProfileData(prev => ({ ...prev, avatarUrl: croppedUrl }));
-    setOriginalProfile(prev => ({ ...prev, avatarUrl: croppedUrl }));
     try {
-      const updated = await userService.updateProfile({
-        ...profileData,
-        avatarUrl: croppedUrl,
-      });
+      const updated = await userService.uploadAvatar(croppedUrl);
+      const savedUrl = updated.avatarUrl || croppedUrl;
+      setProfileData(prev => ({ ...prev, avatarUrl: savedUrl }));
+      setOriginalProfile(prev => ({ ...prev, avatarUrl: savedUrl }));
       updateUserData({
         fullName: updated.fullName,
         username: updated.username,
         name: updated.fullName || updated.username,
-        avatarUrl: updated.avatarUrl,
-        avatar: updated.avatarUrl,
+        avatarUrl: savedUrl,
+        avatar: savedUrl,
       });
       showAlert('success', 'Profile photo cropped and saved successfully!');
     } catch (err) {
@@ -253,16 +251,13 @@ export function SettingsPage() {
   };
 
   const handleRemoveAvatar = async () => {
-    setProfileData(prev => ({ ...prev, avatarUrl: null }));
-    setOriginalProfile(prev => ({ ...prev, avatarUrl: null }));
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
     try {
-      const updated = await userService.updateProfile({
-        ...profileData,
-        avatarUrl: '',
-      });
+      await userService.deleteAvatar();
+      setProfileData(prev => ({ ...prev, avatarUrl: null }));
+      setOriginalProfile(prev => ({ ...prev, avatarUrl: null }));
       updateUserData({
         avatarUrl: null,
         avatar: null,

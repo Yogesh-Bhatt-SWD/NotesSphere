@@ -18,8 +18,9 @@ export async function request(endpoint, options = {}) {
   const url = `${BASE_URL}${endpoint}`;
   const token = localStorage.getItem('notesphere_access_token');
 
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const headers = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers || {}),
   };
 
@@ -159,9 +160,19 @@ export async function downloadFile(endpoint, filename) {
 
 export default {
   get: (endpoint) => request(endpoint, { method: 'GET' }),
-  post: (endpoint, body) => request(endpoint, { method: 'POST', body: JSON.stringify(body) }),
-  put: (endpoint, body) => request(endpoint, { method: 'PUT', body: JSON.stringify(body) }),
-  patch: (endpoint, body) => request(endpoint, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined }),
+  post: (endpoint, body) => request(endpoint, {
+    method: 'POST',
+    body: (typeof FormData !== 'undefined' && body instanceof FormData) ? body : JSON.stringify(body)
+  }),
+  put: (endpoint, body) => request(endpoint, {
+    method: 'PUT',
+    body: (typeof FormData !== 'undefined' && body instanceof FormData) ? body : JSON.stringify(body)
+  }),
+  patch: (endpoint, body) => request(endpoint, {
+    method: 'PATCH',
+    body: body ? ((typeof FormData !== 'undefined' && body instanceof FormData) ? body : JSON.stringify(body)) : undefined
+  }),
   delete: (endpoint, body) => request(endpoint, { method: 'DELETE', body: body ? JSON.stringify(body) : undefined }),
+  upload: (endpoint, formData) => request(endpoint, { method: 'POST', body: formData }),
   download: downloadFile,
 };

@@ -19,12 +19,14 @@ import com.notesphere.repository.PostReactionRepository;
 import com.notesphere.repository.RefreshTokenRepository;
 import com.notesphere.repository.ReminderPreferenceRepository;
 import com.notesphere.repository.UserRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
@@ -77,6 +79,7 @@ public class UserServiceTest {
 
     @BeforeEach
     void setUp() {
+        cleanTestAvatarFiles();
         testUser = User.builder()
                 .id("user-1")
                 .username("testwriter")
@@ -106,6 +109,21 @@ public class UserServiceTest {
                 .themePreference("light")
                 .createdAt(Instant.now())
                 .build();
+    }
+
+    @AfterEach
+    void tearDown() {
+        cleanTestAvatarFiles();
+    }
+
+    private void cleanTestAvatarFiles() {
+        try {
+            java.nio.file.Path testAvatar = java.nio.file.Paths.get(System.getProperty("user.home"), ".notesphere", "uploads", "avatars", "user-1.jpg");
+            java.nio.file.Files.deleteIfExists(testAvatar);
+            java.nio.file.Path optAvatar = java.nio.file.Paths.get("/opt/notesphere/uploads/avatars", "user-1.jpg");
+            java.nio.file.Files.deleteIfExists(optAvatar);
+        } catch (Exception ignored) {
+        }
     }
 
     @Test
@@ -313,5 +331,149 @@ public class UserServiceTest {
                 .build();
 
         assertThrows(BadRequestException.class, () -> userService.deleteAccount("user-1", request));
+    }
+
+    @Test
+    void uploadAvatar_WithValidDataUrl_PersistsAvatarUrl() {
+        when(userRepository.findById("user-1")).thenReturn(Optional.of(testUser));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        String testDataUrl = "data:image/jpeg;base64,/9j/4AAQSkZJRg==";
+        UserResponse response = userService.uploadAvatar("user-1", null, testDataUrl);
+
+        assertNotNull(response);
+        assertEquals(testDataUrl, response.getAvatarUrl());
+        assertEquals(testDataUrl, testUser.getAvatarUrl());
+        verify(userRepository).save(testUser);
+    }
+
+    @Test
+    void uploadAvatar_WithMultipartFile_PersistsAvatarUrl() {
+        when(userRepository.findById("user-1")).thenReturn(Optional.of(testUser));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "avatar.jpg",
+                "image/jpeg",
+                new byte[]{1, 2, 3, 4}
+        );
+
+        UserResponse response = userService.uploadAvatar("user-1", file, null);
+
+        assertNotNull(response);
+        assertNotNull(response.getAvatarUrl());
+        assertTrue(response.getAvatarUrl().contains("data:image/jpeg;base64,") || response.getAvatarUrl().contains("/avatar"));
+        verify(userRepository).save(testUser);
+    }
+
+    @Test
+    void uploadAvatar_OversizedFile_ThrowsBadRequest() {
+        when(userRepository.findById("user-1")).thenReturn(Optional.of(testUser));
+
+        byte[] bigBytes = new byte[11 * 1024 * 1024]; // 11MB
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "huge.jpg",
+                "image/jpeg",
+                bigBytes
+        );
+
+        assertThrows(BadRequestException.class, () -> userService.uploadAvatar("user-1", file, null));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void uploadAvatar_InvalidFileType_ThrowsBadRequest() {
+        when(userRepository.findById("user-1")).thenReturn(Optional.of(testUser));
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "document.pdf",
+                "application/pdf",
+                new byte[]{1, 2, 3}
+        );
+
+        assertThrows(BadRequestException.class, () -> userService.uploadAvatar("user-1", file, null));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void deleteAvatar_RemovesAvatarUrl() {
+        testUser.setAvatarUrl("https://example.com/old-avatar.jpg");
+        when(userRepository.findById("user-1")).thenReturn(Optional.of(testUser));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UserResponse response = userService.deleteAvatar("user-1");
+
+        assertNotNull(response);
+        assertNull(response.getAvatarUrl());
+        assertNull(testUser.getAvatarUrl());
+        verify(userRepository).save(testUser);
+    }
+
+    @Test
+    void updateProfile_WithoutAvatarUrl_PreservesExistingAvatar() {
+        testUser.setAvatarUrl("data:image/jpeg;base64,existingphoto");
+        when(userRepository.findById("user-1")).thenReturn(Optional.of(testUser));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UpdateProfileRequest request = UpdateProfileRequest.builder()
+                .fullName("Updated Name")
+                .bio("New bio")
+                .avatarUrl(null) // null should not overwrite existing avatar
+                .build();
+
+        UserResponse response = userService.updateProfile("user-1", request);
+
+        assertNotNull(response);
+        assertEquals("data:image/jpeg;base64,existingphoto", response.getAvatarUrl());
+        assertEquals("data:image/jpeg;base64,existingphoto", testUser.getAvatarUrl());
+        assertEquals("Updated Name", response.getFullName());
+    }
+
+    @Test
+    void updateProfile_WithEmptyAvatarUrl_RemovesAvatar() {
+        testUser.setAvatarUrl("data:image/jpeg;base64,existingphoto");
+        when(userRepository.findById("user-1")).thenReturn(Optional.of(testUser));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UpdateProfileRequest request = UpdateProfileRequest.builder()
+                .avatarUrl("") // empty string explicitly clears avatar
+                .build();
+
+        UserResponse response = userService.updateProfile("user-1", request);
+
+        assertNotNull(response);
+        assertNull(response.getAvatarUrl());
+        assertNull(testUser.getAvatarUrl());
+    }
+
+    @Test
+    void getAvatarBytes_FromDataUrl_ReturnsDecodedBytes() {
+        cleanTestAvatarFiles();
+        testUser.setAvatarUrl("data:image/jpeg;base64,AQIDBA==");
+        when(userRepository.findById("user-1")).thenReturn(Optional.of(testUser));
+
+        byte[] bytes = userService.getAvatarBytes("user-1");
+
+        assertNotNull(bytes);
+        assertArrayEquals(new byte[]{1, 2, 3, 4}, bytes);
+    }
+
+    @Test
+    void getAvatarBytes_FromDisk_ReturnsDiskBytes() {
+        String testDataUrl = "data:image/jpeg;base64,AQIDBA==";
+        when(userRepository.findById("user-1")).thenReturn(Optional.of(testUser));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Upload first to write file to disk
+        userService.uploadAvatar("user-1", null, testDataUrl);
+
+        // Fetching avatar bytes should read from disk without needing DB query
+        byte[] bytes = userService.getAvatarBytes("user-1");
+
+        assertNotNull(bytes);
+        assertArrayEquals(new byte[]{1, 2, 3, 4}, bytes);
     }
 }

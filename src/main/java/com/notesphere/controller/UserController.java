@@ -23,9 +23,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
@@ -46,6 +49,43 @@ public class UserController {
             @AuthenticationPrincipal UserPrincipal currentUser) {
         UserResponse user = userService.getUserById(currentUser.getId());
         return ResponseEntity.ok(ApiResponse.success(user));
+    }
+
+    @PostMapping(value = "/me/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload current user profile avatar via multipart file")
+    public ResponseEntity<ApiResponse<UserResponse>> uploadAvatarMultipart(
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @RequestParam("file") MultipartFile file) {
+        UserResponse response = userService.uploadAvatar(currentUser.getId(), file, null);
+        return ResponseEntity.ok(ApiResponse.success("Avatar uploaded successfully", response));
+    }
+
+    @PostMapping(value = "/me/avatar", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Upload current user profile avatar via JSON data URL")
+    public ResponseEntity<ApiResponse<UserResponse>> uploadAvatarJson(
+            @AuthenticationPrincipal UserPrincipal currentUser,
+            @RequestBody Map<String, String> request) {
+        String dataUrl = request.getOrDefault("avatarUrl", request.get("avatar"));
+        UserResponse response = userService.uploadAvatar(currentUser.getId(), null, dataUrl);
+        return ResponseEntity.ok(ApiResponse.success("Avatar updated successfully", response));
+    }
+
+    @DeleteMapping("/me/avatar")
+    @Operation(summary = "Delete current user profile avatar")
+    public ResponseEntity<ApiResponse<UserResponse>> deleteAvatar(
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+        UserResponse response = userService.deleteAvatar(currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success("Avatar deleted successfully", response));
+    }
+
+    @GetMapping(value = "/{userId}/avatar")
+    @Operation(summary = "Get raw avatar image bytes for a user")
+    public ResponseEntity<byte[]> getAvatar(@PathVariable("userId") String userId) {
+        byte[] bytes = userService.getAvatarBytes(userId);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "image/jpeg")
+                .header(HttpHeaders.CACHE_CONTROL, "public, max-age=86400")
+                .body(bytes);
     }
 
     @PutMapping("/me")

@@ -11,6 +11,23 @@ export const userService = {
     return res?.data || res;
   },
 
+  uploadAvatar: async (fileOrDataUrl) => {
+    let res;
+    if (typeof fileOrDataUrl === 'string') {
+      res = await apiClient.post('/users/me/avatar', { avatarUrl: fileOrDataUrl });
+    } else {
+      const formData = new FormData();
+      formData.append('file', fileOrDataUrl);
+      res = await apiClient.upload('/users/me/avatar', formData);
+    }
+    return res?.data || res;
+  },
+
+  deleteAvatar: async () => {
+    const res = await apiClient.delete('/users/me/avatar');
+    return res?.data || res;
+  },
+
   updatePreferences: async (preferencesData) => {
     const res = await apiClient.put('/users/me/preferences', preferencesData);
     return res?.data || res;
