@@ -5,6 +5,7 @@ import com.notesphere.dto.response.ApiResponse;
 import com.notesphere.dto.response.JournalInsightsResponse;
 import com.notesphere.dto.response.JournalResponse;
 import com.notesphere.dto.response.PagedResponse;
+import com.notesphere.dto.response.TagCountResponse;
 import com.notesphere.entity.enums.SentimentLabel;
 import com.notesphere.security.UserPrincipal;
 import com.notesphere.service.JournalService;
@@ -248,6 +249,14 @@ public class JournalController {
     public ResponseEntity<ApiResponse<List<String>>> getUserTags(
             @AuthenticationPrincipal UserPrincipal currentUser) {
         List<String> tags = journalService.getUserTags(currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success(tags));
+    }
+
+    @GetMapping("/tags/counts")
+    @Operation(summary = "Get all tags used by the current user with actual usage counts")
+    public ResponseEntity<ApiResponse<List<TagCountResponse>>> getUserTagsWithCounts(
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+        List<TagCountResponse> tags = journalService.getUserTagsWithCounts(currentUser.getId());
         return ResponseEntity.ok(ApiResponse.success(tags));
     }
 

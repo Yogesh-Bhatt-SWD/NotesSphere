@@ -153,7 +153,60 @@ export function formatPublishedDateIST(isoString) {
   }
 }
 
+/**
+ * Format relative last seen timestamp for inactive friends.
+ * Examples:
+ * - "Active just now"
+ * - "Active 5m ago"
+ * - "Active 2h ago"
+ * - "Last seen yesterday"
+ * - "Last seen on Oct 12"
+ * - "Offline" (if timestamp is missing)
+ *
+ * @param {string|Date} lastSeenAt - ISO timestamp or Date object
+ * @returns {string} User-friendly relative status text
+ */
+export function formatLastSeen(lastSeenAt) {
+  if (!lastSeenAt) return 'Offline';
+
+  try {
+    const date = new Date(lastSeenAt);
+    if (isNaN(date.getTime())) return 'Offline';
+
+    const now = new Date();
+    const diffSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffSeconds < 0 || diffSeconds < 60) {
+      return 'Active just now';
+    }
+
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    if (diffMinutes < 60) {
+      return `Active ${diffMinutes}m ago`;
+    }
+
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) {
+      return `Active ${diffHours}h ago`;
+    }
+
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays === 1) {
+      return 'Last seen yesterday';
+    }
+
+    if (diffDays < 7) {
+      return `Last seen ${diffDays}d ago`;
+    }
+
+    return `Last seen on ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  } catch {
+    return 'Offline';
+  }
+}
+
 export default {
   formatJournalCardDate,
   formatPublishedDateIST,
+  formatLastSeen,
 };

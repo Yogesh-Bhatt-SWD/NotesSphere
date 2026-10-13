@@ -8,6 +8,7 @@ import com.notesphere.entity.enums.FriendRequestStatus;
 import com.notesphere.exception.ResourceNotFoundException;
 import com.notesphere.repository.FriendRequestRepository;
 import com.notesphere.repository.FriendshipRepository;
+import com.notesphere.repository.UserPresenceSessionRepository;
 import com.notesphere.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,7 @@ public class FriendshipService {
     private final FriendshipRepository friendshipRepository;
     private final FriendRequestRepository friendRequestRepository;
     private final UserRepository userRepository;
+    private final UserPresenceSessionRepository presenceSessionRepository;
 
     /**
      * Get all accepted friends for the given user.
@@ -45,15 +47,24 @@ public class FriendshipService {
             friendIdToFriendship.put(otherId, f);
         }
 
-        List<User> friendUsers = userRepository.findAllById(friendIdToFriendship.keySet());
+        Set<String> friendIds = friendIdToFriendship.keySet();
+        Set<String> onlineUserIds = presenceSessionRepository != null
+                ? presenceSessionRepository.findOnlineUserIds(friendIds)
+                : Collections.emptySet();
+
+        List<User> friendUsers = userRepository.findAllById(friendIds);
         return friendUsers.stream().map(u -> {
             Friendship f = friendIdToFriendship.get(u.getId());
             return FriendResponse.builder()
                     .friendshipId(f.getId())
                     .friendId(u.getId())
                     .username(u.getUsername())
+                    .fullName(u.getFullName())
+                    .avatarUrl(u.getAvatarUrl())
                     .email(u.getEmail())
                     .connectedAt(f.getCreatedAt())
+                    .online(onlineUserIds.contains(u.getId()))
+                    .lastSeenAt(u.getLastSeenAt())
                     .build();
         }).collect(Collectors.toList());
     }

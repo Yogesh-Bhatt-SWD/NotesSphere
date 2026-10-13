@@ -1,0 +1,82 @@
+.presence-indicator-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+.presence-dot {
+  display: inline-block;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: all 0.25s ease-in-out;
+}
+
+/* Dot sizes */
+.presence-indicator-wrapper.sm .presence-dot {
+  width: 7px;
+  height: 7px;
+}
+
+.presence-indicator-wrapper.md .presence-dot {
+  width: 8px;
+  height: 8px;
+}
+
+.presence-indicator-wrapper.lg .presence-dot {
+  width: 10px;
+  height: 10px;
+}
+
+/* Status variants */
+.presence-dot.online {
+  background-color: #10B981;
+  box-shadow: 0 0 0 2px #FFFFFF, 0 0 6px rgba(16, 185, 129, 0.45);
+}
+
+.presence-dot.offline {
+  background-color: #94A3B8;
+  box-shadow: 0 0 0 2px #FFFFFF;
+}
+
+.presence-dot.loading {
+  background-color: #CBD5E1;
+  animation: presence-pulse 1.4s infinite ease-in-out;
+}
+
+/* Status Labels */
+.presence-label {
+  font-size: 0.76rem;
+  font-weight: 500;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.presence-indicator-wrapper.sm .presence-label {
+  font-size: 0.72rem;
+}
+
+.presence-indicator-wrapper.lg .presence-label {
+  font-size: 0.82rem;
+}
+
+.presence-label.online {
+  color: #059669;
+  font-weight: 600;
+}
+
+.presence-label.offline {
+  color: var(--text-muted, #64748B);
+}
+
+@keyframes presence-pulse {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}

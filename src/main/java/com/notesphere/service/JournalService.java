@@ -6,6 +6,7 @@ import com.notesphere.dto.response.JournalInsightsResponse;
 import com.notesphere.dto.response.JournalResponse;
 import com.notesphere.dto.response.PagedResponse;
 import com.notesphere.dto.response.SentimentResponse;
+import com.notesphere.dto.response.TagCountResponse;
 import com.notesphere.entity.JournalEntry;
 import com.notesphere.entity.User;
 import com.notesphere.entity.enums.SentimentLabel;
@@ -369,6 +370,29 @@ public class JournalService {
                 .flatMap(entry -> entry.getTags().stream())
                 .distinct()
                 .sorted()
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<TagCountResponse> getUserTagsWithCounts(String userId) {
+        List<JournalEntry> entries = journalRepository.findTagsByUserId(userId);
+        Map<String, Long> countMap = new LinkedHashMap<>();
+        for (JournalEntry entry : entries) {
+            if (entry.getTags() != null) {
+                for (String tag : entry.getTags()) {
+                    if (tag != null && !tag.isBlank()) {
+                        String normalized = tag.trim().toLowerCase();
+                        countMap.put(normalized, countMap.getOrDefault(normalized, 0L) + 1);
+                    }
+                }
+            }
+        }
+        return countMap.entrySet().stream()
+                .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
+                .map(e -> TagCountResponse.builder()
+                        .name(e.getKey())
+                        .count(e.getValue())
+                        .build())
                 .collect(Collectors.toList());
     }
 

@@ -58,9 +58,25 @@ public class CategoryService {
 
     @Transactional(readOnly = true)
     public List<CategoryResponse> getAvailableCategories(String userId) {
+        java.util.Map<String, Long> categoryCountMap = new java.util.HashMap<>();
+        if (userId != null) {
+            List<Object[]> counts = journalRepository.countCategoryDistributionByUserId(userId);
+            for (Object[] row : counts) {
+                if (row != null && row.length >= 2 && row[0] != null) {
+                    String cat = row[0].toString().trim().toLowerCase();
+                    Long cnt = row[1] instanceof Number ? ((Number) row[1]).longValue() : 0L;
+                    categoryCountMap.put(cat, cnt);
+                }
+            }
+        }
+
         return categoryRepository.findAllAvailableForUser(userId)
                 .stream()
-                .map(this::mapToResponse)
+                .map(cat -> {
+                    CategoryResponse resp = mapToResponse(cat);
+                    resp.setEntryCount(categoryCountMap.getOrDefault(cat.getName().trim().toLowerCase(), 0L));
+                    return resp;
+                })
                 .collect(Collectors.toList());
     }
 

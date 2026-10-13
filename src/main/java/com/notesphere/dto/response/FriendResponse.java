@@ -19,6 +19,10 @@ public class FriendResponse {
     private String friendshipId;
     private String friendId;
     private String username;
+    private String fullName;
+    private String avatarUrl;
     private String email;
     private Instant connectedAt;
+    private boolean online;
+    private Instant lastSeenAt;
 }

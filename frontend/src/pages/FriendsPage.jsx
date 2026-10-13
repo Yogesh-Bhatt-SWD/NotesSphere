@@ -18,6 +18,7 @@ import friendService from '../api/friendService';
 import chatService from '../api/chatService';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Modal from '../components/common/Modal';
+import PresenceIndicator from '../components/common/PresenceIndicator';
 import './FriendsPage.css';
 
 export default function FriendsPage() {
@@ -461,12 +462,28 @@ export default function FriendsPage() {
                                 {friend.username ? friend.username.charAt(0).toUpperCase() : 'U'}
                               </div>
                             )}
-                            <div className="online-dot" title="Online" />
+                            <PresenceIndicator
+                              userId={friend.friendId}
+                              fallbackOnline={friend.online}
+                              fallbackLastSeen={friend.lastSeenAt}
+                              size="sm"
+                              className="avatar-presence-dot"
+                            />
                           </div>
                           <div className="user-meta">
                             <h4>{friend.fullName || friend.username}</h4>
-                            <div className="user-handle" style={{ color: 'var(--primary)', fontWeight: 500 }}>
-                              @{friend.username?.toLowerCase()}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                              <span className="user-handle" style={{ color: 'var(--primary)', fontWeight: 500 }}>
+                                @{friend.username?.toLowerCase()}
+                              </span>
+                              <span style={{ color: 'var(--border-subtle, #CBD5E1)', fontSize: '0.75rem' }}>•</span>
+                              <PresenceIndicator
+                                userId={friend.friendId}
+                                showLabel={true}
+                                fallbackOnline={friend.online}
+                                fallbackLastSeen={friend.lastSeenAt}
+                                size="sm"
+                              />
                             </div>
                           </div>
                         </div>

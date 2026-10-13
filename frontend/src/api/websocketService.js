@@ -2,14 +2,17 @@ import { Client } from '@stomp/stompjs';
 
 /**
  * Singleton WebSocket service wrapping STOMP client with auto-reconnect,
- * destination authorization, and subscription lifecycle management.
+ * destination authorization, heartbeat management, and subscription lifecycle management.
  */
 class WebSocketService {
   constructor() {
     this.client = null;
     this.connected = false;
+    this.hasConnectedBefore = false;
     this.subscriptions = new Map();
     this.statusListeners = new Set();
+    this.reconnectListeners = new Set();
+    this.heartbeatTimer = null;
   }
 
   /**
@@ -51,6 +54,16 @@ class WebSocketService {
     this.client.onConnect = (frame) => {
       this.connected = true;
       this.notifyStatus(true);
+
+      // Start periodic presence heartbeat ping
+      this.startHeartbeat();
+
+      // Trigger reconnect handlers if recovering from connection drop
+      if (this.hasConnectedBefore) {
+        this.notifyReconnect();
+      }
+      this.hasConnectedBefore = true;
+
       if (onConnectCallback) onConnectCallback(frame);
     };
 
@@ -65,6 +78,7 @@ class WebSocketService {
 
     this.client.onWebSocketClose = () => {
       this.connected = false;
+      this.stopHeartbeat();
       this.notifyStatus(false);
     };
 
@@ -72,9 +86,41 @@ class WebSocketService {
   }
 
   /**
+   * Start periodic heartbeat to keep presence session active.
+   */
+  startHeartbeat() {
+    this.stopHeartbeat();
+    this.heartbeatTimer = setInterval(() => {
+      this.sendHeartbeat();
+    }, 20000);
+  }
+
+  stopHeartbeat() {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+  }
+
+  /**
+   * Send heartbeat frame over STOMP to /app/presence.heartbeat.
+   */
+  sendHeartbeat() {
+    if (this.client && this.connected) {
+      try {
+        this.client.publish({
+          destination: '/app/presence.heartbeat',
+          body: JSON.stringify({}),
+        });
+      } catch (_) {}
+    }
+  }
+
+  /**
    * Disconnect and clear all active subscriptions.
    */
   disconnect() {
+    this.stopHeartbeat();
     if (this.client) {
       this.subscriptions.forEach((sub) => {
         try {
@@ -87,6 +133,7 @@ class WebSocketService {
       this.client.deactivate();
       this.client = null;
       this.connected = false;
+      this.hasConnectedBefore = false;
       this.notifyStatus(false);
     }
   }
@@ -164,6 +211,42 @@ class WebSocketService {
   }
 
   /**
+   * Subscribe to real-time friend presence updates for authenticated user.
+   */
+  subscribeToFriendPresence(userId, callback) {
+    if (!this.client || !this.connected) return null;
+    const dest = `/topic/presence.friends.${userId}`;
+
+    if (this.subscriptions.has(dest)) {
+      try {
+        if (this.client?.connected) {
+          this.subscriptions.get(dest).unsubscribe();
+        }
+      } catch (_) {}
+    }
+
+    const sub = this.client.subscribe(dest, (message) => {
+      try {
+        const payload = JSON.parse(message.body);
+        callback(payload);
+      } catch (err) {
+        console.error('Failed to parse presence STOMP payload:', err);
+      }
+    });
+
+    this.subscriptions.set(dest, sub);
+
+    return () => {
+      try {
+        if (this.client?.connected) {
+          sub.unsubscribe();
+        }
+      } catch (_) {}
+      this.subscriptions.delete(dest);
+    };
+  }
+
+  /**
    * Send a chat message over STOMP /app/chat.send.
    */
   sendMessage(conversationId, content) {
@@ -188,6 +271,20 @@ class WebSocketService {
   notifyStatus(status) {
     this.statusListeners.forEach((fn) => {
       try { fn(status); } catch (_) {}
+    });
+  }
+
+  /**
+   * Register a reconnect listener to restore state after connection drops.
+   */
+  onReconnect(listener) {
+    this.reconnectListeners.add(listener);
+    return () => this.reconnectListeners.delete(listener);
+  }
+
+  notifyReconnect() {
+    this.reconnectListeners.forEach((fn) => {
+      try { fn(); } catch (_) {}
     });
   }
 }

@@ -183,6 +183,9 @@ public class User {
         return dailyWritingGoalWords != null ? dailyWritingGoalWords : 500;
     }
 
+    @Column(name = "last_seen_at")
+    private Instant lastSeenAt;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

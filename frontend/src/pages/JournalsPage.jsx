@@ -52,9 +52,9 @@ export function JournalsPage() {
   const [joinedCommunities, setJoinedCommunities] = useState([]);
 
   // Filters
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(() => searchParams.get('search') || searchParams.get('tag') || '');
   const [activeSentiment, setActiveSentiment] = useState('ALL');
-  const [selectedCategory, setSelectedCategory] = useState('ALL');
+  const [selectedCategory, setSelectedCategory] = useState(() => searchParams.get('category') || 'ALL');
   const [selectedVisibility, setSelectedVisibility] = useState('ALL'); // 'ALL' | 'PRIVATE' | 'COMMUNITY'
   const [currentPage, setCurrentPage] = useState(0); // 0-indexed for Spring Data
   const [totalPages, setTotalPages] = useState(1);
@@ -148,6 +148,13 @@ export function JournalsPage() {
     loadJoinedCommunities();
     loadPublishedJournals();
   }, []);
+
+  useEffect(() => {
+    const cat = searchParams.get('category');
+    const s = searchParams.get('search') || searchParams.get('tag');
+    if (cat) setSelectedCategory(cat);
+    if (s !== null && s !== undefined) setSearch(s);
+  }, [searchParams]);
 
   useEffect(() => {
     if (activeTab === 'published') {

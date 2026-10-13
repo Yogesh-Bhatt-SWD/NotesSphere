@@ -20,4 +20,5 @@ public class CategoryResponse {
     private String icon;
     private String color;
     private Instant createdAt;
+    private long entryCount;
 }

@@ -6,6 +6,8 @@ import com.notesphere.repository.ConversationRepository;
 import com.notesphere.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.notesphere.service.PresenceService;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageDeliveryException;
@@ -34,6 +36,7 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
     private final CustomUserDetailsService userDetailsService;
     private final ConversationRepository conversationRepository;
     private final UserRepository userRepository;
+    private final ObjectProvider<PresenceService> presenceServiceProvider;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -92,6 +95,15 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
                         throw new MessageDeliveryException("Access denied: You cannot subscribe to another user's notifications");
                     }
                 }
+                // Authorize personal friend presence feed: /topic/presence.friends.{id}
+                else if (destination.startsWith("/topic/presence.friends.")) {
+                    String targetUserId = destination.substring("/topic/presence.friends.".length());
+                    if (!targetUserId.equals(userId) && !targetUserId.equalsIgnoreCase(principal.getName())) {
+                        log.warn("User {} (resolved ID: {}) attempted unauthorized subscription to presence feed of {}",
+                                principal.getName(), userId, targetUserId);
+                        throw new MessageDeliveryException("Access denied: You can only subscribe to your own friend presence feed");
+                    }
+                }
             }
         }
 
@@ -101,6 +113,17 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
             if (principal == null) {
                 log.warn("WebSocket STOMP SEND rejected: unauthenticated session");
                 throw new MessageDeliveryException("Unauthorized STOMP send");
+            }
+        }
+
+        // 4. Track activity heartbeat on valid frames
+        if (accessor.getUser() != null && accessor.getSessionId() != null) {
+            PresenceService ps = presenceServiceProvider.getIfAvailable();
+            if (ps != null) {
+                String userId = resolveUserId(accessor.getUser());
+                if (userId != null) {
+                    ps.recordHeartbeat(accessor.getSessionId(), userId);
+                }
             }
         }
 

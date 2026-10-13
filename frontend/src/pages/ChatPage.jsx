@@ -18,6 +18,7 @@ import { useAuth } from '../context/AuthContext';
 import chatService from '../api/chatService';
 import websocketService from '../api/websocketService';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import PresenceIndicator from '../components/common/PresenceIndicator';
 import './ChatPage.css';
 
 export default function ChatPage() {
@@ -343,7 +344,11 @@ export default function ChatPage() {
                       <div className="convo-avatar">
                         {convo.friendUsername ? convo.friendUsername.charAt(0).toUpperCase() : 'U'}
                       </div>
-                      <div className="online-dot" />
+                      <PresenceIndicator
+                        userId={convo.friendId}
+                        size="sm"
+                        className="avatar-presence-dot"
+                      />
                     </div>
                     <div className="convo-meta">
                       <span className="convo-name">{convo.friendUsername}</span>
@@ -385,16 +390,11 @@ export default function ChatPage() {
                 <div className="chat-header-info">
                   <h3>{activeConversation.friendUsername}</h3>
                   <div className="chat-header-status">
-                    <span
-                      style={{
-                        width: 7,
-                        height: 7,
-                        borderRadius: '50%',
-                        backgroundColor: '#10B981',
-                        display: 'inline-block',
-                      }}
+                    <PresenceIndicator
+                      userId={activeConversation.friendId}
+                      showLabel={true}
+                      size="sm"
                     />
-                    <span>online</span>
                   </div>
                 </div>
               </div>

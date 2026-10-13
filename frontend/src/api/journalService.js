@@ -83,6 +83,8 @@ export const journalService = {
 
   getUserTags: () => apiClient.get('/journals/tags'),
 
+  getUserTagsWithCounts: () => apiClient.get('/journals/tags/counts'),
+
   getUserCategories: () => apiClient.get('/journals/categories'),
 
   exportJson: (filename = 'journals.json') =>

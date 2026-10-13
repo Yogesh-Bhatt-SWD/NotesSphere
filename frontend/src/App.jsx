@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { PresenceProvider } from './context/PresenceContext';
 import MainLayout from './components/layout/MainLayout';
 
 // Pages
@@ -64,43 +65,45 @@ function PublicRoute({ children }) {
 export function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Public Authentication Routes */}
-          <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-          <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
-          <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
+      <PresenceProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public Authentication Routes */}
+            <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+            <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
+            <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
 
-          {/* Shareable Blog Detail Page (Public Preview + Login Gate) */}
-          <Route path="/blogs/:slug" element={<BlogDetailPage />} />
+            {/* Shareable Blog Detail Page (Public Preview + Login Gate) */}
+            <Route path="/blogs/:slug" element={<BlogDetailPage />} />
 
-          {/* Authenticated Dashboard Shell Layout */}
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <MainLayout showRightPanel={true} />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<DashboardPage />} />
-            <Route path="journals" element={<JournalsPage />} />
-            <Route path="editor" element={<EditorPage />} />
-            <Route path="communities" element={<CommunitiesPage />} />
-            <Route path="friends" element={<FriendsPage />} />
-            <Route path="chat" element={<ChatPage />} />
-            <Route path="analytics" element={<AnalyticsPage />} />
-            <Route path="calendar" element={<CalendarPage />} />
-            <Route path="tags" element={<TagsPage />} />
-            <Route path="reminders" element={<RemindersPage />} />
-            <Route path="search" element={<SearchPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-            <Route path="profile/:userId" element={<PublicProfilePage />} />
-            <Route path="profile" element={<Navigate to="/settings" replace />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+            {/* Authenticated Dashboard Shell Layout */}
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <MainLayout showRightPanel={true} />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<DashboardPage />} />
+              <Route path="journals" element={<JournalsPage />} />
+              <Route path="editor" element={<EditorPage />} />
+              <Route path="communities" element={<CommunitiesPage />} />
+              <Route path="friends" element={<FriendsPage />} />
+              <Route path="chat" element={<ChatPage />} />
+              <Route path="analytics" element={<AnalyticsPage />} />
+              <Route path="calendar" element={<CalendarPage />} />
+              <Route path="tags" element={<TagsPage />} />
+              <Route path="reminders" element={<RemindersPage />} />
+              <Route path="search" element={<SearchPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+              <Route path="profile/:userId" element={<PublicProfilePage />} />
+              <Route path="profile" element={<Navigate to="/settings" replace />} />
+              <Route path="*" element={<NotFoundPage />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </PresenceProvider>
     </AuthProvider>
   );
 }

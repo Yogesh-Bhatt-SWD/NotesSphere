@@ -55,6 +55,9 @@ class FriendAndMessagingServiceTest {
     @Mock
     private SimpMessagingTemplate messagingTemplate;
 
+    @Mock
+    private com.notesphere.repository.UserPresenceSessionRepository presenceSessionRepository;
+
     @InjectMocks
     private FriendRequestService friendRequestService;
 

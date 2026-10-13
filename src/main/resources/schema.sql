@@ -278,3 +278,28 @@ CREATE TABLE IF NOT EXISTS journal_views (
     CONSTRAINT fk_jv_journal FOREIGN KEY (journal_id) REFERENCES journal_entries(id) ON DELETE CASCADE
 );
 
+-- 19. User Presence Sessions Table (Multi-tab active presence tracking)
+CREATE TABLE IF NOT EXISTS user_presence_sessions (
+    session_id VARCHAR(100) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    connected_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_heartbeat_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    instance_id VARCHAR(100) NULL,
+    INDEX idx_presence_user_id (user_id),
+    INDEX idx_presence_heartbeat (last_heartbeat_at),
+    CONSTRAINT fk_presence_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 20. Presence Broadcast Events Table (Cross-instance presence replication)
+CREATE TABLE IF NOT EXISTS presence_broadcast_events (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    is_online BOOLEAN NOT NULL,
+    last_seen_at TIMESTAMP NULL,
+    origin_instance_id VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_pbe_created (created_at),
+    INDEX idx_pbe_origin (origin_instance_id)
+);
+
+

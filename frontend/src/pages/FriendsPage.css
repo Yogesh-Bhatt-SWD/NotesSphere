@@ -306,6 +306,13 @@
   border-radius: 50%;
 }
 
+.avatar-presence-dot {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  pointer-events: none;
+}
+
 .user-meta h4 {
   margin: 0;
   font-size: 0.95rem;
