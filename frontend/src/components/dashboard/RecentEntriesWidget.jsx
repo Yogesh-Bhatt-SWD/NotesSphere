@@ -1,50 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, BookOpen } from 'lucide-react';
-import { mockRecentJournals } from '../../mock/mockData';
+import { ArrowRight, BookOpen, Loader2 } from 'lucide-react';
 import journalService from '../../api/journalService';
 import './RecentEntriesWidget.css';
 
 export function RecentEntriesWidget({ entries: propEntries }) {
   const navigate = useNavigate();
-  const [items, setItems] = useState(propEntries || mockRecentJournals);
+  const [items, setItems] = useState(propEntries || []);
+  const [loading, setLoading] = useState(!propEntries);
   const [imgErrors, setImgErrors] = useState({});
-
-  useEffect(() => {
-    if (propEntries && propEntries.length > 0) {
-      setItems(propEntries);
-      return;
-    }
-
-    journalService.getJournals({ size: 3, sortBy: 'createdAt', sortDir: 'desc' })
-      .then((res) => {
-        if (res?.data?.content && res.data.content.length > 0) {
-          const mapped = res.data.content.map((j, idx) => ({
-            id: j.id,
-            title: j.title,
-            category: j.category || 'General',
-            timeAgo: j.createdAt ? formatTimeAgo(j.createdAt) : 'Recently',
-            thumbnail:
-              j.coverImageUrl ||
-              [
-                'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=200&q=80',
-                'https://images.unsplash.com/photo-1526676037777-05a232554f77?auto=format&fit=crop&w=200&q=80',
-                'https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=200&q=80',
-              ][idx % 3],
-          }));
-          setItems(mapped);
-        } else {
-          setItems(mockRecentJournals);
-        }
-      })
-      .catch(() => {
-        setItems(mockRecentJournals);
-      });
-  }, [propEntries]);
-
-  const handleImgError = (id) => {
-    setImgErrors((prev) => ({ ...prev, [id]: true }));
-  };
 
   const formatTimeAgo = (dateStr) => {
     try {
@@ -60,53 +24,116 @@ export function RecentEntriesWidget({ entries: propEntries }) {
     }
   };
 
+  const fetchRecent = useCallback(async () => {
+    if (propEntries && propEntries.length > 0) {
+      setItems(propEntries);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await journalService.getJournals({ size: 3, sortBy: 'createdAt', sortDir: 'desc' });
+      const content = res?.data?.content || [];
+      const mapped = content.map((j) => ({
+        id: j.id,
+        title: j.title,
+        category: j.category || 'General',
+        timeAgo: j.createdAt ? formatTimeAgo(j.createdAt) : 'Recently',
+        thumbnail: j.coverImageUrl || j.coverImage || null,
+      }));
+      setItems(mapped);
+    } catch (err) {
+      console.warn('Failed to load recent journals:', err);
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [propEntries]);
+
+  useEffect(() => {
+    fetchRecent();
+
+    const handleMutation = () => fetchRecent();
+    window.addEventListener('notesphere:journal-mutated', handleMutation);
+    return () => {
+      window.removeEventListener('notesphere:journal-mutated', handleMutation);
+    };
+  }, [fetchRecent]);
+
+  const handleImgError = (id) => {
+    setImgErrors((prev) => ({ ...prev, [id]: true }));
+  };
+
   return (
     <div className="recent-journals-widget">
       <div className="widget-header-row">
         <div className="widget-title-group">
           <h3>Recent Journals</h3>
-          <p>{items.length} Journals in row</p>
+          <p>{items.length} {items.length === 1 ? 'journal' : 'journals'} written</p>
         </div>
-        <button
-          className="view-all-pill-btn"
-          onClick={() => navigate('/journals')}
-        >
-          View All <span className="view-all-counter">{items.length}</span>
-        </button>
+        {items.length > 0 && (
+          <button
+            className="view-all-pill-btn"
+            onClick={() => navigate('/journals')}
+          >
+            View All <span className="view-all-counter">{items.length}</span>
+          </button>
+        )}
       </div>
 
       <div className="recent-entries-list">
-        {items.map((item) => (
-          <div
-            key={item.id}
-            className="recent-entry-item"
-            onClick={() => navigate(`/editor?id=${item.id}`)}
-          >
-            {imgErrors[item.id] || !item.thumbnail ? (
-              <div className="entry-thumb-placeholder">
-                <BookOpen size={20} color="var(--primary)" />
-              </div>
-            ) : (
-              <img
-                src={item.thumbnail}
-                alt={item.title}
-                className="entry-thumb"
-                onError={() => handleImgError(item.id)}
-              />
-            )}
-            <div className="entry-info">
-              <div className="entry-title">{item.title}</div>
-              <div className="entry-meta-row">
-                <span>{item.category}</span>
-                <span>•</span>
-                <span>{item.timeAgo}</span>
-              </div>
-            </div>
-            <div className="entry-action-btn">
-              <ArrowRight size={16} />
-            </div>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+            <Loader2 size={18} className="animate-spin" style={{ margin: '0 auto 6px', color: 'var(--primary)' }} />
+            <span>Loading recent entries...</span>
           </div>
-        ))}
+        ) : items.length === 0 ? (
+          <div className="recent-entries-empty" style={{
+            textAlign: 'center',
+            padding: '24px 16px',
+            color: 'var(--text-muted)',
+            fontSize: '0.84rem'
+          }}>
+            <BookOpen size={24} style={{ margin: '0 auto 6px', opacity: 0.35, display: 'block', color: 'var(--primary)' }} />
+            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>No recent journals yet</div>
+            <p style={{ margin: '4px 0 0 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+              Your latest reflections and notes will appear here.
+            </p>
+          </div>
+        ) : (
+          items.map((item) => (
+            <div
+              key={item.id}
+              className="recent-entry-item"
+              onClick={() => navigate(`/editor?id=${item.id}`)}
+            >
+              {imgErrors[item.id] || !item.thumbnail ? (
+                <div className="entry-thumb-placeholder">
+                  <BookOpen size={20} color="var(--primary)" />
+                </div>
+              ) : (
+                <img
+                  src={item.thumbnail}
+                  alt={item.title}
+                  className="entry-thumb"
+                  onError={() => handleImgError(item.id)}
+                />
+              )}
+              <div className="entry-info">
+                <div className="entry-title">{item.title}</div>
+                <div className="entry-meta-row">
+                  <span>{item.category}</span>
+                  <span>•</span>
+                  <span>{item.timeAgo}</span>
+                </div>
+              </div>
+              <div className="entry-action-btn">
+                <ArrowRight size={16} />
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

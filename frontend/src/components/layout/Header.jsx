@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Bell, Search, Menu, X } from 'lucide-react';
 import { Badge } from '../common/Badge';
 import { useAuth } from '../../context/AuthContext';
-import { mockCurrentUser } from '../../mock/mockData';
 import { GlobalSearchDropdown } from '../common/GlobalSearchDropdown';
 import './Header.css';
 
@@ -17,11 +16,10 @@ export function Header({
 }) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const currentUser = user || mockCurrentUser;
-  const userName = currentUser?.name || currentUser?.fullName || currentUser?.username || (user ? 'Member' : 'Arthur Fen');
+  const userName = user?.fullName || user?.name || user?.username || 'Member';
   const userInitial = userName.charAt(0).toUpperCase();
   const userFirstName = userName.split(' ')[0];
-  const avatarUrl = currentUser?.avatarUrl || currentUser?.avatar || null;
+  const avatarUrl = user?.avatarUrl || user?.avatar || null;
   const displayName = title || `Hello, ${userName}`;
 
   const [searchQuery, setSearchQuery] = useState('');

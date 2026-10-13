@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft,
@@ -9,10 +9,11 @@ import {
   TrendingUp,
   Folder,
   BarChart2,
-  Plus
+  Plus,
+  BookOpen
 } from 'lucide-react';
-import { mockCurrentUser, mockCalendarDatesWithEntries } from '../../mock/mockData';
 import { useAuth } from '../../context/AuthContext';
+import journalService from '../../api/journalService';
 import './RightSidebar.css';
 
 export function RightSidebar({ className = '' }) {
@@ -20,14 +21,15 @@ export function RightSidebar({ className = '' }) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const currentUser = user || mockCurrentUser;
-  const userName = currentUser?.name || currentUser?.username || (user ? 'Member' : 'Arthur Fen');
+  const userName = user?.fullName || user?.name || user?.username || 'Member';
   const userInitial = userName.charAt(0).toUpperCase();
   const path = location.pathname;
 
   // Calendar State
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDay, setSelectedDay] = useState(12);
+  const [selectedDay, setSelectedDay] = useState(new Date().getDate());
+  const [activities, setActivities] = useState([]);
+  const [entryDates, setEntryDates] = useState(new Set());
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -48,6 +50,34 @@ export function RightSidebar({ className = '' }) {
   const startDay = (firstDayIndex + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
+  useEffect(() => {
+    if (!user) {
+      setActivities([]);
+      setEntryDates(new Set());
+      return;
+    }
+
+    journalService.getJournals({ size: 5, sortBy: 'createdAt', sortDir: 'desc' })
+      .then((res) => {
+        const list = res?.data?.content || [];
+        setActivities(list);
+        const days = new Set();
+        list.forEach((j) => {
+          if (j.createdAt) {
+            const d = new Date(j.createdAt);
+            if (d.getMonth() === month && d.getFullYear() === year) {
+              days.add(d.getDate());
+            }
+          }
+        });
+        setEntryDates(days);
+      })
+      .catch(() => {
+        setActivities([]);
+        setEntryDates(new Set());
+      });
+  }, [user, month, year]);
+
   const calendarDays = [];
   for (let i = 0; i < startDay; i++) {
     calendarDays.push({ day: null, empty: true });
@@ -56,32 +86,10 @@ export function RightSidebar({ className = '' }) {
     calendarDays.push({
       day: d,
       empty: false,
-      hasEntry: mockCalendarDatesWithEntries.includes(d),
+      hasEntry: entryDates.has(d),
       isActive: d === selectedDay
     });
   }
-
-  // Sample activities matching Screen 1 in Image B
-  const sampleActivities = [
-    {
-      id: 'act-1',
-      title: 'A Productive Day',
-      time: '2 hours ago',
-      thumb: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=120&q=80'
-    },
-    {
-      id: 'act-2',
-      title: 'Weekend Memories',
-      time: '5 hours ago',
-      thumb: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=120&q=80'
-    },
-    {
-      id: 'act-3',
-      title: 'Learning something new',
-      time: '1 day ago',
-      thumb: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=120&q=80'
-    }
-  ];
 
   // Calendar entries for selected date (Screen 4)
   const calendarEntries = [
@@ -337,15 +345,47 @@ export function RightSidebar({ className = '' }) {
               <span className="view-all-link" onClick={() => navigate('/journals')}>View all</span>
             </div>
 
-            {sampleActivities.map((act) => (
-              <div key={act.id} className="activity-item-card" onClick={() => navigate('/journals')}>
-                <img src={act.thumb} alt={act.title} className="activity-thumb" />
-                <div className="activity-info">
-                  <div className="activity-name">{act.title}</div>
-                  <div className="activity-meta">{act.time}</div>
-                </div>
+            {activities.length === 0 ? (
+              <div style={{
+                padding: '16px 12px',
+                textAlign: 'center',
+                color: 'var(--text-muted)',
+                fontSize: '0.82rem',
+                background: 'var(--bg-subtle, #f8fafc)',
+                borderRadius: 'var(--radius-md)',
+                marginTop: '8px'
+              }}>
+                No journal activities recorded today.
               </div>
-            ))}
+            ) : (
+              activities.map((act) => (
+                <div key={act.id} className="activity-item-card" onClick={() => navigate(`/editor?id=${act.id}`)}>
+                  {act.coverImageUrl || act.coverImage ? (
+                    <img src={act.coverImageUrl || act.coverImage} alt={act.title} className="activity-thumb" />
+                  ) : (
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '8px',
+                      background: 'var(--primary-light, #e7f8f5)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'var(--primary, #00B69B)',
+                      flexShrink: 0
+                    }}>
+                      <BookOpen size={18} />
+                    </div>
+                  )}
+                  <div className="activity-info">
+                    <div className="activity-name">{act.title}</div>
+                    <div className="activity-meta">
+                      {act.createdAt ? new Date(act.createdAt).toLocaleDateString() : 'Recently'}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </>
       )}
