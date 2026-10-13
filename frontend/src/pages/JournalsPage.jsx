@@ -171,6 +171,10 @@ export function JournalsPage() {
     try {
       setUnpublishingId(id);
       await journalService.unpublishJournal(id);
+      sessionStorage.removeItem('notesphere_dashboard_journals_cache');
+      sessionStorage.removeItem('notesphere_recent_journals_cache');
+      sessionStorage.removeItem('notesphere_sidebar_activities_cache');
+      window.dispatchEvent(new CustomEvent('notesphere:journal-mutated'));
       showToast('Journal reverted to private');
       setPublishedEntries((prev) => prev.filter((item) => item.id !== id));
       loadJournals();
@@ -269,6 +273,10 @@ export function JournalsPage() {
     try {
       setUnpublishingId(id);
       await journalService.unpublishJournal(id);
+      sessionStorage.removeItem('notesphere_dashboard_journals_cache');
+      sessionStorage.removeItem('notesphere_recent_journals_cache');
+      sessionStorage.removeItem('notesphere_sidebar_activities_cache');
+      window.dispatchEvent(new CustomEvent('notesphere:journal-mutated'));
       showToast('Journal reverted to private');
       loadJournals();
       if (activeTab === 'published') {
@@ -696,7 +704,7 @@ export function JournalsPage() {
                       <span>{formatJournalCardDate(item)}</span>
                     </span>
 
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <div className="card-buttons-group">
                       {/* Publish / Unpublish button */}
                       {isCommunity || isPublic ? (
                         <>
@@ -707,24 +715,26 @@ export function JournalsPage() {
                               e.stopPropagation();
                               setShareJournal(item);
                             }}
-                            title="Share Blog Link"
+                            title="Share Blog Link — Copy link, share to WhatsApp, or generate card"
+                            aria-label="Share Link"
                           >
-                            <Share2 size={13} /> Share Link
+                            <Share2 size={13} /> <span>Share Link</span>
                           </button>
                           <button
                             type="button"
                             className="btn-card-unpublish"
                             onClick={(e) => handleUnpublish(item.id, e)}
                             disabled={unpublishingId === item.id}
-                            title="Unpublish back to private"
+                            title="Revert journal to private (removes from public feed)"
+                            aria-label="Unpublish"
                           >
                             {unpublishingId === item.id ? (
                               <>
-                                <Loader2 size={13} className="btn-icon-spin" /> Unpublishing...
+                                <Loader2 size={13} className="btn-icon-spin" /> <span>Unpublishing...</span>
                               </>
                             ) : (
                               <>
-                                <Lock size={13} /> Unpublish
+                                <Lock size={13} /> <span>Unpublish</span>
                               </>
                             )}
                           </button>
@@ -734,13 +744,14 @@ export function JournalsPage() {
                           type="button"
                           className="btn-card-publish"
                           onClick={(e) => handleOpenPublishModal(item, e)}
-                          title="Publish journal"
+                          title="Publish to Community or Public timeline"
+                          aria-label="Publish Entry"
                         >
-                          <Share2 size={13} /> Publish
+                          <Share2 size={13} /> <span>Publish</span>
                         </button>
                       )}
 
-                      <div className="card-action-icons">
+                      <div className="card-action-icons" onClick={(e) => e.stopPropagation()}>
                         {(isCommunity || isPublic) && (
                           <button
                             type="button"
@@ -749,9 +760,10 @@ export function JournalsPage() {
                               e.stopPropagation();
                               setPreviewJournal(item);
                             }}
-                            title="Preview Published Story"
+                            title="Quick Preview Story"
+                            aria-label="Preview Story"
                           >
-                            <Eye size={16} />
+                            <Eye size={15} />
                           </button>
                         )}
 
@@ -759,9 +771,10 @@ export function JournalsPage() {
                           type="button"
                           className={`icon-btn star ${item.favorite ? 'active' : ''}`}
                           onClick={(e) => toggleFavorite(item.id, e)}
-                          title="Favorite"
+                          title={item.favorite ? "Favorited (Click to remove)" : "Add to Favorites"}
+                          aria-label="Toggle Favorite"
                         >
-                          <Star size={16} fill={item.favorite ? '#F59E0B' : 'none'} />
+                          <Star size={15} fill={item.favorite ? '#F59E0B' : 'none'} />
                         </button>
 
                         <button
@@ -771,18 +784,20 @@ export function JournalsPage() {
                             e.stopPropagation();
                             navigate(`/editor?id=${item.id}`);
                           }}
-                          title="Edit"
+                          title="Edit Journal Entry"
+                          aria-label="Edit Entry"
                         >
-                          <Edit3 size={16} />
+                          <Edit3 size={15} />
                         </button>
 
                         <button
                           type="button"
                           className="icon-btn delete"
                           onClick={(e) => deleteEntry(item.id, e)}
-                          title="Delete"
+                          title="Delete Journal Entry"
+                          aria-label="Delete Entry"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={15} />
                         </button>
                       </div>
                     </div>
