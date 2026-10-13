@@ -279,43 +279,148 @@
   color: #15803D;
 }
 
-.btn-card-publish {
-  padding: 4px 10px;
-  border-radius: var(--radius-pill);
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid var(--primary);
-  background: transparent;
-  color: var(--primary);
-  transition: all var(--transition-fast);
+/* Card interactive action buttons (Publish, Share, Unpublish) */
+.btn-card-publish,
+.btn-card-share {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  border: 1px solid rgba(0, 182, 155, 0.35);
+  background: rgba(0, 182, 155, 0.08);
+  color: #009680;
+  box-shadow: 0 1px 2px rgba(0, 182, 155, 0.05);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  user-select: none;
 }
 
-.btn-card-publish:hover {
-  background: var(--primary);
-  color: #ffffff;
+.btn-card-publish:hover:not(:disabled),
+.btn-card-share:hover:not(:disabled) {
+  background: var(--primary, #00B69B);
+  border-color: var(--primary, #00B69B);
+  color: #FFFFFF;
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 14px rgba(0, 182, 155, 0.32);
+}
+
+.btn-card-publish:hover:not(:disabled) svg,
+.btn-card-share:hover:not(:disabled) svg {
+  transform: rotate(6deg) scale(1.08);
+}
+
+.btn-card-publish:active:not(:disabled),
+.btn-card-share:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+  box-shadow: 0 2px 6px rgba(0, 182, 155, 0.2);
+}
+
+.btn-card-publish:disabled,
+.btn-card-share:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .btn-card-unpublish {
-  padding: 4px 10px;
-  border-radius: var(--radius-pill);
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid #FECDD3;
-  background: #FFF1F2;
-  color: #E11D48;
-  transition: all var(--transition-fast);
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  background: rgba(239, 68, 68, 0.07);
+  color: #DC2626;
+  box-shadow: 0 1px 2px rgba(239, 68, 68, 0.05);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  user-select: none;
 }
 
-.btn-card-unpublish:hover {
-  background: #FEE2E2;
+.btn-card-unpublish:hover:not(:disabled) {
+  background: #EF4444;
+  border-color: #EF4444;
+  color: #FFFFFF;
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+}
+
+.btn-card-unpublish:hover:not(:disabled) svg {
+  transform: scale(1.1);
+}
+
+.btn-card-unpublish:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.18);
+}
+
+.btn-card-unpublish:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-card-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border-subtle, #E2E8F0);
+  background: #FFFFFF;
+  color: var(--text-secondary, #64748B);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  user-select: none;
+}
+
+.btn-card-action:hover:not(:disabled) {
+  border-color: var(--primary, #00B69B);
+  color: var(--primary, #00B69B);
+  background: rgba(0, 182, 155, 0.06);
+  transform: translateY(-1.5px);
+  box-shadow: 0 3px 10px rgba(0, 182, 155, 0.16);
+}
+
+.btn-card-action:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+}
+
+.btn-card-publish svg,
+.btn-card-share svg,
+.btn-card-unpublish svg,
+.btn-card-action svg {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-icon-spin {
+  animation: btn-spin 0.8s linear infinite;
+}
+
+@keyframes btn-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Tab Switcher for All Journals vs Published Timeline */

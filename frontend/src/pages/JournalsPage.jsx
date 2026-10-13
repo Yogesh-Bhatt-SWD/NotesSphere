@@ -20,7 +20,8 @@ import {
   MessageSquare,
   ExternalLink,
   BookOpen,
-  Eye
+  Eye,
+  Loader2
 } from 'lucide-react';
 import journalService from '../api/journalService';
 import categoryService from '../api/categoryService';
@@ -70,6 +71,7 @@ export function JournalsPage() {
 
   // Share Blog Modal
   const [shareJournal, setShareJournal] = useState(null);
+  const [unpublishingId, setUnpublishingId] = useState(null);
 
   const showToast = (msg, type = 'success') => {
     setNotification({ msg, type });
@@ -160,12 +162,15 @@ export function JournalsPage() {
     if (!window.confirm('Revert this publication to private? It will be removed from the community feed.')) return;
 
     try {
+      setUnpublishingId(id);
       await journalService.unpublishJournal(id);
       showToast('Journal reverted to private');
       setPublishedEntries((prev) => prev.filter((item) => item.id !== id));
       loadJournals();
     } catch (err) {
       showToast(err.message || 'Failed to unpublish journal', 'error');
+    } finally {
+      setUnpublishingId(null);
     }
   };
 
@@ -255,11 +260,17 @@ export function JournalsPage() {
     if (!window.confirm('Revert this publication to private? It will be removed from the community feed.')) return;
 
     try {
+      setUnpublishingId(id);
       await journalService.unpublishJournal(id);
       showToast('Journal reverted to private');
       loadJournals();
+      if (activeTab === 'published') {
+        loadPublishedJournals();
+      }
     } catch (err) {
       showToast(err.message || 'Failed to unpublish journal', 'error');
+    } finally {
+      setUnpublishingId(null);
     }
   };
 
@@ -443,11 +454,21 @@ export function JournalsPage() {
 
                         <div className="timeline-actions">
                           <button
+                            type="button"
                             className="btn-card-unpublish"
                             onClick={(e) => handleUnpublishFromTimeline(item.id, e)}
+                            disabled={unpublishingId === item.id}
                             title="Revert journal to private (removes from community feed)"
                           >
-                            <Lock size={13} /> Unpublish
+                            {unpublishingId === item.id ? (
+                              <>
+                                <Loader2 size={13} className="btn-icon-spin" /> Unpublishing...
+                              </>
+                            ) : (
+                              <>
+                                <Lock size={13} /> Unpublish
+                              </>
+                            )}
                           </button>
                         </div>
                       </div>
@@ -479,28 +500,31 @@ export function JournalsPage() {
 
                         <div className="timeline-actions">
                           <button
-                            className="btn-card-publish"
+                            type="button"
+                            className="btn-card-share"
                             onClick={() => setShareJournal(item)}
                             title="Share Blog Link"
-                            style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)', borderColor: 'rgba(0, 182, 155, 0.4)' }}
                           >
                             <Share2 size={13} /> Share Link
                           </button>
                           <button
-                            className="btn-card-publish"
+                            type="button"
+                            className="btn-card-action"
                             onClick={() => setPreviewJournal(item)}
                             title="Preview Published Story"
                           >
                             <Eye size={13} /> View
                           </button>
                           <button
-                            className="btn-card-publish"
+                            type="button"
+                            className="btn-card-action"
                             onClick={() => navigate(`/editor?id=${item.id}`)}
                           >
                             <Edit3 size={13} /> Edit Entry
                           </button>
                           <button
-                            className="btn-card-publish"
+                            type="button"
+                            className="btn-card-action"
                             onClick={() => navigate('/communities')}
                           >
                             <ExternalLink size={13} /> Feed
@@ -671,13 +695,12 @@ export function JournalsPage() {
                         <>
                           <button
                             type="button"
-                            className="btn-card-publish"
+                            className="btn-card-share"
                             onClick={(e) => {
                               e.stopPropagation();
                               setShareJournal(item);
                             }}
                             title="Share Blog Link"
-                            style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)', borderColor: 'rgba(0, 182, 155, 0.4)' }}
                           >
                             <Share2 size={13} /> Share Link
                           </button>
@@ -685,9 +708,18 @@ export function JournalsPage() {
                             type="button"
                             className="btn-card-unpublish"
                             onClick={(e) => handleUnpublish(item.id, e)}
+                            disabled={unpublishingId === item.id}
                             title="Unpublish back to private"
                           >
-                            Unpublish
+                            {unpublishingId === item.id ? (
+                              <>
+                                <Loader2 size={13} className="btn-icon-spin" /> Unpublishing...
+                              </>
+                            ) : (
+                              <>
+                                <Lock size={13} /> Unpublish
+                              </>
+                            )}
                           </button>
                         </>
                       ) : (
