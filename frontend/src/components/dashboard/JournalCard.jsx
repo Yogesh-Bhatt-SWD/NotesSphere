@@ -34,6 +34,12 @@ export function JournalCard({ journal, onClick }) {
             e.currentTarget.src = 'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=600&q=80';
           }}
         />
+        {/* Frosted floating published date badge over cover */}
+        <div className="journal-card-floating-date" title={dateDisplay}>
+          <Calendar size={12} className="journal-card-floating-date-icon" />
+          <span>{dateDisplay}</span>
+        </div>
+
         {/* Frosted floating badge */}
         <div className="journal-card-floating-badge">
           {getIcon()}
@@ -43,8 +49,14 @@ export function JournalCard({ journal, onClick }) {
       <div className="journal-card-body">
         <h4 className="journal-card-title">{journal.title}</h4>
         <div className="journal-card-meta">
-          <Calendar size={13} className="journal-card-meta-icon" />
-          <span>{dateDisplay}</span>
+          <span className="journal-card-category-badge">{journal.category || 'Reflections'}</span>
+          {journal.readingTimeMinutes > 0 ? (
+            <span className="journal-card-reading-time"> · {journal.readingTimeMinutes} min read</span>
+          ) : (
+            journal.wordCount > 0 && (
+              <span className="journal-card-reading-time"> · {journal.wordCount} words</span>
+            )
+          )}
         </div>
       </div>
     </div>

@@ -72,21 +72,53 @@
   letter-spacing: -0.02em;
 }
 
-.journal-card-meta {
+/* Frosted floating published date badge over cover matching Image style */
+.journal-card-floating-date {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  max-width: calc(100% - 28px);
+  padding: 4px 11px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  font-weight: 500;
-  line-height: 1.4;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.9);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  z-index: 2;
+  transition: all var(--transition-fast);
 }
 
-.journal-card-meta-icon {
-  flex-shrink: 0;
-  color: var(--text-muted);
-  opacity: 0.8;
+.journal-card:hover .journal-card-floating-date {
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16);
+  transform: translateY(-1px);
 }
+
+.journal-card-floating-date-icon {
+  flex-shrink: 0;
+  color: var(--primary, #00B69B);
+}
+
+.journal-card-category-badge {
+  color: var(--primary, #00B69B);
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: -0.01em;
+}
+
+.journal-card-reading-time {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 500;
+}
+
