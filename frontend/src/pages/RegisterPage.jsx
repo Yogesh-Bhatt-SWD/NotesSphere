@@ -13,7 +13,24 @@ export function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const getInitialOAuthError = () => {
+    const raw = searchParams.get('error');
+    if (!raw) return '';
+    try {
+      const decoded = decodeURIComponent(raw);
+      if (decoded.includes('access_denied')) {
+        return 'Google sign-in was cancelled. Please try again when you are ready.';
+      }
+      if (decoded.includes('authorization_request_not_found')) {
+        return 'Sign-in session expired or cookies were blocked. Please try again.';
+      }
+      return decoded;
+    } catch {
+      return raw;
+    }
+  };
+
+  const [error, setError] = useState(getInitialOAuthError);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {

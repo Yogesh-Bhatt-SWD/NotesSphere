@@ -33,6 +33,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private final UserRepository userRepository;
     private final JwtTokenProvider tokenProvider;
     private final RefreshTokenService refreshTokenService;
+    private final HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository;
 
     @Value("${app.frontend-url:https://notes-sphere-d2m4.vercel.app}")
     private String defaultFrontendUrl;
@@ -94,6 +95,9 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 .queryParam("token", token)
                 .queryParam("refreshToken", refreshToken)
                 .build().toUriString();
+
+        // Clean up authorization request and redirect cookies
+        cookieAuthorizationRequestRepository.removeAuthorizationRequestCookies(request, response);
 
         log.info("Google OAuth2 login successful for user: {}. Redirecting to: {}", email, targetUrl);
         getRedirectStrategy().sendRedirect(request, response, targetUrl);

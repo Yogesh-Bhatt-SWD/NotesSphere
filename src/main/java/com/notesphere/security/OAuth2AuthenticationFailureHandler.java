@@ -3,6 +3,7 @@ package com.notesphere.security;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.AuthenticationException;
@@ -16,7 +17,10 @@ import java.nio.charset.StandardCharsets;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationFailureHandler {
+
+    private final HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository;
 
     @Value("${app.frontend-url:https://notes-sphere-d2m4.vercel.app}")
     private String defaultFrontendUrl;
@@ -26,6 +30,8 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
                                         HttpServletResponse response,
                                         AuthenticationException exception) throws IOException, ServletException {
         log.error("OAuth2 Authentication failed: {}", exception.getMessage(), exception);
+
+        cookieAuthorizationRequestRepository.removeAuthorizationRequestCookies(request, response);
 
         String frontendBase = determineFrontendBaseUrl(request);
         String targetUrl = UriComponentsBuilder.fromUriString(frontendBase + "/login")
