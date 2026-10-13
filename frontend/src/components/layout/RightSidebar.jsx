@@ -10,14 +10,35 @@ import {
   Folder,
   BarChart2,
   Plus,
-  BookOpen
+  BookOpen,
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import journalService from '../../api/journalService';
 import './RightSidebar.css';
 
+const SIDEBAR_CACHE_KEY = 'notesphere_sidebar_activities_cache';
+
+const getCachedActivities = () => {
+  try {
+    const raw = sessionStorage.getItem(SIDEBAR_CACHE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {}
+  return null;
+};
+
+const setCachedActivities = (data) => {
+  try {
+    sessionStorage.setItem(SIDEBAR_CACHE_KEY, JSON.stringify(data));
+  } catch {}
+};
+
 export function RightSidebar({ className = '' }) {
   const { user } = useAuth();
+  const currentUser = user;
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -28,8 +49,22 @@ export function RightSidebar({ className = '' }) {
   // Calendar State
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(new Date().getDate());
-  const [activities, setActivities] = useState([]);
-  const [entryDates, setEntryDates] = useState(new Set());
+  const cachedActs = getCachedActivities();
+  const [activities, setActivities] = useState(() => cachedActs || []);
+  const [entryDates, setEntryDates] = useState(() => {
+    const set = new Set();
+    const list = cachedActs || [];
+    const now = new Date();
+    list.forEach((j) => {
+      if (j.createdAt) {
+        const d = new Date(j.createdAt);
+        if (d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) {
+          set.add(d.getDate());
+        }
+      }
+    });
+    return set;
+  });
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -50,17 +85,18 @@ export function RightSidebar({ className = '' }) {
   const startDay = (firstDayIndex + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  useEffect(() => {
+  const fetchActivities = () => {
     if (!user) {
       setActivities([]);
       setEntryDates(new Set());
       return;
     }
 
-    journalService.getJournals({ size: 5, sortBy: 'createdAt', sortDir: 'desc' })
+    journalService.getJournals({ size: 10, sortBy: 'createdAt', sortDir: 'desc' })
       .then((res) => {
         const list = res?.data?.content || [];
         setActivities(list);
+        setCachedActivities(list);
         const days = new Set();
         list.forEach((j) => {
           if (j.createdAt) {
@@ -73,9 +109,21 @@ export function RightSidebar({ className = '' }) {
         setEntryDates(days);
       })
       .catch(() => {
-        setActivities([]);
-        setEntryDates(new Set());
+        if (!cachedActs) {
+          setActivities([]);
+          setEntryDates(new Set());
+        }
       });
+  };
+
+  useEffect(() => {
+    fetchActivities();
+
+    const handleMutation = () => fetchActivities();
+    window.addEventListener('notesphere:journal-mutated', handleMutation);
+    return () => {
+      window.removeEventListener('notesphere:journal-mutated', handleMutation);
+    };
   }, [user, month, year]);
 
   const calendarDays = [];
@@ -91,30 +139,12 @@ export function RightSidebar({ className = '' }) {
     });
   }
 
-  // Calendar entries for selected date (Screen 4)
-  const calendarEntries = [
-    {
-      id: 'cal-1',
-      title: 'A Productive Day at Work',
-      sentiment: 'Positive',
-      category: 'Work',
-      thumb: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=120&q=80'
-    },
-    {
-      id: 'cal-2',
-      title: 'Team Learning Session',
-      sentiment: 'Neutral',
-      category: 'Study',
-      thumb: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=120&q=80'
-    },
-    {
-      id: 'cal-3',
-      title: 'Evening Reflection',
-      sentiment: 'Positive',
-      category: 'Personal',
-      thumb: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=120&q=80'
-    }
-  ];
+  // Real entries for selected calendar date
+  const selectedDateEntries = activities.filter((j) => {
+    if (!j.createdAt) return false;
+    const d = new Date(j.createdAt);
+    return d.getDate() === selectedDay && d.getMonth() === month && d.getFullYear() === year;
+  });
 
   return (
     <aside className={`right-sidebar ${className}`}>
@@ -146,54 +176,72 @@ export function RightSidebar({ className = '' }) {
         <ChevronDown size={18} className="user-chevron" />
       </div>
 
-      {/* 2. CONTEXTUAL CONTENT BASED ON CURRENT SCREEN IN IMAGE B */}
+      {/* 2. CONTEXTUAL CONTENT BASED ON CURRENT SCREEN */}
 
-      {/* SCREEN 2: EDITOR INSIGHTS PANEL */}
+      {/* SCREEN 2: MINDFUL WRITING COMPANION */}
       {path === '/editor' && (
         <div className="insights-sidebar-card">
-          <h3 className="insights-card-title">Journal Insights</h3>
-
-          {/* Sentiment Emoji & Text */}
-          <div className="sentiment-meter-box">
-            <div className="sentiment-avatar-circle">
-              <Smile size={28} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '8px',
+              background: 'var(--primary-light, #e7f8f5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--primary, #00B69B)'
+            }}>
+              <Sparkles size={18} />
             </div>
             <div>
-              <div className="sentiment-text-label">Sentiment</div>
-              <div className="sentiment-val-status">Positive</div>
+              <h3 className="insights-card-title" style={{ margin: 0, fontSize: '0.98rem' }}>Writing Companion</h3>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Mindful reflection space</span>
             </div>
           </div>
 
-          {/* Score & Progress Bar */}
-          <div className="score-progress-box">
-            <div className="score-progress-header">
-              <span style={{ color: 'var(--text-muted)' }}>Score</span>
-              <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>0.72</span>
+          {/* Thought Prompt */}
+          <div style={{
+            background: 'var(--bg-subtle, #f8fafc)',
+            borderRadius: 'var(--radius-md, 10px)',
+            padding: '12px',
+            marginBottom: '14px',
+            border: '1px solid var(--border-subtle, #e2e8f0)'
+          }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
+              Today's Reflection Prompt
             </div>
-            <div className="score-progress-bar-bg">
-              <div className="score-progress-fill" style={{ width: '72%' }} />
+            <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-primary)', lineHeight: 1.45, fontStyle: 'italic' }}>
+              "What moment today brought you clarity, gratitude, or a lesson worth remembering?"
+            </p>
+          </div>
+
+          {/* Helpful Tips */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+              Mindful Writing Tips
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              <span style={{ color: 'var(--primary)', fontWeight: 700 }}>•</span>
+              <span>Express authentic feelings without judging or self-editing.</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              <span style={{ color: 'var(--primary)', fontWeight: 700 }}>•</span>
+              <span>Add a cover photo to visually anchor this memory.</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              <span style={{ color: 'var(--primary)', fontWeight: 700 }}>•</span>
+              <span>Categorize and tag your entry to track your personal journey.</span>
             </div>
           </div>
 
-          {/* Category */}
-          <div className="category-badge-row">
-            <Briefcase size={16} color="var(--primary)" />
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-              Work
-            </span>
-          </div>
-
-          {/* Keywords */}
-          <div>
-            <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
-              Keywords
-            </div>
-            <div className="keywords-chips-wrap">
-              {['productivity', 'team', 'progress', 'learning', 'motivation'].map((kw) => (
-                <span key={kw} className="keyword-chip">{kw}</span>
-              ))}
-            </div>
-          </div>
+          <button
+            className="add-journal-calendar-btn"
+            onClick={() => navigate('/journals')}
+            style={{ width: '100%', justifyContent: 'center' }}
+          >
+            <BookOpen size={16} /> View All My Journals
+          </button>
         </div>
       )}
 
@@ -201,34 +249,75 @@ export function RightSidebar({ className = '' }) {
       {path === '/calendar' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
           <div className="date-inspector-header">
-            <div className="inspector-date-title">Apr 12, 2026</div>
-            <div className="inspector-entry-count">3 Journal Entries</div>
+            <div className="inspector-date-title">
+              {monthNames[month].slice(0, 3)} {selectedDay}, {year}
+            </div>
+            <div className="inspector-entry-count">
+              {selectedDateEntries.length} {selectedDateEntries.length === 1 ? 'Journal Entry' : 'Journal Entries'}
+            </div>
           </div>
 
           <div className="inspector-entries-list">
-            {calendarEntries.map((item) => (
-              <div key={item.id} className="inspector-entry-card" onClick={() => navigate('/editor')}>
-                <img src={item.thumb} alt={item.title} className="inspector-entry-thumb" />
-                <div className="inspector-entry-details">
-                  <div className="inspector-entry-title">{item.title}</div>
-                  <div className="inspector-badges-row">
-                    <span style={{
-                      fontSize: '0.68rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px',
-                      background: item.sentiment === 'Positive' ? '#D1FAE5' : '#F1F5F9',
-                      color: item.sentiment === 'Positive' ? '#065F46' : '#475569'
+            {selectedDateEntries.length === 0 ? (
+              <div style={{
+                textAlign: 'center',
+                padding: '28px 16px',
+                background: 'var(--bg-subtle, #f8fafc)',
+                borderRadius: 'var(--radius-lg, 12px)',
+                border: '1px dashed var(--border-card, #e2e8f0)',
+                color: 'var(--text-muted)'
+              }}>
+                <BookOpen size={24} style={{ margin: '0 auto 8px', opacity: 0.4, color: 'var(--primary)' }} />
+                <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.86rem' }}>
+                  No entries for this date
+                </div>
+                <p style={{ margin: '4px 0 0', fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                  Capture your thoughts for {monthNames[month].slice(0, 3)} {selectedDay}.
+                </p>
+              </div>
+            ) : (
+              selectedDateEntries.map((item) => (
+                <div key={item.id} className="inspector-entry-card" onClick={() => navigate(`/editor?id=${item.id}`)}>
+                  {item.coverImageUrl || item.coverImage ? (
+                    <img src={item.coverImageUrl || item.coverImage} alt={item.title} className="inspector-entry-thumb" />
+                  ) : (
+                    <div style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '8px',
+                      background: 'var(--primary-light, #e7f8f5)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'var(--primary, #00B69B)',
+                      flexShrink: 0
                     }}>
-                      {item.sentiment}
-                    </span>
-                    <span style={{
-                      fontSize: '0.68rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px',
-                      background: '#EFF6FF', color: '#1E40AF'
-                    }}>
-                      {item.category}
-                    </span>
+                      <BookOpen size={20} />
+                    </div>
+                  )}
+                  <div className="inspector-entry-details">
+                    <div className="inspector-entry-title">{item.title}</div>
+                    <div className="inspector-badges-row">
+                      <span style={{
+                        fontSize: '0.68rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px',
+                        background: '#EFF6FF', color: '#1E40AF'
+                      }}>
+                        {item.category || 'Journal'}
+                      </span>
+                      {item.sentiment && (
+                        <span style={{
+                          fontSize: '0.68rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px',
+                          background: item.sentiment === 'POSITIVE' ? '#D1FAE5' : '#F1F5F9',
+                          color: item.sentiment === 'POSITIVE' ? '#065F46' : '#475569'
+                        }}>
+                          {item.sentiment}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           <button className="add-journal-calendar-btn" onClick={() => navigate('/editor')}>
@@ -244,7 +333,7 @@ export function RightSidebar({ className = '' }) {
           <div className="calendar-widget">
             <div className="calendar-header">
               <div className="calendar-month-title">
-                April <span>2026</span>
+                {monthNames[month]} <span>{year}</span>
               </div>
               <div className="calendar-nav-buttons">
                 <button className="calendar-nav-btn" onClick={handlePrevMonth}><ChevronLeft size={14} /></button>
@@ -279,8 +368,14 @@ export function RightSidebar({ className = '' }) {
                 <TrendingUp size={18} color="var(--primary)" />
               </div>
               <div>
-                <div className="insight-item-title">Positive trend this week</div>
-                <div className="insight-item-desc">Your mood has been improving compared to last week.</div>
+                <div className="insight-item-title">
+                  {activities.length > 0 ? `${activities.length} entries written` : 'Journal consistency'}
+                </div>
+                <div className="insight-item-desc">
+                  {activities.length > 0
+                    ? 'Consistent journaling builds mindfulness and personal growth.'
+                    : 'Start capturing your daily reflections to build your streak.'}
+                </div>
               </div>
             </div>
 
@@ -289,18 +384,12 @@ export function RightSidebar({ className = '' }) {
                 <Folder size={18} color="#F59E0B" />
               </div>
               <div>
-                <div className="insight-item-title">Most common category</div>
-                <div className="insight-item-desc">Work (28% of entries)</div>
-              </div>
-            </div>
-
-            <div className="insight-stat-item">
-              <div className="insight-icon-box">
-                <BarChart2 size={18} color="#3B82F6" />
-              </div>
-              <div>
-                <div className="insight-item-title">Peak journaling day</div>
-                <div className="insight-item-desc">Wednesday (5 entries)</div>
+                <div className="insight-item-title">Active Themes</div>
+                <div className="insight-item-desc">
+                  {activities.length > 0
+                    ? `Latest in ${activities[0]?.category || 'General'}`
+                    : 'Personal reflections and daily growth'}
+                </div>
               </div>
             </div>
           </div>

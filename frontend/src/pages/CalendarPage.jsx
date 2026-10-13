@@ -1,42 +1,92 @@
-import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import journalService from '../api/journalService';
 
 export function CalendarPage() {
-  const [selectedDay, setSelectedDay] = useState(12);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDay, setSelectedDay] = useState(new Date().getDate());
+  const [entryDots, setEntryDots] = useState({});
 
-  // April 2026 dates with sentiments matching Screen 4 in Image B
-  const entryDots = {
-    4: ['positive'],
-    6: ['neutral'],
-    7: ['positive'],
-    8: ['positive'],
-    9: ['negative'],
-    11: ['neutral'],
-    12: ['positive'], // selected date
-    14: ['positive'],
-    15: ['neutral'],
-    16: ['positive'],
-    18: ['neutral'],
-    19: ['positive'],
-    21: ['positive', 'negative'],
-    22: ['neutral'],
-    24: ['positive'],
-    26: ['negative'],
-    28: ['positive'],
-    29: ['positive']
-  };
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
 
   const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-  // Days layout: 2 previous month days (30, 31), 30 days of April, 3 next month days (1, 2, 3)
-  const calendarCells = [
-    { day: 30, isOtherMonth: true },
-    { day: 31, isOtherMonth: true },
-    ...Array.from({ length: 30 }, (_, i) => ({ day: i + 1, isOtherMonth: false })),
-    { day: 1, isOtherMonth: true },
-    { day: 2, isOtherMonth: true },
-    { day: 3, isOtherMonth: true }
-  ];
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  const handlePrevMonth = () => {
+    setCurrentDate(new Date(year, month - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentDate(new Date(year, month + 1, 1));
+  };
+
+  const handleGoToday = () => {
+    const today = new Date();
+    setCurrentDate(today);
+    setSelectedDay(today.getDate());
+  };
+
+  // Fetch real journals and map sentiment dots to days in current month
+  const fetchMonthEntries = useCallback(async () => {
+    try {
+      const res = await journalService.getJournals({ size: 100, sortBy: 'createdAt', sortDir: 'desc' });
+      const content = res?.data?.content || [];
+      const dotsMap = {};
+
+      content.forEach((j) => {
+        if (!j.createdAt) return;
+        const d = new Date(j.createdAt);
+        if (d.getMonth() === month && d.getFullYear() === year) {
+          const dayNum = d.getDate();
+          if (!dotsMap[dayNum]) dotsMap[dayNum] = [];
+          const s = (j.sentiment || 'NEUTRAL').toLowerCase();
+          const mapped = s.includes('pos') ? 'positive' : s.includes('neg') ? 'negative' : 'neutral';
+          if (dotsMap[dayNum].length < 3) {
+            dotsMap[dayNum].push(mapped);
+          }
+        }
+      });
+      setEntryDots(dotsMap);
+    } catch {
+      setEntryDots({});
+    }
+  }, [month, year]);
+
+  useEffect(() => {
+    fetchMonthEntries();
+
+    const handleMutation = () => fetchMonthEntries();
+    window.addEventListener('notesphere:journal-mutated', handleMutation);
+    return () => {
+      window.removeEventListener('notesphere:journal-mutated', handleMutation);
+    };
+  }, [fetchMonthEntries]);
+
+  // Dynamic calendar math
+  const firstDayIndex = new Date(year, month, 1).getDay();
+  const startDay = (firstDayIndex + 6) % 7; // Monday = 0
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+  const calendarCells = [];
+  // Trailing previous month days
+  for (let i = startDay - 1; i >= 0; i--) {
+    calendarCells.push({ day: daysInPrevMonth - i, isOtherMonth: true });
+  }
+  // Current month days
+  for (let d = 1; d <= daysInMonth; d++) {
+    calendarCells.push({ day: d, isOtherMonth: false });
+  }
+  // Leading next month days to complete a multiple of 7 grid
+  const remainingCells = (7 - (calendarCells.length % 7)) % 7;
+  for (let d = 1; d <= remainingCells; d++) {
+    calendarCells.push({ day: d, isOtherMonth: true });
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -60,25 +110,33 @@ export function CalendarPage() {
           {/* Controls Bar */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <button style={{
-                background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)',
-                padding: '4px', display: 'flex', alignItems: 'center'
-              }}>
+              <button
+                onClick={handlePrevMonth}
+                aria-label="Previous month"
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)',
+                  padding: '4px', display: 'flex', alignItems: 'center'
+                }}
+              >
                 <ChevronLeft size={20} />
               </button>
               <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                April 2026
+                {monthNames[month]} {year}
               </h2>
-              <button style={{
-                background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)',
-                padding: '4px', display: 'flex', alignItems: 'center'
-              }}>
+              <button
+                onClick={handleNextMonth}
+                aria-label="Next month"
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)',
+                  padding: '4px', display: 'flex', alignItems: 'center'
+                }}
+              >
                 <ChevronRight size={20} />
               </button>
             </div>
 
             <button
-              onClick={() => setSelectedDay(12)}
+              onClick={handleGoToday}
               style={{
                 padding: '6px 16px',
                 borderRadius: 'var(--radius-pill)',
@@ -87,10 +145,13 @@ export function CalendarPage() {
                 fontSize: '0.82rem',
                 fontWeight: 600,
                 color: 'var(--text-primary)',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
               }}
             >
-              Today
+              <CalendarIcon size={14} /> Today
             </button>
           </div>
 

@@ -34,7 +34,23 @@ export function AnalyticsPage() {
       .catch(() => {});
   }, []);
 
-  // 7-day trend matching real activity or fallback
+  // 7-day trend matching real activity or clean 7-day zero baseline
+  const generateZeroTrend = () => {
+    const list = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      list.push({
+        day: d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+        Positive: 0,
+        Neutral: 0,
+        Negative: 0
+      });
+    }
+    return list;
+  };
+
   const trendData = (insights?.dailyActivities && insights.dailyActivities.length > 0)
     ? insights.dailyActivities.map(d => ({
         day: d.dayLabel,
@@ -42,15 +58,7 @@ export function AnalyticsPage() {
         Neutral: 0,
         Negative: 0
       }))
-    : [
-        { day: 'Apr 6', Positive: 8, Neutral: 5, Negative: 2 },
-        { day: 'Apr 7', Positive: 11, Neutral: 7, Negative: 3 },
-        { day: 'Apr 8', Positive: 9, Neutral: 6, Negative: 1 },
-        { day: 'Apr 9', Positive: 13, Neutral: 8, Negative: 4 },
-        { day: 'Apr 10', Positive: 10, Neutral: 6, Negative: 2 },
-        { day: 'Apr 11', Positive: 14, Neutral: 9, Negative: 1 },
-        { day: 'Apr 12', Positive: 15, Neutral: 10, Negative: 3 }
-      ];
+    : generateZeroTrend();
 
   // 1. Real Sentiment Calculation
   const sentimentCounts = analyticsData?.sentimentDistribution || { POSITIVE: 0, NEUTRAL: 0, NEGATIVE: 0 };

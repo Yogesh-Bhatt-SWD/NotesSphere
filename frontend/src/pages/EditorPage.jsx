@@ -322,6 +322,9 @@ export function EditorPage() {
         }
       }
 
+      sessionStorage.removeItem('notesphere_dashboard_journals_cache');
+      sessionStorage.removeItem('notesphere_recent_journals_cache');
+      sessionStorage.removeItem('notesphere_sidebar_activities_cache');
       localStorage.removeItem('notesphere_saved_draft');
       window.dispatchEvent(new CustomEvent('notesphere:journal-mutated'));
     } catch (err) {

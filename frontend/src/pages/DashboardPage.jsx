@@ -10,33 +10,60 @@ import QuickCreateModal from '../components/dashboard/QuickCreateModal';
 import journalService from '../api/journalService';
 import './DashboardPage.css';
 
+const DASHBOARD_CACHE_KEY = 'notesphere_dashboard_journals_cache';
+
+const getCachedJournals = () => {
+  try {
+    const raw = sessionStorage.getItem(DASHBOARD_CACHE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {}
+  return null;
+};
+
+const setCachedJournals = (data) => {
+  try {
+    sessionStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(data));
+  } catch {}
+};
+
 export function DashboardPage() {
   const navigate = useNavigate();
   const { toggleMobileMenu } = useOutletContext() || {};
 
-  const [featuredJournals, setFeaturedJournals] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const initialCache = getCachedJournals();
+  const [featuredJournals, setFeaturedJournals] = useState(() => initialCache || []);
+  const [isLoading, setIsLoading] = useState(() => initialCache === null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const fetchJournals = useCallback(async () => {
-    setIsLoading(true);
+  const fetchJournals = useCallback(async (silent = false) => {
+    if (!silent) {
+      setIsLoading(true);
+    }
     try {
       const res = await journalService.getJournals({ size: 6, sortBy: 'createdAt', sortDir: 'desc' });
       const content = res?.data?.content || [];
       setFeaturedJournals(content);
+      setCachedJournals(content);
     } catch (err) {
       console.warn('Failed to load journals on dashboard:', err);
-      setFeaturedJournals([]);
+      if (!initialCache) {
+        setFeaturedJournals([]);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [initialCache]);
 
   useEffect(() => {
-    fetchJournals();
+    // If cache is present, load silently in background without flashing a loader or mock card
+    const hasCache = getCachedJournals() !== null;
+    fetchJournals(hasCache);
 
-    const handleMutation = () => fetchJournals();
+    const handleMutation = () => fetchJournals(true);
     window.addEventListener('notesphere:journal-mutated', handleMutation);
     return () => {
       window.removeEventListener('notesphere:journal-mutated', handleMutation);
@@ -44,7 +71,11 @@ export function DashboardPage() {
   }, [fetchJournals]);
 
   const handleCreateNew = (newEntry) => {
-    setFeaturedJournals((prev) => [newEntry, ...prev.filter(j => j.id !== newEntry.id).slice(0, 5)]);
+    setFeaturedJournals((prev) => {
+      const updated = [newEntry, ...prev.filter(j => j.id !== newEntry.id).slice(0, 5)];
+      setCachedJournals(updated);
+      return updated;
+    });
     window.dispatchEvent(new CustomEvent('notesphere:journal-mutated'));
   };
 

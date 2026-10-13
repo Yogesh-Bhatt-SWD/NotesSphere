@@ -4,10 +4,30 @@ import { ArrowRight, BookOpen, Loader2 } from 'lucide-react';
 import journalService from '../../api/journalService';
 import './RecentEntriesWidget.css';
 
+const RECENT_CACHE_KEY = 'notesphere_recent_journals_cache';
+
+const getCachedRecent = () => {
+  try {
+    const raw = sessionStorage.getItem(RECENT_CACHE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {}
+  return null;
+};
+
+const setCachedRecent = (data) => {
+  try {
+    sessionStorage.setItem(RECENT_CACHE_KEY, JSON.stringify(data));
+  } catch {}
+};
+
 export function RecentEntriesWidget({ entries: propEntries }) {
   const navigate = useNavigate();
-  const [items, setItems] = useState(propEntries || []);
-  const [loading, setLoading] = useState(!propEntries);
+  const initialCache = propEntries || getCachedRecent();
+  const [items, setItems] = useState(() => initialCache || []);
+  const [loading, setLoading] = useState(() => !propEntries && initialCache === null);
   const [imgErrors, setImgErrors] = useState({});
 
   const formatTimeAgo = (dateStr) => {
@@ -24,14 +44,16 @@ export function RecentEntriesWidget({ entries: propEntries }) {
     }
   };
 
-  const fetchRecent = useCallback(async () => {
+  const fetchRecent = useCallback(async (silent = false) => {
     if (propEntries && propEntries.length > 0) {
       setItems(propEntries);
       setLoading(false);
       return;
     }
 
-    setLoading(true);
+    if (!silent) {
+      setLoading(true);
+    }
     try {
       const res = await journalService.getJournals({ size: 3, sortBy: 'createdAt', sortDir: 'desc' });
       const content = res?.data?.content || [];
@@ -43,23 +65,27 @@ export function RecentEntriesWidget({ entries: propEntries }) {
         thumbnail: j.coverImageUrl || j.coverImage || null,
       }));
       setItems(mapped);
+      setCachedRecent(mapped);
     } catch (err) {
       console.warn('Failed to load recent journals:', err);
-      setItems([]);
+      if (!initialCache) {
+        setItems([]);
+      }
     } finally {
       setLoading(false);
     }
-  }, [propEntries]);
+  }, [propEntries, initialCache]);
 
   useEffect(() => {
-    fetchRecent();
+    const hasCache = !!propEntries || getCachedRecent() !== null;
+    fetchRecent(hasCache);
 
-    const handleMutation = () => fetchRecent();
+    const handleMutation = () => fetchRecent(true);
     window.addEventListener('notesphere:journal-mutated', handleMutation);
     return () => {
       window.removeEventListener('notesphere:journal-mutated', handleMutation);
     };
-  }, [fetchRecent]);
+  }, [fetchRecent, propEntries]);
 
   const handleImgError = (id) => {
     setImgErrors((prev) => ({ ...prev, [id]: true }));
