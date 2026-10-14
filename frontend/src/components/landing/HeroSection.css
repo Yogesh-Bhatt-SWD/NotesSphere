@@ -1,10 +1,10 @@
 .landing-hero {
   position: relative;
   overflow: hidden;
-  min-height: 84vh;
+  min-height: 100vh;
   display: flex;
   align-items: center;
-  padding: 100px 24px 105px;
+  padding: 135px 24px 105px;
   background-color: #0A1C1A;
 }
 
@@ -13,7 +13,7 @@
   position: absolute;
   inset: 0;
   background-size: cover;
-  background-position: right 25% center;
+  background-position: right 22% top;
   background-repeat: no-repeat;
   filter: contrast(1.06) saturate(1.08) brightness(0.95);
   z-index: 0;
@@ -24,13 +24,15 @@
 .hero-bg-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    95deg,
-    rgba(8, 22, 21, 0.88) 0%,
-    rgba(10, 32, 30, 0.80) 45%,
-    rgba(12, 35, 34, 0.62) 75%,
-    rgba(8, 22, 21, 0.70) 100%
-  );
+  background:
+    linear-gradient(180deg, rgba(8, 22, 21, 0.6) 0%, rgba(8, 22, 21, 0.15) 90px, transparent 160px),
+    linear-gradient(
+      95deg,
+      rgba(8, 22, 21, 0.88) 0%,
+      rgba(10, 32, 30, 0.80) 45%,
+      rgba(12, 35, 34, 0.62) 75%,
+      rgba(8, 22, 21, 0.70) 100%
+    );
   z-index: 1;
   pointer-events: none;
 }
@@ -304,12 +306,12 @@
 /* Responsive */
 @media (max-width: 900px) {
   .landing-hero {
-    min-height: 80vh;
-    padding: 90px 20px 110px;
+    min-height: 85vh;
+    padding: 110px 20px 95px;
   }
 
   .hero-bg-photo {
-    background-position: center center;
+    background-position: center top;
   }
 
   .hero-bg-overlay {
@@ -342,7 +344,7 @@
 
 @media (max-width: 600px) {
   .landing-hero {
-    padding: 70px 16px 90px;
+    padding: 95px 16px 80px;
     min-height: auto;
   }
 

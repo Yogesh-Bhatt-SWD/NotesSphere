@@ -1,19 +1,26 @@
 .landing-nav-header {
-  position: sticky;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 100;
-  background: rgba(244, 249, 248, 0.85);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid rgba(230, 239, 234, 0.7);
-  transition: all 0.25s ease;
+  transition: background-color 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.landing-nav-header.transparent {
+  background: transparent;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
 }
 
 .landing-nav-header.scrolled {
-  background: rgba(255, 255, 255, 0.95);
-  border-bottom-color: var(--border-subtle, #E6EFEA);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border-subtle, #E6EFEA);
   box-shadow: 0 4px 20px rgba(0, 40, 30, 0.05);
 }
 
@@ -58,10 +65,20 @@
   font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--text-primary, #1E293B);
+  transition: color 0.25s ease;
+}
+
+.landing-nav-header.transparent .landing-brand-text {
+  color: #FFFFFF;
 }
 
 .landing-brand-text span {
   color: var(--primary, #00B69B);
+  transition: color 0.25s ease;
+}
+
+.landing-nav-header.transparent .landing-brand-text span {
+  color: #2DD4BF;
 }
 
 /* Navigation Links */
@@ -83,7 +100,15 @@
   transition: color 0.2s ease;
 }
 
-.landing-nav-link:hover {
+.landing-nav-header.transparent .landing-nav-link {
+  color: rgba(241, 245, 249, 0.92);
+}
+
+.landing-nav-header.transparent .landing-nav-link:hover {
+  color: #2DD4BF;
+}
+
+.landing-nav-header.scrolled .landing-nav-link:hover {
   color: var(--primary, #00B69B);
 }
 
@@ -97,6 +122,10 @@
   background: var(--primary, #00B69B);
   border-radius: 2px;
   transition: width 0.25s ease;
+}
+
+.landing-nav-header.transparent .landing-nav-link::after {
+  background: #2DD4BF;
 }
 
 .landing-nav-link:hover::after {
@@ -124,7 +153,16 @@
   transition: all 0.2s ease;
 }
 
-.landing-btn-ghost:hover {
+.landing-nav-header.transparent .landing-btn-ghost {
+  color: #FFFFFF;
+}
+
+.landing-nav-header.transparent .landing-btn-ghost:hover {
+  background: rgba(45, 212, 191, 0.15);
+  color: #2DD4BF;
+}
+
+.landing-nav-header.scrolled .landing-btn-ghost:hover {
   background: var(--primary-light, #E7F8F5);
   color: var(--primary, #00B69B);
 }
@@ -166,10 +204,19 @@
   cursor: pointer;
   padding: 6px;
   border-radius: 8px;
+  transition: color 0.2s ease, background-color 0.2s ease;
 }
 
 .landing-mobile-toggle:hover {
   background: var(--bg-subtle, #F0F6F5);
+}
+
+.landing-nav-header.transparent .landing-mobile-toggle {
+  color: #FFFFFF;
+}
+
+.landing-nav-header.transparent .landing-mobile-toggle:hover {
+  background: rgba(255, 255, 255, 0.14);
 }
 
 /* Mobile Drawer */

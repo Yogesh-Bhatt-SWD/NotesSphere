@@ -38,7 +38,7 @@ export function LandingNav() {
   };
 
   return (
-    <header className={`landing-nav-header ${scrolled ? 'scrolled' : ''}`}>
+    <header className={`landing-nav-header ${scrolled || mobileMenuOpen ? 'scrolled' : 'transparent'}`}>
       <div className="landing-nav-container">
         {/* Brand Logo */}
         <Link to="/" className="landing-brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
