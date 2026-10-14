@@ -10,9 +10,10 @@ import {
   ArrowRight,
   Sparkles,
   RefreshCw,
-  AlertCircle
+  CheckCircle2
 } from 'lucide-react';
 import { blogService } from '../../api/blogService';
+import { journalService } from '../../api/journalService';
 import { formatJournalCardDate } from '../../utils/dateUtils';
 import { useAuth } from '../../context/AuthContext';
 import './PublicStoriesSection.css';
@@ -23,13 +24,25 @@ export function PublicStoriesSection() {
 
   const [stories, setStories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [hasError, setHasError] = useState(false);
 
   const fetchStories = useCallback(async () => {
     setLoading(true);
-    setError(null);
+    setHasError(false);
     try {
-      const res = await blogService.getPublicBlogs({ page: 0, size: 6 });
+      let res;
+      try {
+        // Primary public blogs feed endpoint
+        res = await blogService.getPublicBlogs({ page: 0, size: 6 });
+      } catch (primaryErr) {
+        // Fallback to /journals/public if /public/blogs is still deploying
+        try {
+          res = await journalService.getPublicJournals({ page: 0, size: 6 });
+        } catch {
+          throw primaryErr;
+        }
+      }
+
       const pageData = res?.data || res;
       const items = pageData?.content || (Array.isArray(pageData) ? pageData : []);
       // Filter out any entries that are strictly not public (defense in depth)
@@ -37,7 +50,7 @@ export function PublicStoriesSection() {
       setStories(publicOnly);
     } catch (err) {
       console.warn('Public stories feed error:', err?.message || err);
-      setError('Unable to load public stories at this time.');
+      setHasError(true);
     } finally {
       setLoading(false);
     }
@@ -85,42 +98,7 @@ export function PublicStoriesSection() {
               </div>
             ))}
           </div>
-        ) : error ? (
-          /* Error State with Graceful Retry */
-          <div className="stories-feedback-card error">
-            <AlertCircle size={28} className="feedback-icon" />
-            <div className="feedback-text">
-              <h3>Connection Notice</h3>
-              <p>{error} Our servers might be updating or undergoing maintenance.</p>
-            </div>
-            <button
-              type="button"
-              className="feedback-retry-btn"
-              onClick={fetchStories}
-            >
-              <RefreshCw size={14} />
-              <span>Retry</span>
-            </button>
-          </div>
-        ) : stories.length === 0 ? (
-          /* Empty State */
-          <div className="stories-feedback-card empty">
-            <div className="empty-book-icon">
-              <BookOpen size={32} />
-            </div>
-            <h3>No Public Stories Yet</h3>
-            <p>
-              Be the first writer to share an authentic story with NoteSphere! Published stories appear here for readers worldwide.
-            </p>
-            <Link
-              to={isAuthenticated ? '/editor' : '/register'}
-              className="stories-action-btn"
-            >
-              <span>{isAuthenticated ? 'Write a Story' : 'Start Writing Now'}</span>
-              <ArrowRight size={16} />
-            </Link>
-          </div>
-        ) : (
+        ) : stories.length > 0 ? (
           /* Real Stories Grid */
           <div className="stories-grid">
             {stories.map((story) => {
@@ -233,6 +211,62 @@ export function PublicStoriesSection() {
                 </article>
               );
             })}
+          </div>
+        ) : (
+          /* Clean, Inspiring Fallback Section (Never breaks the page or displays alarming error notices) */
+          <div className="stories-clean-fallback-card">
+            <div className="fallback-badge">
+              <BookOpen size={16} />
+              <span>COMMUNITY STORIES</span>
+            </div>
+
+            <h3 className="fallback-title">Explore Thoughtful Writing on NoteSphere</h3>
+
+            <p className="fallback-description">
+              Writers and thinkers share authentic reflections, creative essays, and mindful perspectives here. Sign in to browse community publications, or write and share your very first story today.
+            </p>
+
+            <div className="fallback-actions">
+              <Link
+                to={isAuthenticated ? '/editor' : '/register'}
+                className="fallback-btn-primary"
+              >
+                <span>{isAuthenticated ? 'Write a Story' : 'Start Writing Free'}</span>
+                <ArrowRight size={16} />
+              </Link>
+
+              {!isAuthenticated && (
+                <Link to="/login" className="fallback-btn-secondary">
+                  <span>Sign In to Read</span>
+                </Link>
+              )}
+
+              {hasError && (
+                <button
+                  type="button"
+                  onClick={fetchStories}
+                  className="fallback-btn-refresh"
+                  title="Refresh public stories feed"
+                >
+                  <RefreshCw size={13} />
+                  <span>Check Feed</span>
+                </button>
+              )}
+            </div>
+
+            <div className="fallback-reassurance-row">
+              <span className="reassurance-pill">
+                <CheckCircle2 size={13} /> Free to read
+              </span>
+              <span className="reassurance-dot">•</span>
+              <span className="reassurance-pill">
+                <CheckCircle2 size={13} /> Zero ad trackers
+              </span>
+              <span className="reassurance-dot">•</span>
+              <span className="reassurance-pill">
+                <CheckCircle2 size={13} /> 100% Privacy-focused
+              </span>
+            </div>
           </div>
         )}
       </div>

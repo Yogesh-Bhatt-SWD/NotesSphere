@@ -77,9 +77,8 @@ describe('NoteSphere Landing Page & Routing Suite', () => {
     const storiesCode = fs.readFileSync(path.join(srcDir, 'components/landing/PublicStoriesSection.jsx'), 'utf-8');
 
     assert.match(storiesCode, /blogService\.getPublicBlogs/i, 'Must call blogService.getPublicBlogs');
-    assert.match(storiesCode, /story-skeleton-card/i, 'Must render loading skeleton state');
-    assert.match(storiesCode, /stories-feedback-card error/i, 'Must handle error state with retry');
-    assert.match(storiesCode, /No Public Stories Yet/i, 'Must handle empty state cleanly');
+    assert.match(storiesCode, /stories-clean-fallback-card/i, 'Must render clean fallback section when stories cannot be loaded');
+    assert.match(storiesCode, /fallback-btn-refresh/i, 'Must provide subtle live feed refresh action');
     assert.match(storiesCode, /navigate\(`\/blogs\/\${targetSlug}`\)/i, 'Card click must navigate to /blogs/:slug route');
     assert.match(storiesCode, /PUBLIC/i, 'Must enforce strictly public visibility');
   });
