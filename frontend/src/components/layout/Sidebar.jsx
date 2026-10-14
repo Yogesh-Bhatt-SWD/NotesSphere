@@ -10,6 +10,7 @@ import {
   LogOut,
   Sparkles,
   ArrowRight,
+  Globe,
   Users,
   UserPlus,
   MessageSquare
@@ -30,6 +31,7 @@ export function Sidebar({ unreadCount = 4, className = '' }) {
   const navItems = [
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
     { label: 'My Journals', path: '/journals', icon: BookOpen },
+    { label: 'Public Journals', path: '/public-journals', icon: Globe },
     { label: 'Communities', path: '/communities', icon: Users },
     { label: 'Friends', path: '/friends', icon: UserPlus },
     { label: 'Chats', path: '/chat', icon: MessageSquare },

@@ -166,7 +166,7 @@ export function JournalsPage() {
 
   const handleUnpublishFromTimeline = async (id, e) => {
     e?.stopPropagation();
-    if (!window.confirm('Revert this publication to private? It will be removed from the community feed.')) return;
+    if (!window.confirm('Revert this publication to private? It will be removed from public and community feeds.')) return;
 
     try {
       setUnpublishingId(id);
@@ -268,7 +268,7 @@ export function JournalsPage() {
 
   const handleUnpublish = async (id, e) => {
     e.stopPropagation();
-    if (!window.confirm('Revert this publication to private? It will be removed from the community feed.')) return;
+    if (!window.confirm('Revert this publication to private? It will be removed from public and community feeds.')) return;
 
     try {
       setUnpublishingId(id);

@@ -4,6 +4,8 @@ import com.notesphere.dto.response.ApiResponse;
 import com.notesphere.dto.response.BlogPreviewResponse;
 import com.notesphere.dto.response.JournalResponse;
 import com.notesphere.security.UserPrincipal;
+import com.notesphere.dto.response.CategoryResponse;
+import com.notesphere.service.CategoryService;
 import com.notesphere.service.JournalService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -17,6 +19,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -24,9 +28,20 @@ import org.springframework.web.bind.annotation.*;
 public class BlogController {
 
     private final JournalService journalService;
+    private final CategoryService categoryService;
 
     @Value("${app.frontend.url:https://notes-sphere-d2m4.vercel.app}")
     private String frontendUrl;
+
+    /**
+     * Public Categories: Returns predefined categories for public filtering without authentication.
+     */
+    @GetMapping("/api/public/categories")
+    @Operation(summary = "Get available predefined categories for public visitors and filters")
+    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getPublicCategories() {
+        List<CategoryResponse> categories = categoryService.getAvailableCategories(null);
+        return ResponseEntity.ok(ApiResponse.success("Public categories retrieved successfully", categories));
+    }
 
     /**
      * Public Stories Feed: Accessible to anyone without authentication.

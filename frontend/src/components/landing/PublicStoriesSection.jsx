@@ -10,7 +10,8 @@ import {
   ArrowRight,
   Sparkles,
   RefreshCw,
-  CheckCircle2
+  CheckCircle2,
+  Globe
 } from 'lucide-react';
 import { blogService } from '../../api/blogService';
 import { journalService } from '../../api/journalService';
@@ -100,7 +101,8 @@ export function PublicStoriesSection() {
           </div>
         ) : stories.length > 0 ? (
           /* Real Stories Grid */
-          <div className="stories-grid">
+          <>
+            <div className="stories-grid">
             {stories.map((story) => {
               const coverUrl = story.coverImageUrl || story.coverImage || null;
               const dateText = formatJournalCardDate(story);
@@ -212,6 +214,18 @@ export function PublicStoriesSection() {
               );
             })}
           </div>
+          <div style={{ textAlign: 'center', marginTop: '28px' }}>
+            <Link
+              to="/public-journals"
+              className="fallback-btn-secondary"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 24px', textDecoration: 'none' }}
+            >
+              <Globe size={16} />
+              <span>Explore All Public Journals</span>
+              <ArrowRight size={14} />
+            </Link>
+          </div>
+          </>
         ) : (
           /* Clean, Inspiring Fallback Section (Never breaks the page or displays alarming error notices) */
           <div className="stories-clean-fallback-card">

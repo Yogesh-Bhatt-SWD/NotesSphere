@@ -24,6 +24,7 @@ import OAuth2RedirectHandler from './pages/OAuth2RedirectHandler';
 import BlogDetailPage from './pages/BlogDetailPage';
 import SearchPage from './pages/SearchPage';
 import NotFoundPage from './pages/NotFoundPage';
+import PublicJournalsPage from './pages/PublicJournalsPage';
 
 /**
  * AppShellLayout determines whether to render the public LandingPage (for logged-out visitors at '/')
@@ -58,13 +59,18 @@ function AppShellLayout() {
     return <LandingPage />;
   }
 
-  // 2. Logged-out visitor accessing protected sub-routes: redirect to login preserving destination
+  // 2. Logged-out visitor accessing Public Journals / Explore: render dedicated PublicJournalsPage
+  if (!isAuthenticated && (location.pathname === '/public-journals' || location.pathname === '/explore' || location.pathname === '/stories')) {
+    return <PublicJournalsPage isPublicVisitor={true} />;
+  }
+
+  // 3. Logged-out visitor accessing protected sub-routes: redirect to login preserving destination
   if (!isAuthenticated) {
     const redirectParam = location.pathname + location.search;
     return <Navigate to={`/login?redirect=${encodeURIComponent(redirectParam)}`} replace />;
   }
 
-  // 3. Authenticated user: Render standard dashboard shell with Sidebar, Center Outlet, and RightSidebar
+  // 4. Authenticated user: Render standard dashboard shell with Sidebar, Center Outlet, and RightSidebar
   return <MainLayout showRightPanel={true} />;
 }
 
@@ -92,8 +98,8 @@ export function App() {
 
             {/* Direct Landing & Explore Aliases */}
             <Route path="/landing" element={<LandingPage />} />
-            <Route path="/explore" element={<Navigate to="/#stories" replace />} />
-            <Route path="/stories" element={<Navigate to="/#stories" replace />} />
+            <Route path="/explore" element={<Navigate to="/public-journals" replace />} />
+            <Route path="/stories" element={<Navigate to="/public-journals" replace />} />
 
             {/* Shareable Blog Detail Page (Public Preview + Login Gate) */}
             <Route path="/blogs/:slug" element={<BlogDetailPage />} />
@@ -102,6 +108,7 @@ export function App() {
             <Route path="/" element={<AppShellLayout />}>
               <Route index element={<DashboardPage />} />
               <Route path="journals" element={<JournalsPage />} />
+              <Route path="public-journals" element={<PublicJournalsPage />} />
               <Route path="editor" element={<EditorPage />} />
               <Route path="communities" element={<CommunitiesPage />} />
               <Route path="friends" element={<FriendsPage />} />

@@ -56,7 +56,7 @@ public final class JournalSpecification {
             }
 
             // Category filter
-            if (StringUtils.hasText(category)) {
+            if (StringUtils.hasText(category) && !"ALL".equalsIgnoreCase(category.trim())) {
                 predicates.add(cb.equal(cb.lower(root.get("category")), category.trim().toLowerCase()));
             }
 
@@ -100,16 +100,17 @@ public final class JournalSpecification {
             // Strictly PUBLIC visibility
             predicates.add(cb.equal(root.get("visibility"), com.notesphere.entity.enums.JournalVisibility.PUBLIC));
 
-            // Search query across title and content
+            // Search query across title, content, and category
             if (StringUtils.hasText(query)) {
                 String pattern = "%" + query.trim().toLowerCase() + "%";
                 Predicate titleMatch = cb.like(cb.lower(root.get("title")), pattern);
                 Predicate contentMatch = cb.like(cb.lower(root.get("content")), pattern);
-                predicates.add(cb.or(titleMatch, contentMatch));
+                Predicate categoryMatch = cb.like(cb.lower(root.get("category")), pattern);
+                predicates.add(cb.or(titleMatch, contentMatch, categoryMatch));
             }
 
             // Category filter
-            if (StringUtils.hasText(category)) {
+            if (StringUtils.hasText(category) && !"ALL".equalsIgnoreCase(category.trim())) {
                 predicates.add(cb.equal(cb.lower(root.get("category")), category.trim().toLowerCase()));
             }
 

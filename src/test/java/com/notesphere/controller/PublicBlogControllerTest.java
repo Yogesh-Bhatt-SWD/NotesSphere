@@ -6,6 +6,8 @@ import com.notesphere.dto.response.JournalResponse;
 import com.notesphere.dto.response.PagedResponse;
 import com.notesphere.entity.enums.JournalVisibility;
 import com.notesphere.security.UserPrincipal;
+import com.notesphere.dto.response.CategoryResponse;
+import com.notesphere.service.CategoryService;
 import com.notesphere.service.JournalService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -30,6 +32,9 @@ class PublicBlogControllerTest {
 
     @Mock
     private JournalService journalService;
+
+    @Mock
+    private CategoryService categoryService;
 
     @InjectMocks
     private BlogController blogController;
@@ -125,5 +130,22 @@ class PublicBlogControllerTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("A Mindful Journey", response.getBody().getData().getTitle());
+    }
+
+    @Test
+    @DisplayName("Should return list of predefined categories for public filtering")
+    void testGetPublicCategories() {
+        CategoryResponse cat1 = CategoryResponse.builder().id("cat-1").name("Mindfulness").predefined(true).build();
+        CategoryResponse cat2 = CategoryResponse.builder().id("cat-2").name("Reflections").predefined(true).build();
+
+        when(categoryService.getAvailableCategories(isNull())).thenReturn(List.of(cat1, cat2));
+
+        ResponseEntity<ApiResponse<List<CategoryResponse>>> response = blogController.getPublicCategories();
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertTrue(response.getBody().isSuccess());
+        assertEquals(2, response.getBody().getData().size());
+        assertEquals("Mindfulness", response.getBody().getData().get(0).getName());
     }
 }

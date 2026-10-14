@@ -63,10 +63,11 @@ export const journalService = {
     if (params.page !== undefined) query.append('page', params.page);
     if (params.size !== undefined) query.append('size', params.size);
     if (params.sortBy) query.append('sortBy', params.sortBy);
-    if (params.direction) query.append('direction', params.direction);
+    if (params.sortDir) query.append('sortDir', params.sortDir);
+    else if (params.direction) query.append('sortDir', params.direction);
     if (params.query) query.append('query', params.query);
-    if (params.search) query.append('query', params.search);
-    if (params.category) query.append('category', params.category);
+    else if (params.search) query.append('query', params.search);
+    if (params.category && params.category !== 'ALL') query.append('category', params.category);
     if (params.tag) query.append('tag', params.tag);
 
     const queryString = query.toString() ? `?${query.toString()}` : '';

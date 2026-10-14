@@ -128,7 +128,8 @@ describe('NoteSphere Landing Page & Routing Suite', () => {
 
     // 5. Direct aliases for landing and explore
     assert.match(appCode, /<Route path="\/landing" element=\{<LandingPage \/>\} \/>/);
-    assert.match(appCode, /<Route path="\/explore" element=\{<Navigate to="\/#stories" replace \/>\} \/>/);
+    assert.match(appCode, /<Route path="\/explore" element=\{<Navigate to="\/public-journals" replace \/>\} \/>/);
+    assert.match(appCode, /<Route path="public-journals" element=\{<PublicJournalsPage \/>\} \/>/);
   });
 
   test('BlogService provides getPublicBlogs endpoint method', () => {
@@ -144,5 +145,37 @@ describe('NoteSphere Landing Page & Routing Suite', () => {
     assert.match(sidebarCode, /<span>Logout<\/span>/i, 'Sidebar must display Logout label');
     assert.doesNotMatch(sidebarCode, /<span>Quit<\/span>/i, 'Sidebar must not display Quit label');
     assert.match(sidebarCode, /navigate\('\/'\)/, 'Sidebar logout must redirect to Home "/"');
+  });
+
+  test('Sidebar has dedicated Public Journals navigation item routed to /public-journals', () => {
+    const sidebarCode = fs.readFileSync(path.join(srcDir, 'components/layout/Sidebar.jsx'), 'utf-8');
+
+    assert.match(sidebarCode, /label:\s*'Public Journals',\s*path:\s*'\/public-journals',\s*icon:\s*Globe/, 'Sidebar must include Public Journals navigation item');
+  });
+
+  test('Dedicated PublicJournalsPage exists and includes header, search, category filters, and grid', () => {
+    const pjPath = path.join(srcDir, 'pages/PublicJournalsPage.jsx');
+    const pjCssPath = path.join(srcDir, 'pages/PublicJournalsPage.css');
+
+    assert.ok(fs.existsSync(pjPath), 'PublicJournalsPage.jsx must exist');
+    assert.ok(fs.existsSync(pjCssPath), 'PublicJournalsPage.css must exist');
+
+    const pjCode = fs.readFileSync(pjPath, 'utf-8');
+    assert.match(pjCode, /Public Journals/i, 'Must render Public Journals heading');
+    assert.match(pjCode, /journalService\.getPublicJournals/i, 'Must fetch from journalService.getPublicJournals');
+    assert.match(pjCode, /Search public journals by title, content, or topic/i, 'Must include search placeholder');
+    assert.match(pjCode, /All Categories/i, 'Must include All Categories filter pill');
+    assert.match(pjCode, /pj-skeleton-card/i, 'Must render skeleton loading cards');
+    assert.match(pjCode, /No Public Journals Found/i, 'Must render clean empty state');
+    assert.match(pjCode, /Unable to Load Public Journals/i, 'Must render error state');
+    assert.match(pjCode, /pj-pagination/i, 'Must render pagination controls');
+  });
+
+  test('JournalService and CategoryService support public journal and category endpoints', () => {
+    const jsCode = fs.readFileSync(path.join(srcDir, 'api/journalService.js'), 'utf-8');
+    const csCode = fs.readFileSync(path.join(srcDir, 'api/categoryService.js'), 'utf-8');
+
+    assert.match(jsCode, /getPublicJournals:\s*\(params\s*=\s*\{\}\)\s*=>/i, 'journalService must export getPublicJournals');
+    assert.match(csCode, /getPublicCategories:\s*\(\)\s*=>/i, 'categoryService must export getPublicCategories');
   });
 });
