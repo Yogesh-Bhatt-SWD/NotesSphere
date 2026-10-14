@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -18,6 +18,7 @@ import './HeroSection.css';
 
 export function HeroSection() {
   const { isAuthenticated } = useAuth();
+  const [mockMode, setMockMode] = useState('public');
 
   const handleExploreClick = (e) => {
     e.preventDefault();
@@ -100,51 +101,118 @@ export function HeroSection() {
         {/* Right Column: Visual Product Showcase */}
         <div className="hero-visual">
           <div className="hero-mockup-wrapper">
-            {/* Main Interactive Journal Card */}
-            <div className="hero-card-main">
-              <div className="hero-card-header">
-                <div className="hero-card-author">
-                  <div className="hero-author-avatar">YB</div>
-                  <div>
-                    <h2 className="hero-author-name">Yogesh Bhatt</h2>
-                    <span className="hero-entry-date">Today · 3 min read</span>
-                  </div>
-                </div>
-                <div className="hero-card-visibility">
-                  <Lock size={12} />
-                  <span>Private</span>
-                </div>
-              </div>
-
-              <div className="hero-card-body">
-                <h2 className="hero-entry-title">Morning Clarity & Reflections</h2>
-                <p className="hero-entry-text">
-                  There is profound freedom in letting your thoughts unfold without judgment. A digital sanctuary for untangled thoughts, personal milestones, and mindful creative clarity...
-                </p>
-
-                <div className="hero-entry-tags">
-                  <span className="hero-tag-pill">#mindfulness</span>
-                  <span className="hero-tag-pill">#journaling</span>
-                  <span className="hero-sentiment-pill">Positive ✨</span>
-                </div>
-              </div>
-
-              <div className="hero-card-footer">
-                <div className="hero-footer-stats">
-                  <span className="hero-stat-pill">
-                    <Heart size={14} color="#EF4444" fill="#EF4444" />
-                    <span>28 Likes</span>
-                  </span>
-                  <span className="hero-stat-pill">
-                    <MessageSquare size={14} color="#00B69B" />
-                    <span>12 Comments</span>
-                  </span>
-                </div>
-                <span className="hero-saved-indicator">Saved & Encrypted</span>
-              </div>
+            {/* Mode Switcher Pills */}
+            <div className="hero-mockup-tabs">
+              <button
+                type="button"
+                className={`hero-mockup-tab ${mockMode === 'public' ? 'active' : ''}`}
+                onClick={() => setMockMode('public')}
+                title="Preview public story format"
+              >
+                <Globe size={13} />
+                <span>Public Story</span>
+              </button>
+              <button
+                type="button"
+                className={`hero-mockup-tab ${mockMode === 'private' ? 'active' : ''}`}
+                onClick={() => setMockMode('private')}
+                title="Preview private journal format"
+              >
+                <Lock size={13} />
+                <span>Private Journal</span>
+              </button>
             </div>
 
-            {/* Floating Floating Pill 1: Live Presence */}
+            {/* Main Interactive Journal Card */}
+            <div className="hero-card-main">
+              {mockMode === 'public' ? (
+                <>
+                  <div className="hero-card-header">
+                    <div className="hero-card-author">
+                      <div className="hero-author-avatar">SC</div>
+                      <div>
+                        <h2 className="hero-author-name">Sophia Chen</h2>
+                        <span className="hero-entry-date">Published Story · 3 min read</span>
+                      </div>
+                    </div>
+                    <div className="hero-card-visibility public">
+                      <Globe size={12} />
+                      <span>Public</span>
+                    </div>
+                  </div>
+
+                  <div className="hero-card-body">
+                    <h2 className="hero-entry-title">Morning Clarity & Reflections</h2>
+                    <p className="hero-entry-text">
+                      There is profound freedom in letting your thoughts unfold without judgment. A digital sanctuary for untangled thoughts, personal milestones, and mindful creative clarity...
+                    </p>
+
+                    <div className="hero-entry-tags">
+                      <span className="hero-tag-pill">#mindfulness</span>
+                      <span className="hero-tag-pill">#storytelling</span>
+                      <span className="hero-sentiment-pill">Positive ✨</span>
+                    </div>
+                  </div>
+
+                  <div className="hero-card-footer">
+                    <div className="hero-footer-stats">
+                      <span className="hero-stat-pill">
+                        <Heart size={14} color="#EF4444" fill="#EF4444" />
+                        <span>28 Likes</span>
+                      </span>
+                      <span className="hero-stat-pill">
+                        <MessageSquare size={14} color="#00B69B" />
+                        <span>12 Comments</span>
+                      </span>
+                    </div>
+                    <span className="hero-saved-indicator">Shared with Community</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="hero-card-header">
+                    <div className="hero-card-author">
+                      <div className="hero-author-avatar private-vault">
+                        <Lock size={18} />
+                      </div>
+                      <div>
+                        <h2 className="hero-author-name">My Private Journal</h2>
+                        <span className="hero-entry-date">Encrypted Vault · Only you can see this</span>
+                      </div>
+                    </div>
+                    <div className="hero-card-visibility private">
+                      <Lock size={12} />
+                      <span>100% Private</span>
+                    </div>
+                  </div>
+
+                  <div className="hero-card-body">
+                    <h2 className="hero-entry-title">Quiet Thoughts & Daily Intentions</h2>
+                    <p className="hero-entry-text">
+                      Writing for my eyes only. Untangling today&apos;s challenges, tracking personal creative milestones, and finding calm in private quiet moments without social pressure...
+                    </p>
+
+                    <div className="hero-entry-tags">
+                      <span className="hero-tag-pill">#personal</span>
+                      <span className="hero-tag-pill">#intentions</span>
+                      <span className="hero-sentiment-pill private-tag">Encrypted 🔒</span>
+                    </div>
+                  </div>
+
+                  <div className="hero-card-footer">
+                    <div className="hero-footer-stats">
+                      <span className="hero-stat-pill">
+                        <ShieldCheck size={14} color="#00B69B" />
+                        <span>End-to-End Encrypted</span>
+                      </span>
+                    </div>
+                    <span className="hero-saved-indicator private-ind">Zero Public Access</span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Floating Pill 1: Live Presence */}
             <div className="hero-float-badge float-presence">
               <span className="pulse-dot" />
               <div>

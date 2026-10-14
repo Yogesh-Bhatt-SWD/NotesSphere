@@ -193,6 +193,45 @@
   max-width: 480px;
 }
 
+.hero-mockup-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(240, 246, 245, 0.95);
+  padding: 4px;
+  border-radius: var(--radius-pill, 9999px);
+  margin-bottom: 12px;
+  width: fit-content;
+  border: 1px solid var(--border-subtle, #E6EFEA);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.hero-mockup-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill, 9999px);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary, #64748B);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hero-mockup-tab:hover {
+  color: var(--text-primary, #1E293B);
+}
+
+.hero-mockup-tab.active {
+  background: #FFFFFF;
+  color: var(--primary, #00B69B);
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 182, 155, 0.15);
+}
+
 .hero-card-main {
   background: #FFFFFF;
   border-radius: var(--radius-xl, 24px);
@@ -232,6 +271,10 @@
   font-size: 0.95rem;
 }
 
+.hero-author-avatar.private-vault {
+  background: linear-gradient(135deg, #475569 0%, #1E293B 100%);
+}
+
 .hero-author-name {
   font-size: 0.98rem;
   font-weight: 700;
@@ -247,13 +290,34 @@
 .hero-card-visibility {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--text-muted, #94A3B8);
   background: var(--bg-subtle, #F0F6F5);
   padding: 4px 10px;
   border-radius: var(--radius-pill, 9999px);
+}
+
+.hero-card-visibility.public {
+  color: #047857;
+  background: #ECFDF5;
+  border: 1px solid #A7F3D0;
+}
+
+.hero-card-visibility.private {
+  color: #92400E;
+  background: #FEF3C7;
+  border: 1px solid #FDE68A;
+}
+
+.hero-sentiment-pill.private-tag {
+  background: #F1F5F9;
+  color: #475569;
+}
+
+.hero-saved-indicator.private-ind {
+  color: #64748B;
 }
 
 .hero-entry-title {
