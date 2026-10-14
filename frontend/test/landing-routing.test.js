@@ -137,4 +137,12 @@ describe('NoteSphere Landing Page & Routing Suite', () => {
     assert.match(blogServiceCode, /getPublicBlogs:\s*\(params\s*=\s*\{\}\)\s*=>/i, 'blogService must export getPublicBlogs');
     assert.match(blogServiceCode, /request\(`\/public\/blogs\${queryString}`\)/i, 'Must call /public/blogs endpoint');
   });
+
+  test('Sidebar displays Logout label (not Quit) and redirects to Home "/" upon logout', () => {
+    const sidebarCode = fs.readFileSync(path.join(srcDir, 'components/layout/Sidebar.jsx'), 'utf-8');
+
+    assert.match(sidebarCode, /<span>Logout<\/span>/i, 'Sidebar must display Logout label');
+    assert.doesNotMatch(sidebarCode, /<span>Quit<\/span>/i, 'Sidebar must not display Quit label');
+    assert.match(sidebarCode, /navigate\('\/'\)/, 'Sidebar logout must redirect to Home "/"');
+  });
 });

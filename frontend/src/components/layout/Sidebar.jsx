@@ -24,7 +24,7 @@ export function Sidebar({ unreadCount = 4, className = '' }) {
 
   const handleLogout = async () => {
     await logout();
-    navigate('/login');
+    navigate('/');
   };
 
   const navItems = [
@@ -82,9 +82,9 @@ export function Sidebar({ unreadCount = 4, className = '' }) {
           <Settings size={18} />
           <span>Settings</span>
         </NavLink>
-        <button onClick={handleLogout} className="footer-link logout">
+        <button onClick={handleLogout} className="footer-link logout" title="Log out of NoteSphere">
           <LogOut size={18} />
-          <span>Quit</span>
+          <span>Logout</span>
         </button>
       </div>
     </aside>
