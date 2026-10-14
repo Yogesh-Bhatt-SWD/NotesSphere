@@ -29,6 +29,22 @@ public class BlogController {
     private String frontendUrl;
 
     /**
+     * Public Stories Feed: Accessible to anyone without authentication.
+     * Returns page of published public journal entries across NoteSphere.
+     * Strictly returns entries where visibility == PUBLIC.
+     */
+    @GetMapping("/api/public/blogs")
+    @Operation(summary = "Get published public stories feed for landing page and unauthenticated visitors")
+    public ResponseEntity<ApiResponse<com.notesphere.dto.response.PagedResponse<JournalResponse>>> getPublicBlogs(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "6") int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(
+                page, Math.min(size, 20), org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt"));
+        com.notesphere.dto.response.PagedResponse<JournalResponse> blogs = journalService.getPublicJournals(null, null, null, null, pageable);
+        return ResponseEntity.ok(ApiResponse.success("Public blogs retrieved successfully", blogs));
+    }
+
+    /**
      * Public Preview Endpoint: Accessible to anyone without authentication.
      * Returns ONLY safe preview teaser metadata (title, author name/avatar, cover, excerpt, reading time).
      * Strictly does not include the full article content or private user details.

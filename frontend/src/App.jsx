@@ -1,10 +1,11 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { PresenceProvider } from './context/PresenceContext';
 import MainLayout from './components/layout/MainLayout';
 
 // Pages
+import LandingPage from './pages/LandingPage';
 import DashboardPage from './pages/DashboardPage';
 import JournalsPage from './pages/JournalsPage';
 import EditorPage from './pages/EditorPage';
@@ -24,8 +25,14 @@ import BlogDetailPage from './pages/BlogDetailPage';
 import SearchPage from './pages/SearchPage';
 import NotFoundPage from './pages/NotFoundPage';
 
-function ProtectedRoute({ children }) {
+/**
+ * AppShellLayout determines whether to render the public LandingPage (for logged-out visitors at '/')
+ * or the authenticated MainLayout shell (for logged-in users or guarded sub-routes).
+ */
+function AppShellLayout() {
   const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
+
   if (loading) {
     return (
       <div style={{
@@ -45,10 +52,20 @@ function ProtectedRoute({ children }) {
       </div>
     );
   }
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+
+  // 1. Logged-out visitor on root URL ('/'): render the Landing Page
+  if (!isAuthenticated && location.pathname === '/') {
+    return <LandingPage />;
   }
-  return children;
+
+  // 2. Logged-out visitor accessing protected sub-routes: redirect to login preserving destination
+  if (!isAuthenticated) {
+    const redirectParam = location.pathname + location.search;
+    return <Navigate to={`/login?redirect=${encodeURIComponent(redirectParam)}`} replace />;
+  }
+
+  // 3. Authenticated user: Render standard dashboard shell with Sidebar, Center Outlet, and RightSidebar
+  return <MainLayout showRightPanel={true} />;
 }
 
 function PublicRoute({ children }) {
@@ -73,18 +90,16 @@ export function App() {
             <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
             <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
 
+            {/* Direct Landing & Explore Aliases */}
+            <Route path="/landing" element={<LandingPage />} />
+            <Route path="/explore" element={<Navigate to="/#stories" replace />} />
+            <Route path="/stories" element={<Navigate to="/#stories" replace />} />
+
             {/* Shareable Blog Detail Page (Public Preview + Login Gate) */}
             <Route path="/blogs/:slug" element={<BlogDetailPage />} />
 
-            {/* Authenticated Dashboard Shell Layout */}
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <MainLayout showRightPanel={true} />
-                </ProtectedRoute>
-              }
-            >
+            {/* Root Application Shell Layout */}
+            <Route path="/" element={<AppShellLayout />}>
               <Route index element={<DashboardPage />} />
               <Route path="journals" element={<JournalsPage />} />
               <Route path="editor" element={<EditorPage />} />
@@ -109,3 +124,4 @@ export function App() {
 }
 
 export default App;
+
