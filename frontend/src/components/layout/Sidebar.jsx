@@ -24,8 +24,16 @@ export function Sidebar({ unreadCount = 4, className = '' }) {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/');
+    try {
+      localStorage.removeItem('notesphere_access_token');
+      localStorage.removeItem('notesphere_refresh_token');
+      localStorage.removeItem('notesphere_user');
+      sessionStorage.clear();
+      navigate('/');
+      await logout();
+    } finally {
+      window.location.replace('/');
+    }
   };
 
   const navItems = [

@@ -39,6 +39,40 @@ const DEFAULT_CATEGORIES = [
   'Creative Writing'
 ];
 
+/**
+ * Filter out synthetic bot/test accounts and test journals created by CI scripts.
+ */
+export const isSyntheticJournal = (item) => {
+  if (!item) return true;
+  const title = (item.title || '').toLowerCase();
+  const author = (item.authorName || '').toLowerCase();
+
+  // Synthetic test titles
+  if (
+    title.includes('astroai') ||
+    title.includes('quantum horizons') ||
+    title.includes('live verification') ||
+    title.includes('public mindful journey')
+  ) {
+    return true;
+  }
+
+  // Synthetic bot/test author accounts
+  if (
+    author.startsWith('alice_') ||
+    author.startsWith('charlie_') ||
+    author.includes('alice adventurer') ||
+    author.includes('mood author') ||
+    author.startsWith('author_') ||
+    author.includes('publication tester') ||
+    /[0-9a-f]{6}/.test(author)
+  ) {
+    return true;
+  }
+
+  return false;
+};
+
 export function PublicJournalsPage({ isPublicVisitor = false }) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -146,9 +180,9 @@ export function PublicJournalsPage({ isPublicVisitor = false }) {
       const pagedData = res?.data || res;
       const content = pagedData?.content || (Array.isArray(pagedData) ? pagedData : []);
 
-      // Strict Defense-in-depth: Ensure only journals with visibility === 'PUBLIC' are rendered
+      // Strict Defense-in-depth: Ensure only journals with visibility === 'PUBLIC' from real users are rendered
       const verifiedPublic = content.filter(
-        (item) => !item.visibility || item.visibility === 'PUBLIC'
+        (item) => (!item.visibility || item.visibility === 'PUBLIC') && !isSyntheticJournal(item)
       );
 
       setJournals(verifiedPublic);

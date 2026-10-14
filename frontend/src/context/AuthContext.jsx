@@ -95,8 +95,18 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
-    await authService.logout();
-    setUser(null);
+    try {
+      await authService.logout();
+    } catch {
+      // Continue client cleanup even if network request fails
+    } finally {
+      localStorage.removeItem('notesphere_access_token');
+      localStorage.removeItem('notesphere_refresh_token');
+      localStorage.removeItem('notesphere_user');
+      sessionStorage.clear();
+      setUser(null);
+      window.location.replace('/');
+    }
   };
 
   const hasToken = !!localStorage.getItem('notesphere_access_token') || !!localStorage.getItem('notesphere_refresh_token');

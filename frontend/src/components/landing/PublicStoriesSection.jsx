@@ -19,6 +19,35 @@ import { formatJournalCardDate } from '../../utils/dateUtils';
 import { useAuth } from '../../context/AuthContext';
 import './PublicStoriesSection.css';
 
+const isSyntheticJournal = (item) => {
+  if (!item) return true;
+  const title = (item.title || '').toLowerCase();
+  const author = (item.authorName || '').toLowerCase();
+
+  if (
+    title.includes('astroai') ||
+    title.includes('quantum horizons') ||
+    title.includes('live verification') ||
+    title.includes('public mindful journey')
+  ) {
+    return true;
+  }
+
+  if (
+    author.startsWith('alice_') ||
+    author.startsWith('charlie_') ||
+    author.includes('alice adventurer') ||
+    author.includes('mood author') ||
+    author.startsWith('author_') ||
+    author.includes('publication tester') ||
+    /[0-9a-f]{6}/.test(author)
+  ) {
+    return true;
+  }
+
+  return false;
+};
+
 export function PublicStoriesSection() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
@@ -46,8 +75,10 @@ export function PublicStoriesSection() {
 
       const pageData = res?.data || res;
       const items = pageData?.content || (Array.isArray(pageData) ? pageData : []);
-      // Filter out any entries that are strictly not public (defense in depth)
-      const publicOnly = items.filter((item) => !item.visibility || item.visibility === 'PUBLIC');
+      // Filter out any entries that are strictly not public or synthetic (defense in depth)
+      const publicOnly = items.filter(
+        (item) => (!item.visibility || item.visibility === 'PUBLIC') && !isSyntheticJournal(item)
+      );
       setStories(publicOnly);
     } catch (err) {
       console.warn('Public stories feed error:', err?.message || err);

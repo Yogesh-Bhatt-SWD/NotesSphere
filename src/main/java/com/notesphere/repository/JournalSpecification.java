@@ -100,6 +100,12 @@ public final class JournalSpecification {
             // Strictly PUBLIC visibility
             predicates.add(cb.equal(root.get("visibility"), com.notesphere.entity.enums.JournalVisibility.PUBLIC));
 
+            // Exclude synthetic test titles from public feed
+            predicates.add(cb.notLike(cb.lower(root.get("title")), "%quantum horizons%"));
+            predicates.add(cb.notLike(cb.lower(root.get("title")), "%astroai%"));
+            predicates.add(cb.notLike(cb.lower(root.get("title")), "%live verification%"));
+            predicates.add(cb.notLike(cb.lower(root.get("title")), "%public mindful journey%"));
+
             // Search query across title, content, and category
             if (StringUtils.hasText(query)) {
                 String pattern = "%" + query.trim().toLowerCase() + "%";
