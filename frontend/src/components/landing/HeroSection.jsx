@@ -9,6 +9,7 @@ import {
   Compass
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import heroBgImage from '../../assets/hero-bg.jpg';
 import './HeroSection.css';
 
 export function HeroSection() {
@@ -31,7 +32,11 @@ export function HeroSection() {
   return (
     <section className="landing-hero" id="home">
       {/* Photographic Editorial Background & Gradient Overlay */}
-      <div className="hero-bg-photo" aria-hidden="true" />
+      <div
+        className="hero-bg-photo"
+        style={{ backgroundImage: `url(${heroBgImage})` }}
+        aria-hidden="true"
+      />
       <div className="hero-bg-overlay" aria-hidden="true" />
 
       {/* Background Ambient Radial Glows */}
