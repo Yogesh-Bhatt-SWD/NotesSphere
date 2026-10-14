@@ -19,7 +19,7 @@ export function InsightsPreviewSection() {
     <section className="landing-insights-section" id="insights">
       <div className="landing-insights-container">
         {/* Section Header */}
-        <div className="insights-header">
+        <div className="insights-header reveal-on-scroll reveal-header">
           <div className="insights-eyebrow">
             <Sparkles size={14} />
             <span>JOURNAL INSIGHTS</span>
@@ -35,7 +35,7 @@ export function InsightsPreviewSection() {
         {/* 3 Metric Preview Cards */}
         <div className="insights-grid">
           {/* Card 1: Emotional Spectrum */}
-          <div className="insight-card">
+          <div className="insight-card reveal-on-scroll reveal-delay-1">
             <div className="insight-card-header">
               <div className="insight-icon-wrap mint">
                 <Smile size={22} />
@@ -82,7 +82,7 @@ export function InsightsPreviewSection() {
           </div>
 
           {/* Card 2: Writing Streaks */}
-          <div className="insight-card">
+          <div className="insight-card reveal-on-scroll reveal-delay-2">
             <div className="insight-card-header">
               <div className="insight-icon-wrap amber">
                 <Flame size={22} />
@@ -118,7 +118,7 @@ export function InsightsPreviewSection() {
           </div>
 
           {/* Card 3: Categorical Focus */}
-          <div className="insight-card">
+          <div className="insight-card reveal-on-scroll reveal-delay-3">
             <div className="insight-card-header">
               <div className="insight-icon-wrap purple">
                 <Layers size={22} />

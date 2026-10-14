@@ -31,6 +31,71 @@ export function LandingPage() {
     }
   }, []);
 
+  // Unified scroll-triggered reveal observer
+  useEffect(() => {
+    // If user prefers reduced motion, reveal everything immediately
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (prefersReducedMotion) {
+      document.querySelectorAll('.reveal-on-scroll').forEach((el) => {
+        el.classList.add('is-revealed');
+      });
+      return;
+    }
+
+    if (typeof IntersectionObserver === 'undefined') {
+      document.querySelectorAll('.reveal-on-scroll').forEach((el) => {
+        el.classList.add('is-revealed');
+      });
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-revealed');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '0px 0px -40px 0px'
+      }
+    );
+
+    const observeUnrevealed = () => {
+      const elements = document.querySelectorAll('.reveal-on-scroll:not(.is-revealed)');
+      elements.forEach((el) => observer.observe(el));
+    };
+
+    observeUnrevealed();
+
+    // Re-observe dynamic content (e.g. asynchronously loaded public stories)
+    let mutationObserver = null;
+    if (typeof MutationObserver !== 'undefined') {
+      const mainEl = document.getElementById('main-content') || document.body;
+      mutationObserver = new MutationObserver(() => {
+        observeUnrevealed();
+      });
+      mutationObserver.observe(mainEl, {
+        childList: true,
+        subtree: true
+      });
+    }
+
+    return () => {
+      observer.disconnect();
+      if (mutationObserver) {
+        mutationObserver.disconnect();
+      }
+    };
+  }, []);
+
   return (
     <div className="landing-page-root">
       <LandingNav />

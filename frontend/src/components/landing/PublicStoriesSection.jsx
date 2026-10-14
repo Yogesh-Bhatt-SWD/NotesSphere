@@ -113,7 +113,7 @@ export function PublicStoriesSection() {
     <section className="landing-stories-section" id="stories">
       <div className="landing-stories-container">
         {/* Section Header */}
-        <div className="stories-header">
+        <div className="stories-header reveal-on-scroll reveal-header">
           <div className="stories-eyebrow">
             <Sparkles size={14} />
             <span>DISCOVER PERSPECTIVES</span>
@@ -144,7 +144,7 @@ export function PublicStoriesSection() {
           /* Real Stories Grid */
           <>
             <div className="stories-grid">
-            {stories.map((story) => {
+            {stories.map((story, idx) => {
               const coverUrl = story.coverImageUrl || story.coverImage || null;
               const dateText = formatJournalCardDate(story);
               const authorName = story.authorName || 'Anonymous Writer';
@@ -153,7 +153,7 @@ export function PublicStoriesSection() {
               return (
                 <article
                   key={story.id}
-                  className="landing-story-card"
+                  className={`landing-story-card reveal-on-scroll reveal-delay-${idx + 1}`}
                   onClick={() => handleCardClick(story)}
                   tabIndex={0}
                   role="button"
@@ -261,7 +261,7 @@ export function PublicStoriesSection() {
               );
             })}
           </div>
-          <div style={{ textAlign: 'center', marginTop: '32px' }}>
+          <div className="reveal-on-scroll reveal-delay-4" style={{ textAlign: 'center', marginTop: '32px' }}>
             <button
               type="button"
               onClick={handleExploreAllClick}
@@ -276,7 +276,7 @@ export function PublicStoriesSection() {
           </>
         ) : (
           /* Clean, Inspiring Fallback Section (Never breaks the page or displays alarming error notices) */
-          <div className="stories-clean-fallback-card">
+          <div className="stories-clean-fallback-card reveal-on-scroll">
             <div className="fallback-badge">
               <BookOpen size={16} />
               <span>COMMUNITY STORIES</span>

@@ -124,7 +124,7 @@ export function FeaturesSection() {
     <section className="landing-features-section" id="features">
       <div className="landing-features-container">
         {/* Section Header */}
-        <div className="features-header">
+        <div className="features-header reveal-on-scroll reveal-header">
           <div className="features-eyebrow">
             <Sparkles size={14} />
             <span>BUILT FOR MINDFUL WRITERS</span>
@@ -139,12 +139,12 @@ export function FeaturesSection() {
 
         {/* Simplified Interactive Feature Grid */}
         <div className="features-grid">
-          {FEATURES_DATA.map((feature) => {
+          {FEATURES_DATA.map((feature, idx) => {
             const Icon = feature.icon;
             return (
               <div
                 key={feature.id}
-                className="feature-card interactive"
+                className={`feature-card interactive reveal-on-scroll reveal-delay-${idx + 1}`}
                 role="button"
                 tabIndex={0}
                 onClick={() => handleFeatureClick(feature)}

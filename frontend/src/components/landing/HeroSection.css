@@ -1,10 +1,10 @@
 .landing-hero {
   position: relative;
   overflow: hidden;
-  min-height: 88vh;
+  min-height: 84vh;
   display: flex;
   align-items: center;
-  padding: 110px 24px 130px;
+  padding: 100px 24px 105px;
   background-color: #0A1C1A;
 }
 
@@ -41,7 +41,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 90px;
+  height: 60px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.95) 85%, #FFFFFF 100%);
   z-index: 2;
   pointer-events: none;
@@ -60,12 +60,12 @@
   flex-direction: column;
   align-items: flex-start;
   text-align: left;
-  max-width: 680px;
+  max-width: 880px;
   gap: 22px;
 }
 
-/* 1. Introductory Kicker */
-.hero-kicker {
+/* 1. Introductory Badge */
+.hero-badge {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -76,23 +76,20 @@
   color: #2DD4BF;
   background: rgba(45, 212, 191, 0.12);
   border: 1px solid rgba(45, 212, 191, 0.32);
-  padding: 6px 16px;
+  padding: 7px 18px;
   border-radius: var(--radius-pill, 9999px);
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
-.hero-kicker-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #2DD4BF;
-  box-shadow: 0 0 8px #2DD4BF;
+.hero-badge-sparkle {
+  color: #2DD4BF;
 }
 
 /* 2. Headline & Line-by-Line Presentation */
 .hero-headline {
-  font-size: clamp(2.5rem, 5.2vw, 4.2rem);
-  line-height: 1.15;
+  font-size: clamp(2.35rem, 4.2vw, 3.75rem);
+  line-height: 1.18;
   font-weight: 850;
   letter-spacing: -0.035em;
   color: #FFFFFF;
@@ -119,10 +116,10 @@
 
 /* 3. Supporting Description */
 .hero-description {
-  font-size: 1.18rem;
-  line-height: 1.7;
+  font-size: 1.15rem;
+  line-height: 1.68;
   color: rgba(241, 245, 249, 0.92);
-  max-width: 580px;
+  max-width: 680px;
   margin: 0;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
@@ -186,6 +183,42 @@
   box-shadow: 0 6px 18px rgba(45, 212, 191, 0.25);
 }
 
+/* 5. Trust & Guarantee Ribbon */
+.hero-trust-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 14px;
+  padding: 8px 20px;
+  background: rgba(8, 24, 22, 0.58);
+  border: 1px solid rgba(45, 212, 191, 0.22);
+  border-radius: var(--radius-pill, 9999px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  flex-wrap: wrap;
+}
+
+.hero-trust-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.88rem;
+  font-weight: 550;
+  color: rgba(241, 245, 249, 0.92);
+  letter-spacing: -0.01em;
+}
+
+.hero-trust-item .trust-icon {
+  color: #2DD4BF;
+  flex-shrink: 0;
+}
+
+.hero-trust-divider {
+  color: rgba(45, 212, 191, 0.45);
+  font-size: 0.9rem;
+  user-select: none;
+}
+
 /* Keyframe Animations */
 @keyframes heroFadeIn {
   from {
@@ -209,7 +242,7 @@
   }
 }
 
-.anim-kicker {
+.anim-badge {
   animation: heroFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
 }
 
@@ -229,6 +262,10 @@
   animation: heroFadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.85s both;
 }
 
+.anim-trust {
+  animation: heroFadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 1.05s both;
+}
+
 /* Accessibility: Screen Reader Only */
 .sr-only {
   position: absolute;
@@ -244,11 +281,12 @@
 
 /* Reduced Motion Support */
 @media (prefers-reduced-motion: reduce) {
-  .anim-kicker,
+  .anim-badge,
   .anim-headline-line-1,
   .anim-headline-line-2,
   .anim-description,
-  .anim-actions {
+  .anim-actions,
+  .anim-trust {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
@@ -296,6 +334,10 @@
   .hero-cta-group {
     justify-content: center;
   }
+
+  .hero-trust-bar {
+    justify-content: center;
+  }
 }
 
 @media (max-width: 600px) {
@@ -323,5 +365,16 @@
   .hero-btn-secondary {
     width: 100%;
     justify-content: center;
+  }
+
+  .hero-trust-bar {
+    border-radius: 14px;
+    padding: 10px 14px;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  .hero-trust-divider {
+    display: none;
   }
 }

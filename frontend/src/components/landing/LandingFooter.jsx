@@ -21,7 +21,7 @@ export function LandingFooter() {
     <footer className="landing-footer">
       <div className="landing-footer-container">
         {/* Top Row: Brand & Columns */}
-        <div className="landing-footer-top">
+        <div className="landing-footer-top reveal-on-scroll">
           {/* Brand Info */}
           <div className="footer-brand-col">
             <Link to="/" className="footer-brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
@@ -93,7 +93,7 @@ export function LandingFooter() {
         </div>
 
         {/* Bottom Row: Copyright & Credits */}
-        <div className="landing-footer-bottom">
+        <div className="landing-footer-bottom reveal-on-scroll reveal-delay-2">
           <p className="footer-copy">
             © {new Date().getFullYear()} NoteSphere. Built with care for mindful writers and thinkers.
           </p>

@@ -10,7 +10,7 @@ export function CtaSection() {
   return (
     <section className="landing-cta-section">
       <div className="landing-cta-container">
-        <div className="cta-card">
+        <div className="cta-card reveal-on-scroll">
           {/* Subtle Ambient Radial Glow */}
           <div className="cta-ambient-glow" aria-hidden="true" />
 

@@ -1,6 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Compass } from 'lucide-react';
+import {
+  ArrowRight,
+  Compass,
+  Sparkles,
+  ShieldCheck,
+  Globe,
+  TrendingUp
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import heroBgPhoto from '../../assets/hero-bg.jpg';
 import './HeroSection.css';
@@ -39,10 +46,10 @@ export function HeroSection() {
 
       <div className="landing-hero-container">
         <div className="hero-content">
-          {/* 1. Gentle Introductory Label */}
-          <div className="hero-kicker anim-kicker">
-            <span className="hero-kicker-dot" aria-hidden="true" />
-            <span>Mindful Journaling & Reflection</span>
+          {/* 1. Introductory Badge */}
+          <div className="hero-badge anim-badge">
+            <Sparkles size={14} className="hero-badge-sparkle" />
+            <span>Mindful Journaling & Social Storytelling</span>
           </div>
 
           {/* 2. Main Headline Animated Line-by-Line */}
@@ -62,7 +69,7 @@ export function HeroSection() {
 
           {/* 3. Supporting Description */}
           <p className="hero-description anim-description">
-            Write privately, share your stories, and connect with people who understand your thoughts.
+            Write privately, share your stories with the world, and connect with people who understand your thoughts. Your space to write, reflect, and grow.
           </p>
 
           {/* 4. Action Buttons */}
@@ -87,6 +94,24 @@ export function HeroSection() {
               <Compass size={18} />
               <span>Explore Stories</span>
             </button>
+          </div>
+
+          {/* 5. Trust & Guarantee Ribbon */}
+          <div className="hero-trust-bar anim-trust">
+            <div className="hero-trust-item">
+              <ShieldCheck size={16} className="trust-icon" />
+              <span>100% Private by default</span>
+            </div>
+            <div className="hero-trust-divider" aria-hidden="true">•</div>
+            <div className="hero-trust-item">
+              <Globe size={16} className="trust-icon" />
+              <span>Public blog previews</span>
+            </div>
+            <div className="hero-trust-divider" aria-hidden="true">•</div>
+            <div className="hero-trust-item">
+              <TrendingUp size={16} className="trust-icon" />
+              <span>Writing streaks & insights</span>
+            </div>
           </div>
         </div>
       </div>
