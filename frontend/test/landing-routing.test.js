@@ -44,8 +44,8 @@ describe('NoteSphere Landing Page & Routing Suite', () => {
     assert.match(heroCode, /Place of Their Own/i, 'Hero must contain headline accent');
 
     // Description check
-    assert.match(heroCode, /Write privately, share your stories with the world/i, 'Hero must contain exact description');
-    assert.match(heroCode, /Your space to write, reflect, and grow/i, 'Hero must contain closing description');
+    assert.match(heroCode, /Write privately, share your stories/i, 'Hero must contain description prefix');
+    assert.match(heroCode, /connect with people who understand your thoughts/i, 'Hero must contain description closing');
 
     // CTAs check
     assert.match(heroCode, /Start Writing/i, 'Hero must provide Start Writing CTA');

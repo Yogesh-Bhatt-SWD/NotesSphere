@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Compass } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import heroWritingPhoto from '../../assets/hero-bg.jpg';
+import heroBgPhoto from '../../assets/hero-bg.jpg';
 import './HeroSection.css';
 
 export function HeroSection() {
@@ -24,18 +24,49 @@ export function HeroSection() {
 
   return (
     <section className="landing-hero" id="home">
+      {/* Full-Width Immersive Photographic Background */}
+      <div
+        className="hero-bg-photo"
+        style={{ backgroundImage: `url(${heroBgPhoto})` }}
+        aria-hidden="true"
+      />
+
+      {/* Subtle Dark / Teal Overlay Gradient */}
+      <div className="hero-bg-overlay" aria-hidden="true" />
+
+      {/* Bottom seamless transition into features section */}
+      <div className="hero-bottom-fade" aria-hidden="true" />
+
       <div className="landing-hero-container">
-        {/* Left Column: Typography & Primary Actions */}
-        <div className="hero-content-col">
-          <h1 className="hero-headline">
-            Your Thoughts Deserve a <span className="hero-headline-accent">Place of Their Own.</span>
+        <div className="hero-content">
+          {/* 1. Gentle Introductory Label */}
+          <div className="hero-kicker anim-kicker">
+            <span className="hero-kicker-dot" aria-hidden="true" />
+            <span>Mindful Journaling & Reflection</span>
+          </div>
+
+          {/* 2. Main Headline Animated Line-by-Line */}
+          <h1 className="hero-headline" aria-label="Your Thoughts Deserve a Place of Their Own.">
+            <span className="hero-headline-line-wrapper">
+              <span className="hero-headline-line anim-headline-line-1" aria-hidden="true">
+                Your Thoughts Deserve a
+              </span>
+            </span>
+            <span className="hero-headline-line-wrapper">
+              <span className="hero-headline-line anim-headline-line-2" aria-hidden="true">
+                <span className="hero-headline-accent">Place of Their Own.</span>
+              </span>
+            </span>
+            <span className="sr-only">Your Thoughts Deserve a Place of Their Own.</span>
           </h1>
 
-          <p className="hero-description">
-            Write privately, share your stories with the world, and connect with people who understand your thoughts. Your space to write, reflect, and grow.
+          {/* 3. Supporting Description */}
+          <p className="hero-description anim-description">
+            Write privately, share your stories, and connect with people who understand your thoughts.
           </p>
 
-          <div className="hero-cta-group">
+          {/* 4. Action Buttons */}
+          <div className="hero-cta-group anim-actions">
             {isAuthenticated ? (
               <Link to="/" className="hero-btn-primary">
                 <span>Start Writing</span>
@@ -56,18 +87,6 @@ export function HeroSection() {
               <Compass size={18} />
               <span>Explore Stories</span>
             </button>
-          </div>
-        </div>
-
-        {/* Right Column: Editorial Visual Showcase */}
-        <div className="hero-visual-col">
-          <div className="hero-photo-frame">
-            <img
-              src={heroWritingPhoto}
-              alt="Handwritten journal with notes, pen, and glasses on a wooden desk"
-              className="hero-editorial-img"
-              loading="eager"
-            />
           </div>
         </div>
       </div>
