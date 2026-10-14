@@ -17,6 +17,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { blogService } from '../api/blogService';
+import { journalService } from '../api/journalService';
 import { communityService } from '../api/communityService';
 import { useAuth } from '../context/AuthContext';
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -65,7 +66,7 @@ export function BlogDetailPage() {
           setLoading(false);
           return;
         } catch (err) {
-          // If 401 (token expired/invalid), fall through to preview
+          // If 401 (token expired/invalid), fall through to public preview
           // If 403 (e.g. community members only) or 404, capture error
           if (err.status === 403) {
             if (!isMounted) return;
@@ -83,13 +84,38 @@ export function BlogDetailPage() {
         }
       }
 
-      // 2. Unauthenticated visitor or fallback: fetch public preview teaser
+      // 2. Unauthenticated visitor: fetch public article content
       try {
-        const res = await blogService.getPublicPreview(slug);
+        let data = null;
+        try {
+          const res = await blogService.getPublicPreview(slug);
+          data = res?.data || res;
+        } catch (previewErr) {
+          // Fall through to public feed search
+        }
+
+        // If preview did not include full content, look for the public journal in the public feed
+        if (!data?.content) {
+          try {
+            const publicRes = await journalService.getPublicJournals({ page: 0, size: 50 });
+            const pContent = publicRes?.data?.content || (Array.isArray(publicRes?.data) ? publicRes.data : publicRes?.content || []);
+            const matched = pContent.find((j) => j.slug === slug || j.id === slug || j.id === data?.id);
+            if (matched && matched.content) {
+              data = { ...(data || {}), ...matched };
+            }
+          } catch {
+            // Keep existing data
+          }
+        }
+
+        if (!data) {
+          throw new Error('This article is either private, unpublished, or does not exist.');
+        }
+
         if (!isMounted) return;
-        const data = res?.data || res;
         setBlog(data);
-        setIsFullArticle(false);
+        // If content is available and not a restricted community post, guest can read it
+        setIsFullArticle(!!data.content && !data.communityPost);
         setLiked(false);
         setLikeCount(data.likeCount || 0);
       } catch (err) {
@@ -386,9 +412,10 @@ export function BlogDetailPage() {
                   <button
                     onClick={handleLike}
                     className={`blog-action-pill ${liked ? 'active' : ''}`}
+                    title={isAuthenticated ? (liked ? 'Unlike' : 'Like') : 'Sign in to like this story'}
                   >
                     <Heart size={16} fill={liked ? '#E66A42' : 'none'} />
-                    <span>{liked ? 'Liked' : 'Like'} ({likeCount})</span>
+                    <span>{isAuthenticated ? (liked ? 'Liked' : 'Like') : 'Sign in to like'} ({likeCount})</span>
                   </button>
                   <button onClick={handleShare} className="blog-action-pill">
                     <Share2 size={16} />
@@ -412,7 +439,7 @@ export function BlogDetailPage() {
               </div>
             </div>
           ) : (
-            /* 2. Public Preview Teaser with Login Gate */
+            /* 2. Community Restricted Post with Login Gate */
             <div className="blog-preview-section">
               <div className="blog-excerpt-content">
                 <p>{blog.excerpt || 'Read this thoughtful story on NoteSphere.'}</p>
@@ -426,9 +453,13 @@ export function BlogDetailPage() {
                 <div className="blog-gate-icon-circle">
                   <Lock size={26} />
                 </div>
-                <h3 className="blog-gate-title">Read the Complete Story</h3>
+                <h3 className="blog-gate-title">
+                  {blog.communityName ? `Join the ${blog.communityName} Community` : 'Community Access Required'}
+                </h3>
                 <p className="blog-gate-subtitle">
-                  Sign in or create a NoteSphere account to read the full article, join discussion, and save stories to your reading list.
+                  {blog.communityName
+                    ? `This story was published exclusively for members of the "${blog.communityName}" circle. Sign in or create an account to read and join the discussion.`
+                    : 'Sign in or create a NoteSphere account to read full community articles, join discussion, and save stories to your reading list.'}
                 </p>
                 <div className="blog-gate-actions">
                   <button onClick={handleContinueReading} className="blog-gate-primary-btn">

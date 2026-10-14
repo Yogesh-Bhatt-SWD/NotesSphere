@@ -627,12 +627,16 @@ public class JournalService {
 
         String excerpt = SlugUtils.extractExcerpt(entry.getContent(), 260);
         int readingTime = SlugUtils.estimateReadingTime(entry.getContent());
+        String publicContent = (entry.getVisibility() == com.notesphere.entity.enums.JournalVisibility.PUBLIC)
+                ? entry.getContent()
+                : null;
 
         return BlogPreviewResponse.builder()
                 .id(entry.getId())
                 .slug(entry.getSlug())
                 .title(entry.getTitle())
                 .excerpt(excerpt)
+                .content(publicContent)
                 .coverImageUrl(entry.getCoverImageUrl())
                 .category(entry.getCategory())
                 .tags(entry.getTags())

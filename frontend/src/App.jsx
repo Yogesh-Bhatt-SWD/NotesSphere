@@ -59,12 +59,7 @@ function AppShellLayout() {
     return <LandingPage />;
   }
 
-  // 2. Logged-out visitor accessing Public Journals / Explore: render dedicated PublicJournalsPage
-  if (!isAuthenticated && (location.pathname === '/public-journals' || location.pathname === '/explore' || location.pathname === '/stories')) {
-    return <PublicJournalsPage isPublicVisitor={true} />;
-  }
-
-  // 3. Logged-out visitor accessing protected sub-routes: redirect to login preserving destination
+  // 2. Logged-out visitor accessing protected sub-routes: redirect to login preserving destination
   if (!isAuthenticated) {
     const redirectParam = location.pathname + location.search;
     return <Navigate to={`/login?redirect=${encodeURIComponent(redirectParam)}`} replace />;

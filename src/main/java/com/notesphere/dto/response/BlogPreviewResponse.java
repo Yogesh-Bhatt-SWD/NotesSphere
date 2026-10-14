@@ -23,6 +23,7 @@ public class BlogPreviewResponse {
     private String slug;
     private String title;
     private String excerpt;
+    private String content;
     private String coverImageUrl;
     private String category;
     private List<String> tags;

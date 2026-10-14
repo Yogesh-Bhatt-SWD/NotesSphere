@@ -79,7 +79,8 @@ export function PublicStoriesSection() {
       const publicOnly = items.filter(
         (item) => (!item.visibility || item.visibility === 'PUBLIC') && !isSyntheticJournal(item)
       );
-      setStories(publicOnly);
+      // Strictly limit to exactly up to 3 cards in total on the landing page
+      setStories(publicOnly.slice(0, 3));
     } catch (err) {
       console.warn('Public stories feed error:', err?.message || err);
       setHasError(true);
@@ -96,6 +97,15 @@ export function PublicStoriesSection() {
     const targetSlug = story.slug || story.id;
     if (targetSlug) {
       navigate(`/blogs/${targetSlug}`);
+    }
+  };
+
+  const handleExploreAllClick = (e) => {
+    e.preventDefault();
+    if (isAuthenticated) {
+      navigate('/public-journals');
+    } else {
+      navigate(`/login?redirect=${encodeURIComponent('/public-journals')}`);
     }
   };
 
@@ -218,25 +228,31 @@ export function PublicStoriesSection() {
                       </div>
                     </div>
 
-                    {/* Engagement Stats Footer */}
+                    {/* Card Footer: Authenticated vs Guest */}
                     <div className="story-card-footer">
-                      <div className="story-stats-group">
-                        <span className="story-stat" title="Total Views">
-                          <Eye size={13} />
-                          <span>{story.viewCount || 0}</span>
-                        </span>
-                        <span className="story-stat" title="Likes">
-                          <Heart size={13} color="#EF4444" fill={story.likedByCurrentUser ? '#EF4444' : 'none'} />
-                          <span>{story.likeCount || 0}</span>
-                        </span>
-                        <span className="story-stat" title="Comments">
-                          <MessageSquare size={13} />
-                          <span>{story.commentCount || 0}</span>
-                        </span>
-                      </div>
+                      {isAuthenticated ? (
+                        <div className="story-stats-group">
+                          <span className="story-stat" title="Total Views">
+                            <Eye size={13} />
+                            <span>{story.viewCount || 0}</span>
+                          </span>
+                          <span className="story-stat" title="Likes">
+                            <Heart size={13} color="#EF4444" fill={story.likedByCurrentUser ? '#EF4444' : 'none'} />
+                            <span>{story.likeCount || 0}</span>
+                          </span>
+                          <span className="story-stat" title="Comments">
+                            <MessageSquare size={13} />
+                            <span>{story.commentCount || 0}</span>
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="story-guest-badge">
+                          <span>Public Article</span>
+                        </div>
+                      )}
 
                       <span className="story-read-link">
-                        <span>Read Story</span>
+                        <span>Read Article</span>
                         <ArrowRight size={13} />
                       </span>
                     </div>
@@ -245,16 +261,17 @@ export function PublicStoriesSection() {
               );
             })}
           </div>
-          <div style={{ textAlign: 'center', marginTop: '28px' }}>
-            <Link
-              to="/public-journals"
+          <div style={{ textAlign: 'center', marginTop: '32px' }}>
+            <button
+              type="button"
+              onClick={handleExploreAllClick}
               className="fallback-btn-secondary"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 24px', textDecoration: 'none' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 28px', cursor: 'pointer', border: '1px solid var(--border-subtle, #E6EFEA)', background: '#FFFFFF', borderRadius: '9999px', fontWeight: 600, color: 'var(--text-primary, #1E293B)', fontSize: '0.98rem' }}
             >
               <Globe size={16} />
               <span>Explore All Public Journals</span>
               <ArrowRight size={14} />
-            </Link>
+            </button>
           </div>
           </>
         ) : (

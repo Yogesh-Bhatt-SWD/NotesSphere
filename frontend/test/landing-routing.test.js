@@ -178,4 +178,30 @@ describe('NoteSphere Landing Page & Routing Suite', () => {
     assert.match(jsCode, /getPublicJournals:\s*\(params\s*=\s*\{\}\)\s*=>/i, 'journalService must export getPublicJournals');
     assert.match(csCode, /getPublicCategories:\s*\(\)\s*=>/i, 'categoryService must export getPublicCategories');
   });
+
+  test('PublicStoriesSection strictly limits to 3 cards and removes like/comment controls for guests', () => {
+    const storiesCode = fs.readFileSync(path.join(srcDir, 'components/landing/PublicStoriesSection.jsx'), 'utf-8');
+    const storiesCss = fs.readFileSync(path.join(srcDir, 'components/landing/PublicStoriesSection.css'), 'utf-8');
+
+    // 1. Exactly 3 cards maximum
+    assert.match(storiesCode, /publicOnly\.slice\(0,\s*3\)/, 'Must limit public stories to exactly up to 3 cards');
+    assert.match(storiesCss, /grid-template-columns:\s*repeat\(3,\s*1fr\)/, 'Desktop layout must display cards 3 side-by-side in one row');
+
+    // 2. Guest preview cards: no likes or comments
+    assert.match(storiesCode, /!isAuthenticated|isAuthenticated\s*\?/, 'Must conditionally check authentication for card footer');
+    assert.match(storiesCode, /story-guest-badge/, 'Must render guest badge without like/comment buttons for unauthenticated visitors');
+
+    // 3. Protected Explore All Public Journals button
+    assert.match(storiesCode, /handleExploreAllClick/, 'Must handle Explore All Public Journals click');
+    assert.match(storiesCode, /\/login\?redirect=/, 'Must redirect unauthenticated guest to login with return redirect');
+  });
+
+  test('BlogDetailPage allows guests to read public articles while protecting authenticated actions', () => {
+    const bdpCode = fs.readFileSync(path.join(srcDir, 'pages/BlogDetailPage.jsx'), 'utf-8');
+
+    // Guest reading of public articles
+    assert.match(bdpCode, /setIsFullArticle\(!!data\.content\s*&&\s*!data\.communityPost\)/, 'Guests must be allowed to read public article content');
+    // Like button prompts login for guests
+    assert.match(bdpCode, /navigate\(`\/login\?redirect=/, 'Unauthenticated like attempt must redirect to login');
+  });
 });
