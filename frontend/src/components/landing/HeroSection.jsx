@@ -2,16 +2,11 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
-  BookOpen,
   Sparkles,
-  Lock,
-  Globe,
-  Users,
   ShieldCheck,
+  Globe,
   TrendingUp,
-  Compass,
-  CheckCircle2,
-  MessageSquare
+  Compass
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import './HeroSection.css';
@@ -35,6 +30,10 @@ export function HeroSection() {
 
   return (
     <section className="landing-hero" id="home">
+      {/* Photographic Editorial Background & Gradient Overlay */}
+      <div className="hero-bg-photo" aria-hidden="true" />
+      <div className="hero-bg-overlay" aria-hidden="true" />
+
       {/* Background Ambient Radial Glows */}
       <div className="hero-glow hero-glow-teal" aria-hidden="true" />
       <div className="hero-glow hero-glow-peach" aria-hidden="true" />
@@ -93,81 +92,6 @@ export function HeroSection() {
             <div className="hero-trust-item">
               <TrendingUp size={16} className="trust-icon" />
               <span>Writing streaks & insights</span>
-            </div>
-          </div>
-        </div>
-
-        {/* 3-Pillar Highlight Deck Filling The Space Seamlessly */}
-        <div className="hero-pillars-grid">
-          {/* Pillar 1: Private Journals */}
-          <div className="hero-pillar-card">
-            <div className="pillar-header">
-              <div className="pillar-icon-box teal">
-                <Lock size={20} />
-              </div>
-              <span className="pillar-tag">Personal Vault</span>
-            </div>
-            <h2 className="pillar-title">Private Journals</h2>
-            <p className="pillar-description">
-              A distraction-free sanctuary for unfiltered thoughts, personal milestones, and emotional processing.
-            </p>
-            <div className="pillar-footer">
-              <span className="pillar-bullet">
-                <CheckCircle2 size={14} className="pillar-check" />
-                <span>AI Sentiment tracking</span>
-              </span>
-              <span className="pillar-bullet">
-                <CheckCircle2 size={14} className="pillar-check" />
-                <span>Zero public visibility</span>
-              </span>
-            </div>
-          </div>
-
-          {/* Pillar 2: Public Stories */}
-          <div className="hero-pillar-card highlight">
-            <div className="pillar-header">
-              <div className="pillar-icon-box purple">
-                <BookOpen size={20} />
-              </div>
-              <span className="pillar-tag purple-tag">Global Feed</span>
-            </div>
-            <h2 className="pillar-title">Public Stories</h2>
-            <p className="pillar-description">
-              Turn your reflections into public stories. Share customized links with reading times and rich preview cards.
-            </p>
-            <div className="pillar-footer">
-              <span className="pillar-bullet">
-                <CheckCircle2 size={14} className="pillar-check" />
-                <span>Rich reader engagement</span>
-              </span>
-              <span className="pillar-bullet">
-                <CheckCircle2 size={14} className="pillar-check" />
-                <span>Social link sharing</span>
-              </span>
-            </div>
-          </div>
-
-          {/* Pillar 3: Circles & Chat */}
-          <div className="hero-pillar-card">
-            <div className="pillar-header">
-              <div className="pillar-icon-box peach">
-                <Users size={20} />
-              </div>
-              <span className="pillar-tag peach-tag">Real-Time</span>
-            </div>
-            <h2 className="pillar-title">Circles & Chat</h2>
-            <p className="pillar-description">
-              Join topic-focused communities and exchange thoughts via instant low-latency WebSocket direct messaging.
-            </p>
-            <div className="pillar-footer">
-              <span className="pillar-bullet">
-                <CheckCircle2 size={14} className="pillar-check" />
-                <span>Live presence indicators</span>
-              </span>
-              <span className="pillar-bullet">
-                <CheckCircle2 size={14} className="pillar-check" />
-                <span>Threaded community posts</span>
-              </span>
             </div>
           </div>
         </div>
