@@ -61,6 +61,9 @@ class FriendAndMessagingServiceTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private com.notesphere.repository.NotificationRepository notificationRepository;
+
 
     @InjectMocks
     private FriendRequestService friendRequestService;

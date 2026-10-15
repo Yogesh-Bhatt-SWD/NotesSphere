@@ -23,6 +23,12 @@ public interface NotificationRepository extends JpaRepository<Notification, Stri
 
     Optional<Notification> findByIdAndUserId(String id, String userId);
 
+    Optional<Notification> findByUserIdAndTypeAndTargetId(String userId, String type, String targetId);
+
+    @Modifying
+    @Query("UPDATE Notification n SET n.isRead = true, n.readAt = :readAt WHERE n.userId = :userId AND n.type = :type AND n.targetId = :targetId AND n.isRead = false")
+    int markAsReadByTypeAndTargetId(@Param("userId") String userId, @Param("type") String type, @Param("targetId") String targetId, @Param("readAt") Instant readAt);
+
     @Modifying
     @Query("UPDATE Notification n SET n.isRead = true, n.readAt = :readAt WHERE n.id = :id AND n.userId = :userId AND n.isRead = false")
     int markAsRead(@Param("id") String id, @Param("userId") String userId, @Param("readAt") Instant readAt);
@@ -33,3 +39,4 @@ public interface NotificationRepository extends JpaRepository<Notification, Stri
 
     void deleteByIdAndUserId(String id, String userId);
 }
+

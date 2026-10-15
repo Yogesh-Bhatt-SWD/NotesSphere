@@ -27,6 +27,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import com.notesphere.dto.response.InAppNotification;
+import com.notesphere.entity.Notification;
+import com.notesphere.repository.NotificationRepository;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 /**
@@ -42,6 +44,7 @@ public class ConversationService {
     private final FriendshipRepository friendshipRepository;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final NotificationRepository notificationRepository;
 
     /**
      * Get all conversations for current user with unread counts and friend details.
@@ -225,6 +228,42 @@ public class ConversationService {
                 .isOutgoing(true)
                 .build();
 
+        // Persist or update notification in notifications table for recipient
+        if (notificationRepository != null) {
+            try {
+                User recipient = userRepository.findById(recipientId).orElse(null);
+                if (recipient != null && (recipient.getNotifyMessages() == null || recipient.getNotifyMessages())) {
+                    Notification notif = notificationRepository.findByUserIdAndTypeAndTargetId(recipientId, "NEW_MESSAGE", conversationId)
+                            .orElse(null);
+                    if (notif == null) {
+                        notif = Notification.builder()
+                                .userId(recipientId)
+                                .type("NEW_MESSAGE")
+                                .title("New message from " + sender.getUsername())
+                                .message(preview)
+                                .senderId(senderId)
+                                .senderUsername(sender.getUsername())
+                                .senderAvatarUrl(sender.getAvatarUrl())
+                                .targetType("CONVERSATION")
+                                .targetId(conversationId)
+                                .targetUrl("/chat?conversationId=" + conversationId)
+                                .isRead(false)
+                                .build();
+                    } else {
+                        notif.setMessage(preview);
+                        notif.setSenderUsername(sender.getUsername());
+                        notif.setSenderAvatarUrl(sender.getAvatarUrl());
+                        notif.setRead(false);
+                        notif.setReadAt(null);
+                        notif.setCreatedAt(Instant.now());
+                    }
+                    notificationRepository.save(notif);
+                }
+            } catch (Exception ex) {
+                log.warn("Could not save persistent notification for message {}: {}", message.getId(), ex.getMessage());
+            }
+        }
+
         try {
             if (messagingTemplate != null) {
                 // Broadcast to conversation channel for both participants
@@ -299,6 +338,15 @@ public class ConversationService {
         }
 
         log.debug("Marked {} messages as read in conversation {}", updated, conversationId);
+
+        // Mark any persistent notifications for this conversation as read
+        if (notificationRepository != null) {
+            try {
+                notificationRepository.markAsReadByTypeAndTargetId(userId, "NEW_MESSAGE", conversationId, now);
+            } catch (Exception ex) {
+                log.warn("Could not mark persistent notification as read for conversation {}: {}", conversationId, ex.getMessage());
+            }
+        }
 
         if (updated > 0) {
             try {

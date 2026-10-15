@@ -1,18 +1,23 @@
 import { Client } from '@stomp/stompjs';
 
 /**
- * Singleton WebSocket service wrapping STOMP client with auto-reconnect,
- * destination authorization, heartbeat management, and subscription lifecycle management.
+ * Resilient Singleton WebSocket service wrapping STOMP client with auto-reconnect,
+ * persistent subscription registry (reconnect-safe & pre-connect registration safe),
+ * heartbeat management, and status notifications.
  */
 class WebSocketService {
   constructor() {
     this.client = null;
     this.connected = false;
     this.hasConnectedBefore = false;
-    this.subscriptions = new Map();
+    // Registry of desired subscriptions: destination -> Set<callback>
+    this.registeredSubscriptions = new Map();
+    // Live STOMP subscription objects: destination -> StompSubscription
+    this.activeStompSubscriptions = new Map();
     this.statusListeners = new Set();
     this.reconnectListeners = new Set();
     this.heartbeatTimer = null;
+    this.currentToken = null;
   }
 
   /**
@@ -22,6 +27,7 @@ class WebSocketService {
     if (!token || token === 'null' || token === 'undefined') {
       return;
     }
+    this.currentToken = token;
 
     if (this.client && this.client.active) {
       if (this.connected && onConnectCallback) {
@@ -33,9 +39,14 @@ class WebSocketService {
     let brokerURL = import.meta.env.VITE_WS_URL;
     if (!brokerURL) {
       if (import.meta.env.VITE_BACKEND_URL && !import.meta.env.DEV) {
-        const wsBackend = import.meta.env.VITE_BACKEND_URL.replace(/^http/, 'ws');
-        brokerURL = `${wsBackend}/ws`;
-      } else {
+        let wsBackend = import.meta.env.VITE_BACKEND_URL.replace(/^http/, 'ws');
+        // Prevent browser SecurityError / Mixed Content blocking on HTTPS deployments
+        if (typeof window !== 'undefined' && window.location.protocol === 'https:' && wsBackend.startsWith('ws://')) {
+          brokerURL = `wss://${window.location.host}/ws`;
+        } else {
+          brokerURL = `${wsBackend}/ws`;
+        }
+      } else if (typeof window !== 'undefined') {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         brokerURL = `${protocol}//${window.location.host}/ws`;
       }
@@ -54,6 +65,11 @@ class WebSocketService {
     this.client.onConnect = (frame) => {
       this.connected = true;
       this.notifyStatus(true);
+
+      // Re-establish/activate all registered destination subscriptions
+      this.registeredSubscriptions.forEach((_, dest) => {
+        this._subscribeStomp(dest);
+      });
 
       // Start periodic presence heartbeat ping
       this.startHeartbeat();
@@ -78,11 +94,82 @@ class WebSocketService {
 
     this.client.onWebSocketClose = () => {
       this.connected = false;
+      this.activeStompSubscriptions.clear();
       this.stopHeartbeat();
       this.notifyStatus(false);
     };
 
     this.client.activate();
+  }
+
+  /**
+   * Internal helper to activate live STOMP subscription for a destination.
+   */
+  _subscribeStomp(dest) {
+    if (!this.client || !this.connected) return;
+    if (this.activeStompSubscriptions.has(dest)) return;
+
+    try {
+      const stompSub = this.client.subscribe(dest, (message) => {
+        try {
+          const payload = JSON.parse(message.body);
+          const callbacks = this.registeredSubscriptions.get(dest);
+          if (callbacks) {
+            callbacks.forEach((cb) => {
+              try {
+                cb(payload);
+              } catch (cbErr) {
+                console.error('Error in subscription callback for', dest, cbErr);
+              }
+            });
+          }
+        } catch (err) {
+          console.error('Failed to parse STOMP message payload on', dest, err);
+        }
+      });
+      this.activeStompSubscriptions.set(dest, stompSub);
+    } catch (err) {
+      console.warn('Failed to subscribe to STOMP destination', dest, err);
+    }
+  }
+
+  /**
+   * Generic subscription method that registers interest immediately,
+   * connects automatically once the STOMP connection is open, and
+   * returns an idempotent unsubscribe function.
+   */
+  subscribe(dest, callback) {
+    if (!dest || typeof callback !== 'function') {
+      return () => {};
+    }
+
+    if (!this.registeredSubscriptions.has(dest)) {
+      this.registeredSubscriptions.set(dest, new Set());
+    }
+    this.registeredSubscriptions.get(dest).add(callback);
+
+    if (this.connected && this.client) {
+      this._subscribeStomp(dest);
+    }
+
+    return () => {
+      const callbacks = this.registeredSubscriptions.get(dest);
+      if (callbacks) {
+        callbacks.delete(callback);
+        if (callbacks.size === 0) {
+          this.registeredSubscriptions.delete(dest);
+          const stompSub = this.activeStompSubscriptions.get(dest);
+          if (stompSub) {
+            try {
+              if (this.client?.connected) {
+                stompSub.unsubscribe();
+              }
+            } catch (_) {}
+            this.activeStompSubscriptions.delete(dest);
+          }
+        }
+      }
+    };
   }
 
   /**
@@ -122,14 +209,15 @@ class WebSocketService {
   disconnect() {
     this.stopHeartbeat();
     if (this.client) {
-      this.subscriptions.forEach((sub) => {
+      this.activeStompSubscriptions.forEach((sub) => {
         try {
           if (this.client?.connected) {
             sub.unsubscribe();
           }
         } catch (_) {}
       });
-      this.subscriptions.clear();
+      this.activeStompSubscriptions.clear();
+      this.registeredSubscriptions.clear();
       this.client.deactivate();
       this.client = null;
       this.connected = false;
@@ -140,110 +228,29 @@ class WebSocketService {
 
   /**
    * Subscribe to real-time chat messages for a specific conversation.
+   * Safe to call before connection finishes; automatically activates on connect/reconnect.
    */
   subscribeToConversation(conversationId, callback) {
-    if (!this.client || !this.connected) return null;
-    const dest = `/topic/conversation.${conversationId}`;
-
-    if (this.subscriptions.has(dest)) {
-      try {
-        if (this.client?.connected) {
-          this.subscriptions.get(dest).unsubscribe();
-        }
-      } catch (_) {}
-    }
-
-    const sub = this.client.subscribe(dest, (message) => {
-      try {
-        const payload = JSON.parse(message.body);
-        callback(payload);
-      } catch (err) {
-        console.error('Failed to parse STOMP message payload:', err);
-      }
-    });
-
-    this.subscriptions.set(dest, sub);
-
-    return () => {
-      try {
-        if (this.client?.connected) {
-          sub.unsubscribe();
-        }
-      } catch (_) {}
-      this.subscriptions.delete(dest);
-    };
+    if (!conversationId) return () => {};
+    return this.subscribe(`/topic/conversation.${conversationId}`, callback);
   }
 
   /**
    * Subscribe to real-time user notification channel.
+   * Safe to call before connection finishes; automatically activates on connect/reconnect.
    */
   subscribeToNotifications(userId, callback) {
-    if (!this.client || !this.connected) return null;
-    const dest = `/topic/notifications.${userId}`;
-
-    if (this.subscriptions.has(dest)) {
-      try {
-        if (this.client?.connected) {
-          this.subscriptions.get(dest).unsubscribe();
-        }
-      } catch (_) {}
-    }
-
-    const sub = this.client.subscribe(dest, (message) => {
-      try {
-        const payload = JSON.parse(message.body);
-        callback(payload);
-      } catch (err) {
-        console.error('Failed to parse STOMP notification payload:', err);
-      }
-    });
-
-    this.subscriptions.set(dest, sub);
-
-    return () => {
-      try {
-        if (this.client?.connected) {
-          sub.unsubscribe();
-        }
-      } catch (_) {}
-      this.subscriptions.delete(dest);
-    };
+    if (!userId) return () => {};
+    return this.subscribe(`/topic/notifications.${userId}`, callback);
   }
 
   /**
    * Subscribe to real-time friend presence updates for authenticated user.
+   * Safe to call before connection finishes; automatically activates on connect/reconnect.
    */
   subscribeToFriendPresence(userId, callback) {
-    if (!this.client || !this.connected) return null;
-    const dest = `/topic/presence.friends.${userId}`;
-
-    if (this.subscriptions.has(dest)) {
-      try {
-        if (this.client?.connected) {
-          this.subscriptions.get(dest).unsubscribe();
-        }
-      } catch (_) {}
-    }
-
-    const sub = this.client.subscribe(dest, (message) => {
-      try {
-        const payload = JSON.parse(message.body);
-        callback(payload);
-      } catch (err) {
-        console.error('Failed to parse presence STOMP payload:', err);
-      }
-    });
-
-    this.subscriptions.set(dest, sub);
-
-    return () => {
-      try {
-        if (this.client?.connected) {
-          sub.unsubscribe();
-        }
-      } catch (_) {}
-      this.subscriptions.delete(dest);
-    };
+    if (!userId) return () => {};
+    return this.subscribe(`/topic/presence.friends.${userId}`, callback);
   }
 
   /**

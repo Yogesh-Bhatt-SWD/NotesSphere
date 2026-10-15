@@ -47,11 +47,39 @@ export function NotificationProvider({ children }) {
     }
   }, [isAuthenticated, user?.id]);
 
-  // 3. Initial load on authentication
+  // 3. Initial load & background reconciliation
   useEffect(() => {
     if (isAuthenticated && user?.id) {
       refreshCounts();
       refreshNotifications();
+
+      // Ensure WebSocket connection is initialized with stored token
+      const token = localStorage.getItem('notesphere_access_token');
+      if (token) {
+        websocketService.connect(token);
+      }
+
+      // Periodic background polling fallback (every 4s) to ensure counts stay accurate
+      // even if WebSocket is sleeping, dropped, or blocked by corporate proxies/mixed content
+      const pollTimer = setInterval(() => {
+        refreshCounts();
+      }, 4000);
+
+      // Instant reconciliation when user returns to this tab or window gains focus
+      const handleTabSync = () => {
+        if (document.visibilityState === 'visible') {
+          refreshCounts();
+          refreshNotifications();
+        }
+      };
+      window.addEventListener('focus', handleTabSync);
+      document.addEventListener('visibilitychange', handleTabSync);
+
+      return () => {
+        clearInterval(pollTimer);
+        window.removeEventListener('focus', handleTabSync);
+        document.removeEventListener('visibilitychange', handleTabSync);
+      };
     } else {
       setUnreadMessageCount(0);
       setUnreadNotificationCount(0);

@@ -105,4 +105,35 @@ describe('NoteSphere Notification System Test Suite', () => {
     assert.ok(dropdownCode.includes('navigate(notif.targetUrl)'),
       'Clicking notification must navigate to target URL');
   });
+
+  test('websocketService resilient subscription registry handles pre-connect registration and reconnects', () => {
+    const wsCode = fs.readFileSync(path.join(srcDir, 'api/websocketService.js'), 'utf-8');
+    assert.ok(wsCode.includes('registeredSubscriptions'), 'Must maintain registeredSubscriptions map');
+    assert.ok(wsCode.includes('activeStompSubscriptions'), 'Must track activeStompSubscriptions');
+    assert.ok(wsCode.includes('_subscribeStomp'), 'Must provide internal _subscribeStomp helper');
+    assert.ok(wsCode.includes('subscribeToNotifications'), 'Must provide subscribeToNotifications');
+    assert.ok(wsCode.includes('subscribeToConversation'), 'Must provide subscribeToConversation');
+    assert.ok(wsCode.includes('subscribeToFriendPresence'), 'Must provide subscribeToFriendPresence');
+    assert.ok(wsCode.includes('wss:'), 'Must guard against mixed content on HTTPS deployments');
+  });
+
+  test('NotificationContext provides periodic polling and window focus/visibility reconciliation', () => {
+    const notifCode = fs.readFileSync(path.join(srcDir, 'context/NotificationContext.jsx'), 'utf-8');
+    assert.ok(notifCode.includes('setInterval'), 'Must poll counts periodically');
+    assert.ok(notifCode.includes('visibilitychange'), 'Must listen to visibilitychange for instant reconciliation');
+    assert.ok(notifCode.includes('focus'), 'Must listen to focus for tab return reconciliation');
+    assert.ok(notifCode.includes('payload.unreadMessageCount'), 'Must update unreadMessageCount from STOMP payload');
+    assert.ok(notifCode.includes('websocketService.connect'), 'Must ensure websocket client is connected');
+  });
+
+  test('ChatPage synchronizes conversations unread count to NotificationContext and prevents duplicate sends', () => {
+    const chatCode = fs.readFileSync(path.join(srcDir, 'pages/ChatPage.jsx'), 'utf-8');
+    assert.ok(chatCode.includes('setUnreadMessageCount'), 'ChatPage must consume setUnreadMessageCount');
+    assert.ok(chatCode.includes('totalOtherUnread') || chatCode.includes('data.reduce'), 'Must compute total unread across other conversations');
+    assert.ok(chatCode.includes('chatService.sendMessage(activeConversationId, content)'), 'Must send via reliable REST endpoint');
+    // Ensure duplicate sendMessage publish was removed
+    assert.ok(!chatCode.includes('websocketService.sendMessage(activeConversationId, content)'),
+      'Must NOT duplicate message send across both REST and STOMP simultaneously');
+  });
 });
+

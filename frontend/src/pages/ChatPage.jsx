@@ -25,7 +25,7 @@ import './ChatPage.css';
 
 export default function ChatPage() {
   const { user } = useAuth();
-  const { refreshCounts } = useNotification();
+  const { refreshCounts, setUnreadMessageCount } = useNotification();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeConversationId = searchParams.get('conversationId');
@@ -224,6 +224,13 @@ export default function ChatPage() {
           });
           return hasDiff ? data : prev;
         });
+
+        // Sum unread messages from conversations other than the currently active conversation
+        const totalOtherUnread = data.reduce((sum, c) => {
+          if (c.id === activeConversationId) return sum;
+          return sum + (Number(c.unreadCount) || 0);
+        }, 0);
+        setUnreadMessageCount(totalOtherUnread);
       } catch (_) {}
     };
 
@@ -232,7 +239,7 @@ export default function ChatPage() {
       isMounted = false;
       clearInterval(interval);
     };
-  }, []);
+  }, [activeConversationId, setUnreadMessageCount]);
 
   useEffect(() => {
     scrollToBottom(true);
@@ -251,14 +258,7 @@ export default function ChatPage() {
       // 1. Send via REST endpoint (persists to MySQL and triggers backend WebSocket broadcast)
       const sentMsg = await chatService.sendMessage(activeConversationId, content);
 
-      // 2. Also publish to STOMP if socket is active
-      if (wsConnected) {
-        try {
-          websocketService.sendMessage(activeConversationId, content);
-        } catch (_) {}
-      }
-
-      // 3. Update local state immediately with optimistic outgoing bubble
+      // 2. Update local state immediately with optimistic outgoing bubble
       setMessages((prev) => {
         if (prev.some((m) => m.id === sentMsg.id)) return prev;
         return [...prev, { ...sentMsg, isOutgoing: true }];
