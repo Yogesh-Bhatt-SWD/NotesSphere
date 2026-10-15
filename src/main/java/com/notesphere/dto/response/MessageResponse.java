@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import java.time.Instant;
 
 /**
- * DTO for an individual chat message.
+ * DTO for an individual chat message including sender avatar metadata.
  */
 @Data
 @Builder
@@ -20,6 +20,7 @@ public class MessageResponse {
     private String conversationId;
     private String senderId;
     private String senderUsername;
+    private String senderAvatarUrl;
     private String content;
     private boolean isRead;
     private Instant readAt;

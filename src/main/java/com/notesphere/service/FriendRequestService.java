@@ -98,7 +98,7 @@ public class FriendRequestService {
             log.warn("Could not dispatch friend request notification: {}", ex.getMessage());
         }
 
-        return mapToFriendRequestResponse(request, sender.getUsername(), receiver.getUsername());
+        return mapToFriendRequestResponse(request, sender.getUsername(), receiver.getUsername(), sender.getAvatarUrl(), receiver.getAvatarUrl());
     }
 
     /**
@@ -114,14 +114,23 @@ public class FriendRequestService {
         }
 
         Set<String> senderIds = requests.stream().map(FriendRequest::getSenderId).collect(Collectors.toSet());
-        Map<String, String> usernameMap = userRepository.findAllById(senderIds).stream()
-                .collect(Collectors.toMap(User::getId, User::getUsername));
+        Map<String, User> senderMap = userRepository.findAllById(senderIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
 
         User receiver = userRepository.findById(userId).orElse(null);
         String receiverName = receiver != null ? receiver.getUsername() : "";
+        String receiverAvatar = receiver != null ? receiver.getAvatarUrl() : null;
 
         return requests.stream()
-                .map(r -> mapToFriendRequestResponse(r, usernameMap.getOrDefault(r.getSenderId(), "Unknown"), receiverName))
+                .map(r -> {
+                    User s = senderMap.get(r.getSenderId());
+                    return mapToFriendRequestResponse(
+                            r,
+                            s != null ? s.getUsername() : "Unknown",
+                            receiverName,
+                            s != null ? s.getAvatarUrl() : null,
+                            receiverAvatar);
+                })
                 .collect(Collectors.toList());
     }
 
@@ -138,14 +147,23 @@ public class FriendRequestService {
         }
 
         Set<String> receiverIds = requests.stream().map(FriendRequest::getReceiverId).collect(Collectors.toSet());
-        Map<String, String> usernameMap = userRepository.findAllById(receiverIds).stream()
-                .collect(Collectors.toMap(User::getId, User::getUsername));
+        Map<String, User> receiverMap = userRepository.findAllById(receiverIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
 
         User sender = userRepository.findById(userId).orElse(null);
         String senderName = sender != null ? sender.getUsername() : "";
+        String senderAvatar = sender != null ? sender.getAvatarUrl() : null;
 
         return requests.stream()
-                .map(r -> mapToFriendRequestResponse(r, senderName, usernameMap.getOrDefault(r.getReceiverId(), "Unknown")))
+                .map(r -> {
+                    User rec = receiverMap.get(r.getReceiverId());
+                    return mapToFriendRequestResponse(
+                            r,
+                            senderName,
+                            rec != null ? rec.getUsername() : "Unknown",
+                            senderAvatar,
+                            rec != null ? rec.getAvatarUrl() : null);
+                })
                 .collect(Collectors.toList());
     }
 
@@ -411,13 +429,20 @@ public class FriendRequestService {
         return ids;
     }
 
-    private FriendRequestResponse mapToFriendRequestResponse(FriendRequest r, String senderName, String receiverName) {
+    private FriendRequestResponse mapToFriendRequestResponse(
+            FriendRequest r,
+            String senderName,
+            String receiverName,
+            String senderAvatarUrl,
+            String receiverAvatarUrl) {
         return FriendRequestResponse.builder()
                 .id(r.getId())
                 .senderId(r.getSenderId())
                 .senderUsername(senderName)
+                .senderAvatarUrl(senderAvatarUrl)
                 .receiverId(r.getReceiverId())
                 .receiverUsername(receiverName)
+                .receiverAvatarUrl(receiverAvatarUrl)
                 .status(r.getStatus())
                 .createdAt(r.getCreatedAt())
                 .updatedAt(r.getUpdatedAt())

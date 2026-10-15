@@ -34,6 +34,7 @@ import { useAuth } from '../context/AuthContext';
 import { CustomDropdown } from '../components/common/CustomDropdown';
 import ContentDetailModal from '../components/common/ContentDetailModal';
 import CommentSection from '../components/common/CommentSection';
+import { normalizeAvatarUrl, getAuthorInitial } from '../utils/avatarUtils';
 import './CommunitiesPage.css';
 
 export function CommunitiesPage() {
@@ -357,12 +358,31 @@ export function CommunitiesPage() {
     const comments = commentsMap[post.id] || [];
     const isExpanded = !!expandedComments[post.id];
 
+    const postAvatar = normalizeAvatarUrl(post.authorAvatarUrl || post.authorAvatar || post.avatarUrl);
+    const postInitial = getAuthorInitial(post.authorName || 'U');
+
     return (
       <div key={post.id} className="feed-post-card">
         <div className="feed-post-header">
           <div className="author-meta">
-            <div className="author-avatar">
-              {(post.authorName || 'U').charAt(0).toUpperCase()}
+            {postAvatar ? (
+              <img
+                src={postAvatar}
+                alt={post.authorName || 'Author'}
+                className="author-avatar-img"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  if (e.currentTarget.nextElementSibling) {
+                    e.currentTarget.nextElementSibling.style.display = 'flex';
+                  }
+                }}
+              />
+            ) : null}
+            <div
+              className="author-avatar"
+              style={{ display: postAvatar ? 'none' : 'flex' }}
+            >
+              {postInitial}
             </div>
             <div>
               <div className="author-name">

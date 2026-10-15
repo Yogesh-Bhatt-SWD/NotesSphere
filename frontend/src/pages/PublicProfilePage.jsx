@@ -28,6 +28,7 @@ import { ContentDetailModal } from '../components/common/ContentDetailModal';
 import { useAuth } from '../context/AuthContext';
 import userService from '../api/userService';
 import friendService from '../api/friendService';
+import { normalizeAvatarUrl } from '../utils/avatarUtils';
 import { formatJournalCardDate } from '../utils/dateUtils';
 
 const TwitterIcon = ({ size = 18, color = 'currentColor' }) => (
@@ -243,36 +244,48 @@ export function PublicProfilePage() {
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px' }}>
             {/* Avatar & Identifiers */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '22px' }}>
-              {profile.avatarUrl ? (
-                <img
-                  src={profile.avatarUrl}
-                  alt={displayName}
-                  style={{
-                    width: '92px',
-                    height: '92px',
-                    borderRadius: '50%',
-                    objectFit: 'cover',
-                    border: '3px solid var(--primary-light)',
-                    boxShadow: 'var(--shadow-md)'
-                  }}
-                />
-              ) : (
-                <div style={{
-                  width: '92px',
-                  height: '92px',
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #00B69B 0%, #10B981 100%)',
-                  color: '#FFFFFF',
-                  fontSize: '2rem',
-                  fontWeight: 800,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: 'var(--shadow-md)'
-                }}>
-                  {initials}
-                </div>
-              )}
+              {(() => {
+                const profileAvatar = normalizeAvatarUrl(profile.avatarUrl);
+                return (
+                  <>
+                    {profileAvatar ? (
+                      <img
+                        src={profileAvatar}
+                        alt={displayName}
+                        style={{
+                          width: '92px',
+                          height: '92px',
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: '3px solid var(--primary-light)',
+                          boxShadow: 'var(--shadow-md)'
+                        }}
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          if (e.currentTarget.nextElementSibling) {
+                            e.currentTarget.nextElementSibling.style.display = 'flex';
+                          }
+                        }}
+                      />
+                    ) : null}
+                    <div style={{
+                      width: '92px',
+                      height: '92px',
+                      borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #00B69B 0%, #10B981 100%)',
+                      color: '#FFFFFF',
+                      fontSize: '2rem',
+                      fontWeight: 800,
+                      display: profileAvatar ? 'none' : 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: 'var(--shadow-md)'
+                    }}>
+                      {initials}
+                    </div>
+                  </>
+                );
+              })()}
 
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>

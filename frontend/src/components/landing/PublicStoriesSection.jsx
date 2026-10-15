@@ -16,6 +16,7 @@ import {
 import { blogService } from '../../api/blogService';
 import { journalService } from '../../api/journalService';
 import { formatJournalCardDate } from '../../utils/dateUtils';
+import { normalizeAvatarUrl, getAuthorInitial } from '../../utils/avatarUtils';
 import { useAuth } from '../../context/AuthContext';
 import './PublicStoriesSection.css';
 
@@ -148,7 +149,8 @@ export function PublicStoriesSection() {
               const coverUrl = story.coverImageUrl || story.coverImage || null;
               const dateText = formatJournalCardDate(story);
               const authorName = story.authorName || 'Anonymous Writer';
-              const authorInitial = authorName.charAt(0).toUpperCase();
+              const authorInitial = getAuthorInitial(authorName);
+              const authorAvatar = normalizeAvatarUrl(story.authorAvatarUrl || story.authorAvatar || story.avatarUrl);
 
               return (
                 <article
@@ -210,15 +212,25 @@ export function PublicStoriesSection() {
 
                     {/* Author Row */}
                     <div className="story-card-author-row">
-                      {story.authorAvatarUrl ? (
+                      {authorAvatar ? (
                         <img
-                          src={story.authorAvatarUrl}
+                          src={authorAvatar}
                           alt={authorName}
                           className="story-author-avatar"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            if (e.currentTarget.nextElementSibling) {
+                              e.currentTarget.nextElementSibling.style.display = 'flex';
+                            }
+                          }}
                         />
-                      ) : (
-                        <div className="story-author-initial">{authorInitial}</div>
-                      )}
+                      ) : null}
+                      <div
+                        className="story-author-initial"
+                        style={{ display: authorAvatar ? 'none' : 'flex' }}
+                      >
+                        {authorInitial}
+                      </div>
                       <div className="story-author-info">
                         <span className="story-author-name">{authorName}</span>
                         <span className="story-published-date">

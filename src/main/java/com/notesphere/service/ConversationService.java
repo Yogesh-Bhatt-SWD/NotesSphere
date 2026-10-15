@@ -69,7 +69,9 @@ public class ConversationService {
                     .id(c.getId())
                     .friendId(friendId)
                     .friendUsername(friend != null ? friend.getUsername() : "Unknown")
+                    .friendFullName(friend != null ? (friend.getFullName() != null && !friend.getFullName().isBlank() ? friend.getFullName() : friend.getUsername()) : "Unknown")
                     .friendEmail(friend != null ? friend.getEmail() : "")
+                    .friendAvatarUrl(friend != null ? friend.getAvatarUrl() : null)
                     .lastMessage(c.getLastMessageContent())
                     .lastMessageAt(c.getLastMessageAt() != null ? c.getLastMessageAt() : c.getCreatedAt())
                     .unreadCount(unread)
@@ -106,7 +108,9 @@ public class ConversationService {
                 .id(conversation.getId())
                 .friendId(friendId)
                 .friendUsername(friend.getUsername())
+                .friendFullName(friend.getFullName() != null && !friend.getFullName().isBlank() ? friend.getFullName() : friend.getUsername())
                 .friendEmail(friend.getEmail())
+                .friendAvatarUrl(friend.getAvatarUrl())
                 .lastMessage(conversation.getLastMessageContent())
                 .lastMessageAt(conversation.getLastMessageAt() != null ? conversation.getLastMessageAt() : conversation.getCreatedAt())
                 .unreadCount(unread)
@@ -133,22 +137,24 @@ public class ConversationService {
                 .map(Message::getSenderId)
                 .collect(Collectors.toSet());
 
-        Map<String, String> usernameMap = userRepository.findAllById(senderIds).stream()
-                .collect(Collectors.toMap(User::getId, User::getUsername));
+        Map<String, User> senderMap = userRepository.findAllById(senderIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
 
-        List<MessageResponse> dtos = messagePage.getContent().stream().map(m ->
-                MessageResponse.builder()
-                        .id(m.getId())
-                        .conversationId(m.getConversationId())
-                        .senderId(m.getSenderId())
-                        .senderUsername(usernameMap.getOrDefault(m.getSenderId(), "Unknown"))
-                        .content(m.getContent())
-                        .isRead(m.isRead())
-                        .readAt(m.getReadAt())
-                        .createdAt(m.getCreatedAt())
-                        .isOutgoing(m.getSenderId().equals(userId))
-                        .build()
-        ).collect(Collectors.toList());
+        List<MessageResponse> dtos = messagePage.getContent().stream().map(m -> {
+            User sender = senderMap.get(m.getSenderId());
+            return MessageResponse.builder()
+                    .id(m.getId())
+                    .conversationId(m.getConversationId())
+                    .senderId(m.getSenderId())
+                    .senderUsername(sender != null ? sender.getUsername() : "Unknown")
+                    .senderAvatarUrl(sender != null ? sender.getAvatarUrl() : null)
+                    .content(m.getContent())
+                    .isRead(m.isRead())
+                    .readAt(m.getReadAt())
+                    .createdAt(m.getCreatedAt())
+                    .isOutgoing(m.getSenderId().equals(userId))
+                    .build();
+        }).collect(Collectors.toList());
 
         return PagedResponse.<MessageResponse>builder()
                 .content(dtos)
@@ -211,6 +217,7 @@ public class ConversationService {
                 .conversationId(conversationId)
                 .senderId(senderId)
                 .senderUsername(sender.getUsername())
+                .senderAvatarUrl(sender.getAvatarUrl())
                 .content(message.getContent())
                 .isRead(false)
                 .readAt(null)

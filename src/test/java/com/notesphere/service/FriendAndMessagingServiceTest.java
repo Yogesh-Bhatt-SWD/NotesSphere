@@ -77,8 +77,8 @@ class FriendAndMessagingServiceTest {
 
     @BeforeEach
     void setUp() {
-        alice = User.builder().id("user-alice").username("alice").email("alice@test.com").build();
-        bob = User.builder().id("user-bob").username("bob").email("bob@test.com").build();
+        alice = User.builder().id("user-alice").username("alice").fullName("Alice Alison").avatarUrl("/api/users/user-alice/avatar?v=1").email("alice@test.com").build();
+        bob = User.builder().id("user-bob").username("bob").fullName("Bob Smith").avatarUrl("https://example.com/bob.jpg").email("bob@test.com").build();
         charlie = User.builder().id("user-charlie").username("charlie").email("charlie@test.com").build();
     }
 
@@ -248,6 +248,8 @@ class FriendAndMessagingServiceTest {
 
         assertNotNull(response);
         assertEquals("user-bob", response.getFriendId());
+        assertEquals("Bob Smith", response.getFriendFullName());
+        assertEquals("https://example.com/bob.jpg", response.getFriendAvatarUrl());
         verify(conversationRepository).save(argThat(c ->
                 c.getUserAId().compareTo(c.getUserBId()) < 0));
     }
@@ -290,6 +292,7 @@ class FriendAndMessagingServiceTest {
         assertNotNull(response);
         assertEquals("msg-1", response.getId());
         assertEquals("Hello Bob!", response.getContent());
+        assertEquals("/api/users/user-alice/avatar?v=1", response.getSenderAvatarUrl());
         assertEquals("Hello Bob!", convo.getLastMessageContent());
         verify(conversationRepository).save(convo);
     }
@@ -345,6 +348,30 @@ class FriendAndMessagingServiceTest {
         assertEquals(5L, count);
 
         verify(messageRepository).countTotalUnreadForUser("user-bob");
+    }
+
+    @Test
+    @DisplayName("Should map senderAvatarUrl and receiverAvatarUrl in incoming friend requests")
+    void testIncomingFriendRequestsMapAvatarUrl() {
+        FriendRequest req = FriendRequest.builder()
+                .id("req-1")
+                .senderId("user-alice")
+                .receiverId("user-bob")
+                .status(FriendRequestStatus.PENDING)
+                .createdAt(Instant.now())
+                .build();
+
+        when(friendRequestRepository.findByReceiverIdAndStatusOrderByCreatedAtDesc("user-bob", FriendRequestStatus.PENDING))
+                .thenReturn(java.util.List.of(req));
+        when(userRepository.findAllById(any())).thenReturn(java.util.List.of(alice));
+        when(userRepository.findById("user-bob")).thenReturn(Optional.of(bob));
+
+        java.util.List<FriendRequestResponse> list = friendRequestService.getIncomingRequests("user-bob");
+
+        assertEquals(1, list.size());
+        assertEquals("/api/users/user-alice/avatar?v=1", list.get(0).getSenderAvatarUrl());
+        assertEquals("https://example.com/bob.jpg", list.get(0).getReceiverAvatarUrl());
+        assertEquals("alice", list.get(0).getSenderUsername());
     }
 }
 

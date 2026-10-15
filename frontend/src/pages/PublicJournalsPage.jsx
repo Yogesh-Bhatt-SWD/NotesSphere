@@ -25,6 +25,7 @@ import { categoryService } from '../api/categoryService';
 import { blogService } from '../api/blogService';
 import { useAuth } from '../context/AuthContext';
 import { formatJournalCardDate } from '../utils/dateUtils';
+import { normalizeAvatarUrl, getAuthorInitial } from '../utils/avatarUtils';
 import './PublicJournalsPage.css';
 
 const DEFAULT_CATEGORIES = [
@@ -504,7 +505,8 @@ export function PublicJournalsPage({ isPublicVisitor = false }) {
               const coverUrl = journal.coverImageUrl || journal.coverImage || null;
               const dateText = formatJournalCardDate(journal);
               const authorName = journal.authorName || 'NoteSphere Writer';
-              const authorInitial = authorName.charAt(0).toUpperCase();
+              const authorInitial = getAuthorInitial(authorName);
+              const authorAvatar = normalizeAvatarUrl(journal.authorAvatarUrl || journal.authorAvatar || journal.avatarUrl);
               const readingTime = journal.readingTimeMinutes || Math.max(1, Math.ceil((journal.wordCount || 100) / 180));
               const viewCount = journal.viewCount || 0;
               const likeCount = journal.likeCount || 0;
@@ -578,7 +580,24 @@ export function PublicJournalsPage({ isPublicVisitor = false }) {
                     {/* Author & Footer Meta */}
                     <div className="pj-card-footer">
                       <div className="pj-card-author">
-                        <div className="pj-author-avatar" aria-hidden="true">
+                        {authorAvatar ? (
+                          <img
+                            src={authorAvatar}
+                            alt={authorName}
+                            className="pj-author-avatar-img"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              if (e.currentTarget.nextElementSibling) {
+                                e.currentTarget.nextElementSibling.style.display = 'flex';
+                              }
+                            }}
+                          />
+                        ) : null}
+                        <div
+                          className="pj-author-avatar"
+                          aria-hidden="true"
+                          style={{ display: authorAvatar ? 'none' : 'flex' }}
+                        >
                           {authorInitial}
                         </div>
                         <div className="pj-author-meta">

@@ -16,6 +16,7 @@ import communityService from '../../api/communityService';
 import ShareModal from './ShareModal';
 import CommentSection from './CommentSection';
 import { formatJournalCardDate } from '../../utils/dateUtils';
+import { normalizeAvatarUrl, getAuthorInitial } from '../../utils/avatarUtils';
 import './ContentDetailModal.css';
 
 export function ContentDetailModal({
@@ -115,14 +116,33 @@ export function ContentDetailModal({
     setShowShareModal(true);
   };
 
+  const authorAvatar = normalizeAvatarUrl(currentJournal?.authorAvatarUrl || currentJournal?.authorAvatar || currentJournal?.avatarUrl);
+  const authorInitial = getAuthorInitial(currentJournal?.authorName || 'U');
+
   return (
     <div className="content-detail-overlay" onClick={onClose}>
       <div className="content-detail-modal" onClick={(e) => e.stopPropagation()}>
         {/* 1. Fixed Header */}
         <div className="content-detail-header">
           <div className="content-detail-author-row">
-            <div className="content-detail-avatar">
-              {(currentJournal.authorName || 'U').charAt(0).toUpperCase()}
+            {authorAvatar ? (
+              <img
+                src={authorAvatar}
+                alt={currentJournal?.authorName || 'Author'}
+                className="content-detail-avatar-img"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  if (e.currentTarget.nextElementSibling) {
+                    e.currentTarget.nextElementSibling.style.display = 'flex';
+                  }
+                }}
+              />
+            ) : null}
+            <div
+              className="content-detail-avatar"
+              style={{ display: authorAvatar ? 'none' : 'flex' }}
+            >
+              {authorInitial}
             </div>
             <div className="content-detail-author-meta">
               <div className="author-name-row">

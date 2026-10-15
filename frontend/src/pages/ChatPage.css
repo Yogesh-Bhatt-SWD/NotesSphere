@@ -112,6 +112,14 @@
   flex-shrink: 0;
 }
 
+.convo-avatar-img {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-pill);
+  object-fit: cover;
+  display: block;
+}
+
 .convo-avatar {
   width: 44px;
   height: 44px;
@@ -197,6 +205,14 @@
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.chat-header-avatar-img {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-pill);
+  object-fit: cover;
+  display: block;
 }
 
 .chat-header-avatar {

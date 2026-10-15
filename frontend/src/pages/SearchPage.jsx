@@ -17,6 +17,7 @@ import {
 import searchService from '../api/searchService';
 import friendService from '../api/friendService';
 import communityService from '../api/communityService';
+import { normalizeAvatarUrl, getAuthorInitial } from '../utils/avatarUtils';
 import './SearchPage.css';
 
 export function SearchPage() {
@@ -325,13 +326,33 @@ export function SearchPage() {
                         onClick={() => navigate(`/profile/${person.id}`)}
                       >
                         <div className="search-person-info">
-                          {person.avatarUrl ? (
-                            <img src={person.avatarUrl} alt={person.fullName} className="search-person-avatar" />
-                          ) : (
-                            <div className="search-person-initial">
-                              {(person.fullName || person.username || 'U').charAt(0).toUpperCase()}
-                            </div>
-                          )}
+                          {(() => {
+                            const personAvatar = normalizeAvatarUrl(person.avatarUrl);
+                            const personInitial = getAuthorInitial(person.fullName || person.username || 'U');
+                            return (
+                              <>
+                                {personAvatar ? (
+                                  <img
+                                    src={personAvatar}
+                                    alt={person.fullName || person.username}
+                                    className="search-person-avatar"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                      if (e.currentTarget.nextElementSibling) {
+                                        e.currentTarget.nextElementSibling.style.display = 'flex';
+                                      }
+                                    }}
+                                  />
+                                ) : null}
+                                <div
+                                  className="search-person-initial"
+                                  style={{ display: personAvatar ? 'none' : 'flex' }}
+                                >
+                                  {personInitial}
+                                </div>
+                              </>
+                            );
+                          })()}
                           <div className="search-person-text">
                             <span className="search-person-name">{person.fullName || person.username}</span>
                             <span className="search-person-meta">

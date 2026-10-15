@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { MessageSquare, Send, Smile, X, Loader2, Sparkles, Heart } from 'lucide-react';
 import communityService from '../../api/communityService';
 import { useAuth } from '../../context/AuthContext';
+import { normalizeAvatarUrl, getAuthorInitial } from '../../utils/avatarUtils';
 import './CommentSection.css';
 
 const QUICK_EMOJIS = ['❤️', '👏', '🔥', '✨', '💡', '🙌', '😍', '🎉', '🚀', '👍'];
@@ -329,11 +330,28 @@ export function CommentSection({
         ) : (
           comments.map((comment) => {
             const author = comment.authorName || 'Member';
-            const initial = author.charAt(0).toUpperCase();
+            const initial = getAuthorInitial(author);
+            const avatarUrl = normalizeAvatarUrl(comment.authorAvatarUrl || comment.avatarUrl);
 
             return (
               <div key={comment.id} className="comment-card-item">
-                <div className="comment-user-avatar">
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={author}
+                    className="comment-user-avatar-img"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      if (e.currentTarget.nextElementSibling) {
+                        e.currentTarget.nextElementSibling.style.display = 'flex';
+                      }
+                    }}
+                  />
+                ) : null}
+                <div
+                  className="comment-user-avatar"
+                  style={{ display: avatarUrl ? 'none' : 'flex' }}
+                >
                   {initial}
                 </div>
                 <div className="comment-content-wrap">

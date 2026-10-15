@@ -212,13 +212,16 @@ public class CommunityService {
         journal.setCommentCount(commentRepository.countByJournalId(journalId));
         journalRepository.save(journal);
 
-        String authorName = userRepository.findById(userId).map(User::getUsername).orElse("Member");
+        var userOpt = userRepository.findById(userId);
+        String authorName = userOpt.map(u -> (u.getFullName() != null && !u.getFullName().isBlank()) ? u.getFullName() : u.getUsername()).orElse("Member");
+        String authorAvatarUrl = userOpt.map(User::getAvatarUrl).orElse(null);
 
         return CommentResponse.builder()
                 .id(saved.getId())
                 .journalId(journalId)
                 .userId(userId)
                 .authorName(authorName)
+                .authorAvatarUrl(authorAvatarUrl)
                 .content(saved.getContent())
                 .createdAt(saved.getCreatedAt())
                 .build();
@@ -240,19 +243,25 @@ public class CommunityService {
         }
 
         List<PostComment> comments = commentRepository.findByJournalIdOrderByCreatedAtAsc(journalId);
-        Map<String, String> userNames = userRepository.findAllById(
+        Map<String, User> userMap = userRepository.findAllById(
                 comments.stream().map(PostComment::getUserId).distinct().toList()
-        ).stream().collect(Collectors.toMap(User::getId, User::getUsername));
+        ).stream().collect(Collectors.toMap(User::getId, u -> u));
 
         return comments.stream()
-                .map(c -> CommentResponse.builder()
-                        .id(c.getId())
-                        .journalId(c.getJournalId())
-                        .userId(c.getUserId())
-                        .authorName(userNames.getOrDefault(c.getUserId(), "Member"))
-                        .content(c.getContent())
-                        .createdAt(c.getCreatedAt())
-                        .build())
+                .map(c -> {
+                    User commenter = userMap.get(c.getUserId());
+                    String aName = commenter != null ? (commenter.getFullName() != null && !commenter.getFullName().isBlank() ? commenter.getFullName() : commenter.getUsername()) : "Member";
+                    String aAvatar = commenter != null ? commenter.getAvatarUrl() : null;
+                    return CommentResponse.builder()
+                            .id(c.getId())
+                            .journalId(c.getJournalId())
+                            .userId(c.getUserId())
+                            .authorName(aName)
+                            .authorAvatarUrl(aAvatar)
+                            .content(c.getContent())
+                            .createdAt(c.getCreatedAt())
+                            .build();
+                })
                 .collect(Collectors.toList());
     }
 

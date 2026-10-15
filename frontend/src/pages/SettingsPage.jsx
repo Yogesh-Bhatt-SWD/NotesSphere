@@ -244,6 +244,9 @@ export function SettingsPage() {
         avatarUrl: savedUrl,
         avatar: savedUrl,
       });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('notesphere_profile_updated', { detail: { avatarUrl: savedUrl } }));
+      }
       showAlert('success', 'Profile photo cropped and saved successfully!');
     } catch (err) {
       showAlert('error', err.message || 'Failed to save cropped photo.');
@@ -262,6 +265,9 @@ export function SettingsPage() {
         avatarUrl: null,
         avatar: null,
       });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('notesphere_profile_updated', { detail: { avatarUrl: null } }));
+      }
       showAlert('success', 'Profile photo removed successfully.');
     } catch (err) {
       showAlert('error', err.message || 'Failed to remove photo.');
@@ -307,6 +313,9 @@ export function SettingsPage() {
         avatarUrl: updated.avatarUrl,
         avatar: updated.avatarUrl,
       });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('notesphere_profile_updated', { detail: { avatarUrl: updated.avatarUrl } }));
+      }
       showAlert('success', 'Profile information updated successfully!');
     } catch (err) {
       showAlert('error', err.message || 'Failed to update profile.');

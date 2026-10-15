@@ -20,6 +20,7 @@ import chatService from '../api/chatService';
 import websocketService from '../api/websocketService';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import PresenceIndicator from '../components/common/PresenceIndicator';
+import { normalizeAvatarUrl, getAuthorInitial } from '../utils/avatarUtils';
 import './ChatPage.css';
 
 export default function ChatPage() {
@@ -88,6 +89,19 @@ export default function ChatPage() {
 
   useEffect(() => {
     loadConversations();
+  }, [loadConversations]);
+
+  // Refresh conversations and participant avatars when user updates profile or tab regains focus
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      loadConversations();
+    };
+    window.addEventListener('notesphere_profile_updated', handleProfileUpdate);
+    window.addEventListener('focus', handleProfileUpdate);
+    return () => {
+      window.removeEventListener('notesphere_profile_updated', handleProfileUpdate);
+      window.removeEventListener('focus', handleProfileUpdate);
+    };
   }, [loadConversations]);
 
 
@@ -338,6 +352,8 @@ export default function ChatPage() {
           ) : (
             filteredConversations.map((convo) => {
               const isActive = convo.id === activeConversationId;
+              const convoInitial = getAuthorInitial(convo.friendUsername || convo.friendFullName || 'U');
+              const convoAvatar = normalizeAvatarUrl(convo.friendAvatarUrl || convo.avatarUrl);
               return (
                 <div
                   key={convo.id}
@@ -346,8 +362,24 @@ export default function ChatPage() {
                 >
                   <div className="convo-left">
                     <div className="convo-avatar-wrapper">
-                      <div className="convo-avatar">
-                        {convo.friendUsername ? convo.friendUsername.charAt(0).toUpperCase() : 'U'}
+                      {convoAvatar ? (
+                        <img
+                          src={convoAvatar}
+                          alt={convo.friendUsername}
+                          className="convo-avatar-img"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            if (e.currentTarget.nextElementSibling) {
+                              e.currentTarget.nextElementSibling.style.display = 'flex';
+                            }
+                          }}
+                        />
+                      ) : null}
+                      <div
+                        className="convo-avatar"
+                        style={{ display: convoAvatar ? 'none' : 'flex' }}
+                      >
+                        {convoInitial}
                       </div>
                       <PresenceIndicator
                         userId={convo.friendId}
@@ -387,11 +419,33 @@ export default function ChatPage() {
             {/* Header matching Reference 3 */}
             <div className="chat-window-header">
               <div className="chat-header-user">
-                <div className="chat-header-avatar">
-                  {activeConversation.friendUsername
-                    ? activeConversation.friendUsername.charAt(0).toUpperCase()
-                    : 'U'}
-                </div>
+                {(() => {
+                  const headerAvatar = normalizeAvatarUrl(activeConversation.friendAvatarUrl || activeConversation.avatarUrl);
+                  const headerInitial = getAuthorInitial(activeConversation.friendUsername || 'U');
+                  return (
+                    <div className="convo-avatar-wrapper">
+                      {headerAvatar ? (
+                        <img
+                          src={headerAvatar}
+                          alt={activeConversation.friendUsername}
+                          className="chat-header-avatar-img"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            if (e.currentTarget.nextElementSibling) {
+                              e.currentTarget.nextElementSibling.style.display = 'flex';
+                            }
+                          }}
+                        />
+                      ) : null}
+                      <div
+                        className="chat-header-avatar"
+                        style={{ display: headerAvatar ? 'none' : 'flex' }}
+                      >
+                        {headerInitial}
+                      </div>
+                    </div>
+                  );
+                })()}
                 <div className="chat-header-info">
                   <h3>{activeConversation.friendUsername}</h3>
                   <div className="chat-header-status">

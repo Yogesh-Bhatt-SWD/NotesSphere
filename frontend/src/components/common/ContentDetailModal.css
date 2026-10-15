@@ -53,6 +53,15 @@
   gap: 14px;
 }
 
+.content-detail-avatar-img {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  display: block;
+}
+
 .content-detail-avatar {
   width: 44px;
   height: 44px;

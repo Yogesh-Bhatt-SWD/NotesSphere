@@ -20,8 +20,10 @@ public class FriendRequestResponse {
     private String id;
     private String senderId;
     private String senderUsername;
+    private String senderAvatarUrl;
     private String receiverId;
     private String receiverUsername;
+    private String receiverAvatarUrl;
     private FriendRequestStatus status;
     private Instant createdAt;
     private Instant updatedAt;

@@ -23,6 +23,7 @@ import { useAuth } from '../context/AuthContext';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import CommentSection from '../components/common/CommentSection';
 import { formatPublishedDateIST } from '../utils/dateUtils';
+import { normalizeAvatarUrl, getAuthorInitial } from '../utils/avatarUtils';
 import './BlogDetailPage.css';
 
 export function BlogDetailPage() {
@@ -347,15 +348,33 @@ export function BlogDetailPage() {
           {/* Author & Publication Metadata */}
           <div className="blog-author-bar">
             <div className="blog-author-info">
-              {blog.authorAvatarUrl ? (
-                <img
-                  src={blog.authorAvatarUrl}
-                  alt={blog.authorName || 'Author'}
-                  className="blog-author-avatar"
-                />
-              ) : (
-                <div className="blog-author-avatar">{authorInitial}</div>
-              )}
+              {(() => {
+                const authorAvatar = normalizeAvatarUrl(blog.authorAvatarUrl || blog.authorAvatar || blog.avatarUrl);
+                const initial = getAuthorInitial(blog.authorName || 'Author');
+                return (
+                  <>
+                    {authorAvatar ? (
+                      <img
+                        src={authorAvatar}
+                        alt={blog.authorName || 'Author'}
+                        className="blog-author-avatar"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          if (e.currentTarget.nextElementSibling) {
+                            e.currentTarget.nextElementSibling.style.display = 'flex';
+                          }
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className="blog-author-avatar"
+                      style={{ display: authorAvatar ? 'none' : 'flex' }}
+                    >
+                      {initial}
+                    </div>
+                  </>
+                );
+              })()}
               <div className="blog-author-meta">
                 <span className="blog-author-name">{blog.authorName || 'Anonymous Author'}</span>
                 <div className="blog-author-sub">

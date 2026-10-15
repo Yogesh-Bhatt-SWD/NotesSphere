@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import java.time.Instant;
 
 /**
- * Summary DTO of a conversation for conversation lists.
+ * Summary DTO of a conversation for conversation lists and participant metadata.
  */
 @Data
 @Builder
@@ -19,7 +19,9 @@ public class ConversationResponse {
     private String id;
     private String friendId;
     private String friendUsername;
+    private String friendFullName;
     private String friendEmail;
+    private String friendAvatarUrl;
     private String lastMessage;
     private Instant lastMessageAt;
     private long unreadCount;

@@ -170,6 +170,14 @@
   gap: 16px;
 }
 
+.invitation-avatar-img {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-pill);
+  object-fit: cover;
+  display: block;
+}
+
 .invitation-avatar {
   width: 48px;
   height: 48px;

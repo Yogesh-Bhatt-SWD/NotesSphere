@@ -19,6 +19,7 @@ import chatService from '../api/chatService';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Modal from '../components/common/Modal';
 import PresenceIndicator from '../components/common/PresenceIndicator';
+import { normalizeAvatarUrl, getAuthorInitial } from '../utils/avatarUtils';
 import './FriendsPage.css';
 
 export default function FriendsPage() {
@@ -294,18 +295,34 @@ export default function FriendsPage() {
                         title="View Public Profile"
                       >
                         <div className="user-avatar-wrapper">
-                          {target.avatarUrl ? (
-                            <img
-                              src={target.avatarUrl}
-                              alt={target.username}
-                              className="user-avatar"
-                              style={{ objectFit: 'cover' }}
-                            />
-                          ) : (
-                            <div className="user-avatar">
-                              {target.username ? target.username.charAt(0).toUpperCase() : 'U'}
-                            </div>
-                          )}
+                          {(() => {
+                            const targetAvatar = normalizeAvatarUrl(target.avatarUrl);
+                            const targetInitial = getAuthorInitial(target.username || target.fullName || 'U');
+                            return (
+                              <>
+                                {targetAvatar ? (
+                                  <img
+                                    src={targetAvatar}
+                                    alt={target.username}
+                                    className="user-avatar"
+                                    style={{ objectFit: 'cover' }}
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                      if (e.currentTarget.nextElementSibling) {
+                                        e.currentTarget.nextElementSibling.style.display = 'flex';
+                                      }
+                                    }}
+                                  />
+                                ) : null}
+                                <div
+                                  className="user-avatar"
+                                  style={{ display: targetAvatar ? 'none' : 'flex' }}
+                                >
+                                  {targetInitial}
+                                </div>
+                              </>
+                            );
+                          })()}
                         </div>
                         <div className="user-meta">
                           <h4>{target.fullName || target.username}</h4>
@@ -383,9 +400,33 @@ export default function FriendsPage() {
                     {incomingRequests.map((req) => (
                       <div key={req.id} className="invitation-card">
                         <div className="invitation-info">
-                          <div className="invitation-avatar">
-                            {req.senderUsername ? req.senderUsername.charAt(0).toUpperCase() : 'U'}
-                          </div>
+                          {(() => {
+                            const senderAvatar = normalizeAvatarUrl(req.senderAvatarUrl || req.avatarUrl);
+                            const senderInitial = getAuthorInitial(req.senderUsername || 'U');
+                            return (
+                              <div style={{ position: 'relative', flexShrink: 0 }}>
+                                {senderAvatar ? (
+                                  <img
+                                    src={senderAvatar}
+                                    alt={req.senderUsername}
+                                    className="invitation-avatar-img"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                      if (e.currentTarget.nextElementSibling) {
+                                        e.currentTarget.nextElementSibling.style.display = 'flex';
+                                      }
+                                    }}
+                                  />
+                                ) : null}
+                                <div
+                                  className="invitation-avatar"
+                                  style={{ display: senderAvatar ? 'none' : 'flex' }}
+                                >
+                                  {senderInitial}
+                                </div>
+                              </div>
+                            );
+                          })()}
                           <div className="invitation-details">
                             <h4>
                               {req.senderUsername} <span>wants to connect with you</span>
@@ -450,18 +491,34 @@ export default function FriendsPage() {
                           title="View Public Profile"
                         >
                           <div className="user-avatar-wrapper">
-                            {friend.avatarUrl ? (
-                              <img
-                                src={friend.avatarUrl}
-                                alt={friend.username}
-                                className="user-avatar"
-                                style={{ objectFit: 'cover' }}
-                              />
-                            ) : (
-                              <div className="user-avatar">
-                                {friend.username ? friend.username.charAt(0).toUpperCase() : 'U'}
-                              </div>
-                            )}
+                            {(() => {
+                              const friendAvatar = normalizeAvatarUrl(friend.avatarUrl);
+                              const friendInitial = getAuthorInitial(friend.username || friend.fullName || 'U');
+                              return (
+                                <>
+                                  {friendAvatar ? (
+                                    <img
+                                      src={friendAvatar}
+                                      alt={friend.username}
+                                      className="user-avatar"
+                                      style={{ objectFit: 'cover' }}
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none';
+                                        if (e.currentTarget.nextElementSibling) {
+                                          e.currentTarget.nextElementSibling.style.display = 'flex';
+                                        }
+                                      }}
+                                    />
+                                  ) : null}
+                                  <div
+                                    className="user-avatar"
+                                    style={{ display: friendAvatar ? 'none' : 'flex' }}
+                                  >
+                                    {friendInitial}
+                                  </div>
+                                </>
+                              );
+                            })()}
                             <PresenceIndicator
                               userId={friend.friendId}
                               fallbackOnline={friend.online}
@@ -523,9 +580,36 @@ export default function FriendsPage() {
                     {outgoingRequests.map((req) => (
                       <div key={req.id} className="invitation-card">
                         <div className="invitation-info">
-                          <div className="invitation-avatar" style={{ background: '#CBD5E1' }}>
-                            {req.receiverUsername ? req.receiverUsername.charAt(0).toUpperCase() : 'U'}
-                          </div>
+                          {(() => {
+                            const recAvatar = normalizeAvatarUrl(req.receiverAvatarUrl || req.avatarUrl);
+                            const recInitial = getAuthorInitial(req.receiverUsername || 'U');
+                            return (
+                              <div style={{ position: 'relative', flexShrink: 0 }}>
+                                {recAvatar ? (
+                                  <img
+                                    src={recAvatar}
+                                    alt={req.receiverUsername}
+                                    className="invitation-avatar-img"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                      if (e.currentTarget.nextElementSibling) {
+                                        e.currentTarget.nextElementSibling.style.display = 'flex';
+                                      }
+                                    }}
+                                  />
+                                ) : null}
+                                <div
+                                  className="invitation-avatar"
+                                  style={{
+                                    display: recAvatar ? 'none' : 'flex',
+                                    background: '#CBD5E1',
+                                  }}
+                                >
+                                  {recInitial}
+                                </div>
+                              </div>
+                            );
+                          })()}
                           <div className="invitation-details">
                             <h4>
                               Request to <strong>{req.receiverUsername}</strong>

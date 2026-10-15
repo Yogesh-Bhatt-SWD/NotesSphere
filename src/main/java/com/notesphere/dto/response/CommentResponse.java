@@ -17,6 +17,7 @@ public class CommentResponse {
     private String journalId;
     private String userId;
     private String authorName;
+    private String authorAvatarUrl;
     private String content;
     private Instant createdAt;
 }
