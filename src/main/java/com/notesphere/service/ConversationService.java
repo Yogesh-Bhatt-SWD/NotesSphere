@@ -224,14 +224,20 @@ public class ConversationService {
                 String conversationDestination = "/topic/conversation." + conversationId;
                 messagingTemplate.convertAndSend(conversationDestination, response);
 
-                // Send notification to recipient
+                // Send notification to recipient with updated total unread count
+                long recipientTotalUnread = messageRepository.countTotalUnreadForUser(recipientId);
                 InAppNotification notification = InAppNotification.builder()
                         .type("NEW_MESSAGE")
                         .title("New message from " + sender.getUsername())
                         .message(response.getContent())
                         .senderId(senderId)
                         .senderUsername(sender.getUsername())
+                        .senderAvatarUrl(sender.getAvatarUrl())
                         .conversationId(conversationId)
+                        .targetType("CONVERSATION")
+                        .targetId(conversationId)
+                        .targetUrl("/chat?conversationId=" + conversationId)
+                        .unreadMessageCount(recipientTotalUnread)
                         .timestamp(Instant.now())
                         .build();
                 messagingTemplate.convertAndSend("/topic/notifications." + recipientId, notification);
@@ -244,10 +250,26 @@ public class ConversationService {
     }
 
     /**
+     * Get total number of unread incoming messages for authenticated user across all conversations.
+     */
+    @Transactional(readOnly = true)
+    public long getTotalUnreadCount(String userId) {
+        return messageRepository.countTotalUnreadForUser(userId);
+    }
+
+    /**
      * Mark all incoming messages in a conversation as read.
      */
     @Transactional
     public void markConversationAsRead(String userId, String conversationId) {
+        markConversationAsRead(userId, conversationId, null);
+    }
+
+    /**
+     * Mark incoming messages in a conversation as read, optionally only up to a specific message ID.
+     */
+    @Transactional
+    public void markConversationAsRead(String userId, String conversationId, String upToMessageId) {
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Conversation", "id", conversationId));
 
@@ -255,14 +277,36 @@ public class ConversationService {
             throw new AccessDeniedException("You are not authorized to access this conversation");
         }
 
-        int updated = messageRepository.markConversationMessagesAsRead(conversationId, userId, Instant.now());
+        int updated = 0;
+        Instant now = Instant.now();
+        if (StringUtils.hasText(upToMessageId)) {
+            Optional<Message> upToMsg = messageRepository.findById(upToMessageId);
+            if (upToMsg.isPresent() && upToMsg.get().getConversationId().equals(conversationId)) {
+                updated = messageRepository.markConversationMessagesAsReadUpTo(
+                        conversationId, userId, upToMsg.get().getCreatedAt(), now);
+            } else {
+                updated = messageRepository.markConversationMessagesAsRead(conversationId, userId, now);
+            }
+        } else {
+            updated = messageRepository.markConversationMessagesAsRead(conversationId, userId, now);
+        }
+
         log.debug("Marked {} messages as read in conversation {}", updated, conversationId);
 
         if (updated > 0) {
             try {
                 if (messagingTemplate != null) {
                     messagingTemplate.convertAndSend("/topic/conversation." + conversationId + ".read",
-                            Map.of("conversationId", conversationId, "readBy", userId, "timestamp", Instant.now().toString()));
+                            Map.of("conversationId", conversationId, "readBy", userId, "timestamp", now.toString()));
+
+                    long remainingTotal = messageRepository.countTotalUnreadForUser(userId);
+                    InAppNotification readAck = InAppNotification.builder()
+                            .type("CONVERSATION_READ")
+                            .conversationId(conversationId)
+                            .unreadMessageCount(remainingTotal)
+                            .timestamp(now)
+                            .build();
+                    messagingTemplate.convertAndSend("/topic/notifications." + userId, readAck);
                 }
             } catch (Exception ex) {
                 log.warn("Could not broadcast read status for conversation {}: {}", conversationId, ex.getMessage());

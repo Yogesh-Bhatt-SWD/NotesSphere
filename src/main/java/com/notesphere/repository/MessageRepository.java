@@ -25,7 +25,15 @@ public interface MessageRepository extends JpaRepository<Message, String> {
     @Query("SELECT COUNT(m) FROM Message m WHERE m.conversationId IN :convoIds AND m.senderId <> :userId AND m.isRead = false")
     long countTotalUnreadAcrossConversations(@Param("convoIds") List<String> convoIds, @Param("userId") String userId);
 
+    @Query("SELECT COUNT(m) FROM Message m, Conversation c WHERE m.conversationId = c.id AND (c.userAId = :userId OR c.userBId = :userId) AND m.senderId <> :userId AND m.isRead = false")
+    long countTotalUnreadForUser(@Param("userId") String userId);
+
     @Modifying
     @Query("UPDATE Message m SET m.isRead = true, m.readAt = :readAt WHERE m.conversationId = :convoId AND m.senderId <> :userId AND m.isRead = false")
     int markConversationMessagesAsRead(@Param("convoId") String convoId, @Param("userId") String userId, @Param("readAt") Instant readAt);
+
+    @Modifying
+    @Query("UPDATE Message m SET m.isRead = true, m.readAt = :readAt WHERE m.conversationId = :convoId AND m.senderId <> :userId AND m.isRead = false AND m.createdAt <= :upToCreatedAt")
+    int markConversationMessagesAsReadUpTo(@Param("convoId") String convoId, @Param("userId") String userId, @Param("upToCreatedAt") Instant upToCreatedAt, @Param("readAt") Instant readAt);
 }
+

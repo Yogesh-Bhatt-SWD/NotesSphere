@@ -25,4 +25,7 @@ public interface CommunityMemberRepository extends JpaRepository<CommunityMember
     void deleteByUserId(String userId);
 
     long countByCommunityId(String communityId);
+
+    List<CommunityMember> findByCommunityId(String communityId);
 }
+

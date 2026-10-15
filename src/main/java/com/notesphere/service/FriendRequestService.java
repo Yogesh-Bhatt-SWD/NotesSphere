@@ -46,6 +46,8 @@ public class FriendRequestService {
     private final UserRepository userRepository;
     private final JournalEntryRepository journalRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final NotificationService notificationService;
+
 
     /**
      * Send a friend request from sender to receiver.
@@ -84,15 +86,14 @@ public class FriendRequestService {
         log.info("Friend request sent from {} to {}", sender.getUsername(), receiver.getUsername());
 
         try {
-            InAppNotification notif = InAppNotification.builder()
-                    .type("FRIEND_REQUEST_RECEIVED")
-                    .title("New Friend Request")
-                    .message(sender.getUsername() + " wants to connect with you")
-                    .senderId(senderId)
-                    .senderUsername(sender.getUsername())
-                    .timestamp(Instant.now())
-                    .build();
-            messagingTemplate.convertAndSend("/topic/notifications." + receiverId, notif);
+            notificationService.notifyFriendRequest(
+                    receiverId,
+                    "FRIEND_REQUEST_RECEIVED",
+                    "New Friend Request",
+                    sender.getUsername() + " wants to connect with you",
+                    sender,
+                    request.getId()
+            );
         } catch (Exception ex) {
             log.warn("Could not dispatch friend request notification: {}", ex.getMessage());
         }
@@ -184,15 +185,14 @@ public class FriendRequestService {
         try {
             User currentUser = userRepository.findById(userId).orElse(null);
             String currentUsername = currentUser != null ? currentUser.getUsername() : "Your connection";
-            InAppNotification notif = InAppNotification.builder()
-                    .type("FRIEND_REQUEST_ACCEPTED")
-                    .title("Friend Request Accepted")
-                    .message(currentUsername + " accepted your friend request")
-                    .senderId(userId)
-                    .senderUsername(currentUsername)
-                    .timestamp(Instant.now())
-                    .build();
-            messagingTemplate.convertAndSend("/topic/notifications." + senderId, notif);
+            notificationService.notifyFriendRequest(
+                    senderId,
+                    "FRIEND_REQUEST_ACCEPTED",
+                    "Friend Request Accepted",
+                    currentUsername + " accepted your friend request",
+                    currentUser,
+                    request.getId()
+            );
         } catch (Exception ex) {
             log.warn("Could not dispatch friend request accept notification: {}", ex.getMessage());
         }

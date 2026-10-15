@@ -15,6 +15,7 @@ import {
   Users,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import chatService from '../api/chatService';
 import websocketService from '../api/websocketService';
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -23,9 +24,11 @@ import './ChatPage.css';
 
 export default function ChatPage() {
   const { user } = useAuth();
+  const { refreshCounts } = useNotification();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeConversationId = searchParams.get('conversationId');
+
 
   // State
   const [conversations, setConversations] = useState([]);
@@ -84,12 +87,9 @@ export default function ChatPage() {
   }, []);
 
   useEffect(() => {
-    loadConversations().then((convos) => {
-      if (convos.length > 0 && !activeConversationId) {
-        setSearchParams({ conversationId: convos[0].id });
-      }
-    });
-  }, [loadConversations, activeConversationId, setSearchParams]);
+    loadConversations();
+  }, [loadConversations]);
+
 
   // 3. When activeConversationId changes, load messages, start smart polling & subscribe to STOMP channel
   useEffect(() => {
@@ -118,8 +118,11 @@ export default function ChatPage() {
           return hasDiff ? chronological : prev;
         });
 
-        // Mark as read if user is viewing
-        chatService.markAsRead(activeConversationId).catch(() => {});
+        // Mark only messages actually displayed to the user as read
+        const lastMsg = chronological.length > 0 ? chronological[chronological.length - 1] : null;
+        chatService.markAsRead(activeConversationId, lastMsg ? lastMsg.id : null)
+          .then(() => refreshCounts())
+          .catch(() => {});
         setConversations((prev) =>
           prev.map((c) => (c.id === activeConversationId ? { ...c, unreadCount: 0 } : c))
         );
@@ -176,7 +179,9 @@ export default function ChatPage() {
           )
         );
 
-        chatService.markAsRead(activeConversationId).catch(() => {});
+        chatService.markAsRead(activeConversationId, newMsg.id)
+          .then(() => refreshCounts())
+          .catch(() => {});
         setTimeout(() => scrollToBottom(true), 50);
       }
     );

@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { PresenceProvider } from './context/PresenceContext';
+import { NotificationProvider } from './context/NotificationContext';
 import MainLayout from './components/layout/MainLayout';
 
 // Pages
@@ -12,6 +13,7 @@ import EditorPage from './pages/EditorPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import CalendarPage from './pages/CalendarPage';
 import RemindersPage from './pages/RemindersPage';
+import NotificationsPage from './pages/NotificationsPage';
 import SettingsPage from './pages/SettingsPage';
 import PublicProfilePage from './pages/PublicProfilePage';
 import TagsPage from './pages/TagsPage';
@@ -25,6 +27,7 @@ import BlogDetailPage from './pages/BlogDetailPage';
 import SearchPage from './pages/SearchPage';
 import NotFoundPage from './pages/NotFoundPage';
 import PublicJournalsPage from './pages/PublicJournalsPage';
+
 
 /**
  * AppShellLayout determines whether to render the public LandingPage (for logged-out visitors at '/')
@@ -84,46 +87,50 @@ export function App() {
   return (
     <AuthProvider>
       <PresenceProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* Public Authentication Routes */}
-            <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-            <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
-            <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
+        <NotificationProvider>
+          <BrowserRouter>
+            <Routes>
+              {/* Public Authentication Routes */}
+              <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+              <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
+              <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
 
-            {/* Direct Landing & Explore Aliases */}
-            <Route path="/landing" element={<LandingPage />} />
-            <Route path="/explore" element={<Navigate to="/public-journals" replace />} />
-            <Route path="/stories" element={<Navigate to="/public-journals" replace />} />
+              {/* Direct Landing & Explore Aliases */}
+              <Route path="/landing" element={<LandingPage />} />
+              <Route path="/explore" element={<Navigate to="/public-journals" replace />} />
+              <Route path="/stories" element={<Navigate to="/public-journals" replace />} />
 
-            {/* Shareable Blog Detail Page (Public Preview + Login Gate) */}
-            <Route path="/blogs/:slug" element={<BlogDetailPage />} />
+              {/* Shareable Blog Detail Page (Public Preview + Login Gate) */}
+              <Route path="/blogs/:slug" element={<BlogDetailPage />} />
 
-            {/* Root Application Shell Layout */}
-            <Route path="/" element={<AppShellLayout />}>
-              <Route index element={<DashboardPage />} />
-              <Route path="journals" element={<JournalsPage />} />
-              <Route path="public-journals" element={<PublicJournalsPage />} />
-              <Route path="editor" element={<EditorPage />} />
-              <Route path="communities" element={<CommunitiesPage />} />
-              <Route path="friends" element={<FriendsPage />} />
-              <Route path="chat" element={<ChatPage />} />
-              <Route path="analytics" element={<AnalyticsPage />} />
-              <Route path="calendar" element={<CalendarPage />} />
-              <Route path="tags" element={<TagsPage />} />
-              <Route path="reminders" element={<RemindersPage />} />
-              <Route path="search" element={<SearchPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-              <Route path="profile/:userId" element={<PublicProfilePage />} />
-              <Route path="profile" element={<Navigate to="/settings" replace />} />
-              <Route path="*" element={<NotFoundPage />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
+              {/* Root Application Shell Layout */}
+              <Route path="/" element={<AppShellLayout />}>
+                <Route index element={<DashboardPage />} />
+                <Route path="journals" element={<JournalsPage />} />
+                <Route path="public-journals" element={<PublicJournalsPage />} />
+                <Route path="editor" element={<EditorPage />} />
+                <Route path="communities" element={<CommunitiesPage />} />
+                <Route path="friends" element={<FriendsPage />} />
+                <Route path="chat" element={<ChatPage />} />
+                <Route path="notifications" element={<NotificationsPage />} />
+                <Route path="analytics" element={<AnalyticsPage />} />
+                <Route path="calendar" element={<CalendarPage />} />
+                <Route path="tags" element={<TagsPage />} />
+                <Route path="reminders" element={<RemindersPage />} />
+                <Route path="search" element={<SearchPage />} />
+                <Route path="settings" element={<SettingsPage />} />
+                <Route path="profile/:userId" element={<PublicProfilePage />} />
+                <Route path="profile" element={<Navigate to="/settings" replace />} />
+                <Route path="*" element={<NotFoundPage />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </NotificationProvider>
       </PresenceProvider>
     </AuthProvider>
   );
 }
+
 
 export default App;
 

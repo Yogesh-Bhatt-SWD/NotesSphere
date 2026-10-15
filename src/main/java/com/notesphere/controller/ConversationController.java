@@ -17,6 +17,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/conversations")
@@ -33,6 +34,14 @@ public class ConversationController {
             @AuthenticationPrincipal UserPrincipal currentUser) {
         List<ConversationResponse> conversations = conversationService.getConversations(currentUser.getId());
         return ResponseEntity.ok(ApiResponse.success(conversations));
+    }
+
+    @GetMapping("/unread-count")
+    @Operation(summary = "Get total unread incoming message count across all conversations for current user")
+    public ResponseEntity<ApiResponse<Map<String, Long>>> getUnreadCount(
+            @AuthenticationPrincipal UserPrincipal currentUser) {
+        long count = conversationService.getTotalUnreadCount(currentUser.getId());
+        return ResponseEntity.ok(ApiResponse.success(Map.of("unreadCount", count)));
     }
 
     @PostMapping("/with-friend/{friendId}")
@@ -69,8 +78,10 @@ public class ConversationController {
     @Operation(summary = "Mark messages in a conversation as read")
     public ResponseEntity<ApiResponse<Void>> markAsRead(
             @AuthenticationPrincipal UserPrincipal currentUser,
-            @PathVariable("id") String conversationId) {
-        conversationService.markConversationAsRead(currentUser.getId(), conversationId);
+            @PathVariable("id") String conversationId,
+            @RequestParam(value = "upToMessageId", required = false) String upToMessageId) {
+        conversationService.markConversationAsRead(currentUser.getId(), conversationId, upToMessageId);
         return ResponseEntity.ok(ApiResponse.success("Conversation marked as read", null));
     }
 }
+

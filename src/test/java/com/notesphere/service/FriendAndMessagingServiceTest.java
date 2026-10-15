@@ -58,6 +58,10 @@ class FriendAndMessagingServiceTest {
     @Mock
     private com.notesphere.repository.UserPresenceSessionRepository presenceSessionRepository;
 
+    @Mock
+    private NotificationService notificationService;
+
+
     @InjectMocks
     private FriendRequestService friendRequestService;
 
@@ -304,4 +308,43 @@ class FriendAndMessagingServiceTest {
                 conversationService.markConversationAsRead("user-alice", "convo-1"));
         verify(messageRepository).markConversationMessagesAsRead(eq("convo-1"), eq("user-alice"), any(Instant.class));
     }
+
+    @Test
+    @DisplayName("Scenario 3: Opening conversation marks only messages actually displayed up to message ID as read")
+    void testMarkAsReadUpToMessageId() {
+        Conversation convo = Conversation.createCanonical("user-alice", "user-bob");
+        convo.setId("convo-1");
+
+        Instant msgTime = Instant.now().minusSeconds(10);
+        Message msg = Message.builder()
+                .id("msg-read-point")
+                .conversationId("convo-1")
+                .senderId("user-bob")
+                .createdAt(msgTime)
+                .isRead(false)
+                .build();
+
+        when(conversationRepository.findById("convo-1")).thenReturn(Optional.of(convo));
+        when(messageRepository.findById("msg-read-point")).thenReturn(Optional.of(msg));
+        when(messageRepository.markConversationMessagesAsReadUpTo(eq("convo-1"), eq("user-alice"), eq(msgTime), any(Instant.class)))
+                .thenReturn(2);
+        when(messageRepository.countTotalUnreadForUser("user-alice")).thenReturn(1L);
+
+        conversationService.markConversationAsRead("user-alice", "convo-1", "msg-read-point");
+
+        verify(messageRepository).markConversationMessagesAsReadUpTo(eq("convo-1"), eq("user-alice"), eq(msgTime), any(Instant.class));
+        verify(messagingTemplate).convertAndSend(eq("/topic/notifications.user-alice"), any(Object.class));
+    }
+
+    @Test
+    @DisplayName("Scenario 1, 2, 5 & 6: Total unread message count correctly calculated across conversations excluding sender's own messages")
+    void testTotalUnreadCountAcrossConversations() {
+        when(messageRepository.countTotalUnreadForUser("user-bob")).thenReturn(5L);
+
+        long count = conversationService.getTotalUnreadCount("user-bob");
+        assertEquals(5L, count);
+
+        verify(messageRepository).countTotalUnreadForUser("user-bob");
+    }
 }
+

@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Bell, Search, Menu, X } from 'lucide-react';
 import { Badge } from '../common/Badge';
 import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
 import { GlobalSearchDropdown } from '../common/GlobalSearchDropdown';
+import { NotificationDropdown } from '../common/NotificationDropdown';
 import './Header.css';
 
 export function Header({
@@ -16,6 +18,7 @@ export function Header({
 }) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { unreadNotificationCount, isDropdownOpen, setIsDropdownOpen } = useNotification();
   const userName = user?.fullName || user?.name || user?.username || 'Member';
   const userInitial = userName.charAt(0).toUpperCase();
   const userFirstName = userName.split(' ')[0];
@@ -24,16 +27,16 @@ export function Header({
 
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
 
   // 300ms debounce for global search
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchQuery);
       if (searchQuery.trim().length > 0) {
-        setIsDropdownOpen(true);
+        setIsSearchDropdownOpen(true);
       } else {
-        setIsDropdownOpen(false);
+        setIsSearchDropdownOpen(false);
       }
     }, 300);
 
@@ -60,11 +63,28 @@ export function Header({
       </div>
 
       <div className="header-actions-section">
-        {/* Notification Button */}
-        <button className="header-notification-btn" aria-label="Notifications">
-          <Bell size={20} />
-          <span className="notification-dot" />
-        </button>
+        {/* Notification Button & Dropdown */}
+        <div className="header-notification-wrapper" style={{ position: 'relative' }}>
+          <button
+            type="button"
+            className="header-notification-btn"
+            aria-label="Notifications"
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          >
+            <Bell size={20} />
+            {unreadNotificationCount > 0 && (
+              <span className="header-notification-badge">
+                {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+              </span>
+            )}
+          </button>
+
+          <NotificationDropdown
+            isOpen={isDropdownOpen}
+            onClose={() => setIsDropdownOpen(false)}
+          />
+        </div>
+
 
         {/* User Profile Avatar Pill */}
         <div
@@ -119,18 +139,18 @@ export function Header({
               }}
               onFocus={() => {
                 if (debouncedQuery.trim().length > 0) {
-                  setIsDropdownOpen(true);
+                  setIsSearchDropdownOpen(true);
                 }
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   const trimmed = searchQuery.trim();
                   if (trimmed) {
-                    setIsDropdownOpen(false);
+                    setIsSearchDropdownOpen(false);
                     navigate(`/search?q=${encodeURIComponent(trimmed)}`);
                   }
                 } else if (e.key === 'Escape') {
-                  setIsDropdownOpen(false);
+                  setIsSearchDropdownOpen(false);
                 }
               }}
               style={{
@@ -150,7 +170,7 @@ export function Header({
                 onClick={() => {
                   setSearchQuery('');
                   setDebouncedQuery('');
-                  setIsDropdownOpen(false);
+                  setIsSearchDropdownOpen(false);
                   if (onSearchChange) onSearchChange('');
                 }}
                 style={{
@@ -174,8 +194,8 @@ export function Header({
           {/* Interactive Global Search Dropdown */}
           <GlobalSearchDropdown
             query={debouncedQuery}
-            isOpen={isDropdownOpen}
-            onClose={() => setIsDropdownOpen(false)}
+            isOpen={isSearchDropdownOpen}
+            onClose={() => setIsSearchDropdownOpen(false)}
           />
         </div>
       </div>

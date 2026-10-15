@@ -10,6 +10,14 @@ export const chatService = {
   },
 
   /**
+   * Get total number of unread incoming messages across all conversations.
+   */
+  async getUnreadCount() {
+    const res = await request('/conversations/unread-count');
+    return res?.data?.unreadCount || 0;
+  },
+
+  /**
    * Get or initialize a private 1-to-1 conversation with an accepted friend.
    */
   async getOrCreateConversation(friendId) {
@@ -39,10 +47,11 @@ export const chatService = {
   },
 
   /**
-   * Mark messages in a conversation as read.
+   * Mark messages in a conversation as read (optionally up to a specific message ID).
    */
-  async markAsRead(conversationId) {
-    const res = await request(`/conversations/${conversationId}/read`, {
+  async markAsRead(conversationId, upToMessageId = null) {
+    const query = upToMessageId ? `?upToMessageId=${encodeURIComponent(upToMessageId)}` : '';
+    const res = await request(`/conversations/${conversationId}/read${query}`, {
       method: 'PUT',
     });
     return res?.data;

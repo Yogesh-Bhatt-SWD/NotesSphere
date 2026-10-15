@@ -70,6 +70,26 @@
   border: 2px solid #FFFFFF;
 }
 
+.header-notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background-color: #FF5A5F;
+  color: #FFFFFF;
+  font-size: 0.68rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 2px 5px rgba(255, 90, 95, 0.4);
+}
+
+
 .header-user-avatar-pill {
   display: flex;
   align-items: center;

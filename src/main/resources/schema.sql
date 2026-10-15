@@ -302,4 +302,27 @@ CREATE TABLE IF NOT EXISTS presence_broadcast_events (
     INDEX idx_pbe_origin (origin_instance_id)
 );
 
+-- 21. Notifications Table (Persistent notifications for journals, messages, friend requests)
+CREATE TABLE IF NOT EXISTS notifications (
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36) NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    sender_id VARCHAR(36) NULL,
+    sender_username VARCHAR(100) NULL,
+    sender_avatar_url MEDIUMTEXT NULL,
+    target_type VARCHAR(50) NULL,
+    target_id VARCHAR(36) NULL,
+    target_url VARCHAR(255) NULL,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    read_at TIMESTAMP NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_notifications_user_created (user_id, created_at),
+    INDEX idx_notifications_user_unread (user_id, is_read),
+    INDEX idx_notifications_user_dedup (user_id, type, target_id),
+    CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+
 

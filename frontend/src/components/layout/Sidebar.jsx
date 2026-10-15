@@ -17,10 +17,12 @@ import {
 } from 'lucide-react';
 import { PillNumber } from '../common/Badge';
 import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
 import './Sidebar.css';
 
-export function Sidebar({ unreadCount = 4, className = '' }) {
+export function Sidebar({ className = '' }) {
   const { logout, user } = useAuth();
+  const { unreadMessageCount, unreadNotificationCount } = useNotification();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -42,12 +44,24 @@ export function Sidebar({ unreadCount = 4, className = '' }) {
     { label: 'Public Journals', path: '/public-journals', icon: Globe },
     { label: 'Communities', path: '/communities', icon: Users },
     { label: 'Friends', path: '/friends', icon: UserPlus },
-    { label: 'Chats', path: '/chat', icon: MessageSquare },
+    {
+      label: 'Chats',
+      path: '/chat',
+      icon: MessageSquare,
+      badge: unreadMessageCount > 0 ? (unreadMessageCount > 99 ? '99+' : unreadMessageCount) : undefined
+    },
+    {
+      label: 'Notifications',
+      path: '/notifications',
+      icon: BellRing,
+      badge: unreadNotificationCount > 0 ? (unreadNotificationCount > 99 ? '99+' : unreadNotificationCount) : undefined
+    },
     { label: 'Analytics', path: '/analytics', icon: LineChart },
     { label: 'Calendar', path: '/calendar', icon: CalendarDays },
     { label: 'Tags', path: '/tags', icon: Sparkles },
     { label: 'Reminders', path: '/reminders', icon: BellRing },
   ];
+
 
   return (
     <aside className={`sidebar ${className}`}>

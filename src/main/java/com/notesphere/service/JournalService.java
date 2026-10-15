@@ -48,6 +48,8 @@ public class JournalService {
     private final com.notesphere.repository.UserRepository userRepository;
     private final com.notesphere.repository.PostReactionRepository postReactionRepository;
     private final com.notesphere.repository.JournalViewRepository journalViewRepository;
+    private final NotificationService notificationService;
+
 
     @Transactional
     public JournalResponse createJournal(String userId, JournalRequest request) {
@@ -117,7 +119,15 @@ public class JournalService {
 
         JournalEntry savedEntry = journalRepository.save(entry);
         log.info("Journal entry {} created for user: {} with visibility: {}", savedEntry.getId(), userId, visibility);
+
+        if (savedEntry.getVisibility() == com.notesphere.entity.enums.JournalVisibility.PUBLIC
+                || savedEntry.getVisibility() == com.notesphere.entity.enums.JournalVisibility.COMMUNITY) {
+            userRepository.findById(userId).ifPresent(author ->
+                    notificationService.notifyJournalPublished(savedEntry, author));
+        }
+
         return mapToResponse(savedEntry, userId);
+
     }
 
     @Transactional
@@ -329,7 +339,15 @@ public class JournalService {
 
         JournalEntry updatedEntry = journalRepository.save(entry);
         log.info("Journal entry {} updated by user: {}", id, userId);
+
+        if (updatedEntry.getVisibility() == com.notesphere.entity.enums.JournalVisibility.PUBLIC
+                || updatedEntry.getVisibility() == com.notesphere.entity.enums.JournalVisibility.COMMUNITY) {
+            userRepository.findById(userId).ifPresent(author ->
+                    notificationService.notifyJournalPublished(updatedEntry, author));
+        }
+
         return mapToResponse(updatedEntry, userId);
+
     }
 
     @Transactional
