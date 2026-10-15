@@ -4,6 +4,28 @@ import notificationService from '../api/notificationService';
 import chatService from '../api/chatService';
 import websocketService from '../api/websocketService';
 
+import '../components/common/InAppToast.css';
+
+// Crisp Web Audio notification chime (cross-browser, zero external asset dependencies)
+function playNotificationChime() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+    osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1); // A5
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.35);
+  } catch (_) {}
+}
+
 const NotificationContext = createContext(null);
 
 export function NotificationProvider({ children }) {
@@ -14,9 +36,28 @@ export function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [inAppToast, setInAppToast] = useState(null);
 
   // Keep a ref of processed notification IDs to avoid duplicate increments from rapid events/tabs
   const processedEventIds = useRef(new Set());
+  const toastTimerRef = useRef(null);
+  const prevMsgCountRef = useRef(null);
+
+  const showInAppToast = useCallback(({ title, body, avatarUrl, url }) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setInAppToast({ title, body, avatarUrl, url, id: Date.now() });
+    toastTimerRef.current = setTimeout(() => {
+      setInAppToast(null);
+    }, 5000);
+  }, []);
+
+  const handleToastClick = useCallback((url) => {
+    setInAppToast(null);
+    if (!url) return;
+    if (window.location.pathname + window.location.search === url) return;
+    window.history.pushState(null, '', url);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  }, []);
 
   // 1. Refresh counts from backend
   const refreshCounts = useCallback(async () => {
@@ -28,6 +69,15 @@ export function NotificationProvider({ children }) {
       ]);
       setUnreadMessageCount(msgCount);
       setUnreadNotificationCount(notifCount);
+
+      if (prevMsgCountRef.current !== null && msgCount > prevMsgCountRef.current) {
+        playNotificationChime();
+        // Also refresh the notification list if count increased
+        notificationService.getNotifications(0, 20)
+          .then((res) => setNotifications(res?.content || []))
+          .catch(() => {});
+      }
+      prevMsgCountRef.current = msgCount;
     } catch (err) {
       console.warn('Failed to refresh unread counts:', err);
     }
@@ -59,11 +109,10 @@ export function NotificationProvider({ children }) {
         websocketService.connect(token);
       }
 
-      // Periodic background polling fallback (every 4s) to ensure counts stay accurate
-      // even if WebSocket is sleeping, dropped, or blocked by corporate proxies/mixed content
+      // Responsive background polling fallback (every 2.5s) to guarantee instantaneous count updates
       const pollTimer = setInterval(() => {
         refreshCounts();
-      }, 4000);
+      }, 2500);
 
       // Instant reconciliation when user returns to this tab or window gains focus
       const handleTabSync = () => {
@@ -127,6 +176,17 @@ export function NotificationProvider({ children }) {
         } else {
           chatService.getUnreadCount().then(setUnreadMessageCount).catch(() => {});
         }
+      }
+
+      // Trigger audio chime and toast banner for incoming friend messages
+      if (payload.type === 'NEW_MESSAGE' && payload.senderId !== user.id) {
+        playNotificationChime();
+        showInAppToast({
+          title: `New message from ${payload.senderUsername || 'Friend'}`,
+          body: payload.message || 'Sent a message',
+          avatarUrl: payload.senderAvatarUrl,
+          url: payload.targetUrl || `/chat?conversationId=${payload.conversationId}`,
+        });
       }
 
       // 2. Update In-App Notification Count & List
@@ -220,11 +280,44 @@ export function NotificationProvider({ children }) {
     refreshNotifications,
     markNotificationAsRead,
     markAllNotificationsAsRead,
+    showInAppToast,
   };
 
   return (
     <NotificationContext.Provider value={value}>
       {children}
+      {inAppToast && (
+        <div className="notesphere-toast-container">
+          <div
+            className="notesphere-inapp-toast"
+            onClick={() => handleToastClick(inAppToast.url)}
+            role="button"
+            tabIndex={0}
+          >
+            <div className="toast-avatar-icon">
+              {inAppToast.avatarUrl ? (
+                <img src={inAppToast.avatarUrl} alt="" />
+              ) : (
+                '💬'
+              )}
+            </div>
+            <div className="toast-body-wrapper">
+              <span className="toast-sender-title">{inAppToast.title}</span>
+              <span className="toast-snippet">{inAppToast.body}</span>
+            </div>
+            <button
+              className="toast-close-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                setInAppToast(null);
+              }}
+              aria-label="Close notification"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
     </NotificationContext.Provider>
   );
 }

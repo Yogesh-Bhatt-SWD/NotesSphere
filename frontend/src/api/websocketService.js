@@ -52,6 +52,15 @@ class WebSocketService {
       }
     }
 
+    const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+    if (isHttps && brokerURL && brokerURL.startsWith('ws://')) {
+      console.info('WebSocket: Insecure ws:// protocol skipped on HTTPS origin to prevent mixed-content blocking. Active HTTP polling enabled.');
+      this.connected = false;
+      this.isPollingFallback = true;
+      this.notifyStatus(false);
+      return;
+    }
+
     this.client = new Client({
       brokerURL,
       connectHeaders: {
@@ -92,6 +101,11 @@ class WebSocketService {
       if (onErrorCallback) onErrorCallback(frame);
     };
 
+    this.client.onWebSocketError = () => {
+      this.connected = false;
+      this.notifyStatus(false);
+    };
+
     this.client.onWebSocketClose = () => {
       this.connected = false;
       this.activeStompSubscriptions.clear();
@@ -99,7 +113,14 @@ class WebSocketService {
       this.notifyStatus(false);
     };
 
-    this.client.activate();
+    try {
+      this.client.activate();
+    } catch (err) {
+      console.warn('STOMP client activation error, falling back to polling:', err);
+      this.connected = false;
+      this.isPollingFallback = true;
+      this.notifyStatus(false);
+    }
   }
 
   /**

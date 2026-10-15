@@ -233,7 +233,7 @@ public class ConversationService {
             try {
                 User recipient = userRepository.findById(recipientId).orElse(null);
                 if (recipient != null && (recipient.getNotifyMessages() == null || recipient.getNotifyMessages())) {
-                    Notification notif = notificationRepository.findByUserIdAndTypeAndTargetId(recipientId, "NEW_MESSAGE", conversationId)
+                    Notification notif = notificationRepository.findFirstByUserIdAndTypeAndTargetIdOrderByCreatedAtDesc(recipientId, "NEW_MESSAGE", conversationId)
                             .orElse(null);
                     if (notif == null) {
                         notif = Notification.builder()

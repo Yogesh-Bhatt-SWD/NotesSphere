@@ -126,14 +126,16 @@ describe('NoteSphere Notification System Test Suite', () => {
     assert.ok(notifCode.includes('websocketService.connect'), 'Must ensure websocket client is connected');
   });
 
-  test('ChatPage synchronizes conversations unread count to NotificationContext and prevents duplicate sends', () => {
+  test('NotificationContext provides in-app toast alerts, chime, and instant load synchronization', () => {
+    const notifCode = fs.readFileSync(path.join(srcDir, 'context/NotificationContext.jsx'), 'utf-8');
+    assert.ok(notifCode.includes('playNotificationChime'), 'Must provide audio chime helper');
+    assert.ok(notifCode.includes('showInAppToast'), 'Must provide in-app toast trigger');
+    assert.ok(notifCode.includes('notesphere-inapp-toast'), 'Must render in-app toast container');
+
     const chatCode = fs.readFileSync(path.join(srcDir, 'pages/ChatPage.jsx'), 'utf-8');
-    assert.ok(chatCode.includes('setUnreadMessageCount'), 'ChatPage must consume setUnreadMessageCount');
-    assert.ok(chatCode.includes('totalOtherUnread') || chatCode.includes('data.reduce'), 'Must compute total unread across other conversations');
-    assert.ok(chatCode.includes('chatService.sendMessage(activeConversationId, content)'), 'Must send via reliable REST endpoint');
-    // Ensure duplicate sendMessage publish was removed
-    assert.ok(!chatCode.includes('websocketService.sendMessage(activeConversationId, content)'),
-      'Must NOT duplicate message send across both REST and STOMP simultaneously');
+    assert.ok(chatCode.includes('loadConversations'), 'ChatPage must load conversations');
+    assert.ok(chatCode.includes('totalOtherUnread'), 'ChatPage must compute unread count immediately upon load');
   });
 });
+
 

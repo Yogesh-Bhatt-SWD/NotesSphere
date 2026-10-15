@@ -23,7 +23,11 @@ public interface NotificationRepository extends JpaRepository<Notification, Stri
 
     Optional<Notification> findByIdAndUserId(String id, String userId);
 
-    Optional<Notification> findByUserIdAndTypeAndTargetId(String userId, String type, String targetId);
+    Optional<Notification> findFirstByUserIdAndTypeAndTargetIdOrderByCreatedAtDesc(String userId, String type, String targetId);
+
+    default Optional<Notification> findByUserIdAndTypeAndTargetId(String userId, String type, String targetId) {
+        return findFirstByUserIdAndTypeAndTargetIdOrderByCreatedAtDesc(userId, type, targetId);
+    }
 
     @Modifying
     @Query("UPDATE Notification n SET n.isRead = true, n.readAt = :readAt WHERE n.userId = :userId AND n.type = :type AND n.targetId = :targetId AND n.isRead = false")

@@ -78,6 +78,14 @@ export default function ChatPage() {
     try {
       const data = await chatService.getConversations();
       setConversations(data || []);
+
+      // Calculate and immediately update unread message count across non-active conversations
+      const totalOtherUnread = (data || []).reduce((sum, c) => {
+        if (c.id === activeConversationId) return sum;
+        return sum + (Number(c.unreadCount) || 0);
+      }, 0);
+      setUnreadMessageCount(totalOtherUnread);
+
       return data || [];
     } catch (err) {
       console.error('Failed to load conversations:', err);
@@ -85,7 +93,7 @@ export default function ChatPage() {
     } finally {
       setLoadingConversations(false);
     }
-  }, []);
+  }, [activeConversationId, setUnreadMessageCount]);
 
   useEffect(() => {
     loadConversations();
@@ -234,7 +242,7 @@ export default function ChatPage() {
       } catch (_) {}
     };
 
-    const interval = setInterval(pollConvos, 4000);
+    const interval = setInterval(pollConvos, 2500);
     return () => {
       isMounted = false;
       clearInterval(interval);
