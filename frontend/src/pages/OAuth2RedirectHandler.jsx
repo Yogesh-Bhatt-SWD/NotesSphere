@@ -18,9 +18,12 @@ export function OAuth2RedirectHandler() {
 
     if (error) {
       setIsError(true);
-      setStatusMessage(error || 'Google authentication failed. Redirecting to login...');
-      setTimeout(() => navigate('/login?error=' + encodeURIComponent(error), { replace: true }), 2500);
-      return;
+      sessionStorage.removeItem('notesphere_oauth2_redirect');
+      setStatusMessage('Google sign-in was not completed. Redirecting to sign in...');
+      const timer = setTimeout(() => {
+        navigate('/login?error=' + encodeURIComponent(error), { replace: true });
+      }, 1200);
+      return () => clearTimeout(timer);
     }
 
     if (token) {
@@ -29,20 +32,31 @@ export function OAuth2RedirectHandler() {
         localStorage.setItem('notesphere_refresh_token', refreshToken);
       }
 
-      // Fetch user profile and sync with AuthContext
+      // Fetch full user profile and immediately synchronize with AuthContext
       userService
         .getMe()
         .then((userData) => {
           const normalized = {
             ...userData,
-            name: userData.name || userData.username || userData.email?.split('@')[0] || 'Member',
+            name: userData.name || userData.fullName || userData.username || userData.email?.split('@')[0] || 'Member',
+            avatar: userData.avatarUrl || userData.avatar || null,
+            avatarUrl: userData.avatarUrl || userData.avatar || null,
           };
+          localStorage.setItem('notesphere_user', JSON.stringify(normalized));
+          setUser(normalized);
+
           const redirectTarget = sessionStorage.getItem('notesphere_oauth2_redirect') || '/';
           sessionStorage.removeItem('notesphere_oauth2_redirect');
           navigate(redirectTarget, { replace: true });
         })
         .catch((err) => {
-          console.warn('Could not immediately fetch user profile after OAuth, continuing to dashboard:', err);
+          console.warn('Could not immediately fetch user profile after OAuth, using token credentials:', err);
+          const fallbackUser = {
+            name: 'Member',
+          };
+          localStorage.setItem('notesphere_user', JSON.stringify(fallbackUser));
+          setUser(fallbackUser);
+
           const redirectTarget = sessionStorage.getItem('notesphere_oauth2_redirect') || '/';
           sessionStorage.removeItem('notesphere_oauth2_redirect');
           navigate(redirectTarget, { replace: true });

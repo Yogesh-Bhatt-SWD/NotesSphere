@@ -44,7 +44,7 @@ app:
     access-token-expiration-ms: ${JWT_ACCESS_TOKEN_EXPIRATION_MS:86400000}       # 24 hours (prevents sudden mid-session timeouts)
     refresh-token-expiration-ms: ${JWT_REFRESH_TOKEN_EXPIRATION_MS:604800000}   # 7 days
   cors:
-    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://localhost:8080}
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://localhost:8080,https://notes-sphere-d2m4.vercel.app}
   frontend-url: ${APP_FRONTEND_URL:https://notes-sphere-d2m4.vercel.app}
 
 # Swagger / OpenAPI

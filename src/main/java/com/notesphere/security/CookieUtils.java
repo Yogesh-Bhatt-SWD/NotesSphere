@@ -37,13 +37,14 @@ public final class CookieUtils {
                                  String value,
                                  int maxAge) {
         boolean isSecure = isSecureRequest(request);
+        String sameSite = isSecure ? "None" : "Lax";
 
         ResponseCookie cookie = ResponseCookie.from(name, value)
                 .path("/")
                 .httpOnly(true)
                 .maxAge(maxAge)
                 .secure(isSecure)
-                .sameSite("Lax")
+                .sameSite(sameSite)
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
@@ -53,13 +54,14 @@ public final class CookieUtils {
                                     HttpServletResponse response,
                                     String name) {
         boolean isSecure = isSecureRequest(request);
+        String sameSite = isSecure ? "None" : "Lax";
 
         ResponseCookie cookie = ResponseCookie.from(name, "")
                 .path("/")
                 .httpOnly(true)
                 .maxAge(0)
                 .secure(isSecure)
-                .sameSite("Lax")
+                .sameSite(sameSite)
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
@@ -86,19 +88,25 @@ public final class CookieUtils {
         }
     }
 
-    private static boolean isSecureRequest(HttpServletRequest request) {
+    public static boolean isSecureRequest(HttpServletRequest request) {
         if (request == null) {
+            return false;
+        }
+        if (request.isSecure()) {
             return true;
         }
         String forwardedProto = request.getHeader("X-Forwarded-Proto");
         if (forwardedProto != null && "https".equalsIgnoreCase(forwardedProto.split(",")[0].trim())) {
             return true;
         }
-        if (request.isSecure()) {
+        String forwardedSsl = request.getHeader("X-Forwarded-Ssl");
+        if (forwardedSsl != null && "on".equalsIgnoreCase(forwardedSsl.trim())) {
             return true;
         }
-        String serverName = request.getServerName();
-        // If not localhost, assume HTTPS in production
-        return serverName != null && !"localhost".equalsIgnoreCase(serverName) && !"127.0.0.1".equals(serverName);
+        String frontEndHttps = request.getHeader("Front-End-Https");
+        if (frontEndHttps != null && "on".equalsIgnoreCase(frontEndHttps.trim())) {
+            return true;
+        }
+        return false;
     }
 }

@@ -21,7 +21,7 @@ export function LoginPage() {
         return 'Google sign-in was cancelled. Please try again when you are ready.';
       }
       if (decoded.includes('authorization_request_not_found')) {
-        return 'Sign-in session expired or cookies were blocked. Please try again.';
+        return 'Sign-in session expired or cookies were blocked. Please click Continue with Google below to try again.';
       }
       return decoded;
     } catch {
@@ -55,6 +55,7 @@ export function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
+    setError('');
     const redirectTarget = searchParams.get('redirect');
     if (redirectTarget) {
       sessionStorage.setItem('notesphere_oauth2_redirect', redirectTarget);
@@ -130,9 +131,30 @@ export function LoginPage() {
             backgroundColor: '#FEF2F2',
             color: '#DC2626',
             fontSize: '0.85rem',
-            border: '1px solid #FEE2E2'
+            border: '1px solid #FEE2E2',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '8px'
           }}>
-            {error}
+            <span>{error}</span>
+            <button
+              type="button"
+              onClick={() => setError('')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#DC2626',
+                cursor: 'pointer',
+                fontSize: '1.1rem',
+                lineHeight: 1,
+                padding: '0 4px',
+                fontWeight: 700
+              }}
+              aria-label="Dismiss error"
+            >
+              ×
+            </button>
           </div>
         )}
 

@@ -155,14 +155,22 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        List<String> origins = Arrays.stream(allowedOrigins.split(","))
+        List<String> origins = new java.util.ArrayList<>(Arrays.stream(allowedOrigins.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
-                .toList();
+                .toList());
+
+        if (!origins.contains("https://notes-sphere-d2m4.vercel.app")) {
+            origins.add("https://notes-sphere-d2m4.vercel.app");
+        }
+        if (!origins.contains("https://*.vercel.app")) {
+            origins.add("https://*.vercel.app");
+        }
+
         if (origins.contains("*") || origins.isEmpty()) {
             configuration.setAllowedOriginPatterns(List.of("*"));
         } else {
-            configuration.setAllowedOrigins(origins);
+            configuration.setAllowedOriginPatterns(origins);
         }
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
